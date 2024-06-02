@@ -4,6 +4,6 @@ on: push
 jobs:
   build:
     name: Greeting
-    runs-on: ip-172-31-46-86
+    runs-on: self-hosted
     steps:
         - run: echo "Hello, world"
