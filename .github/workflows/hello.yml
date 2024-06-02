@@ -1,0 +1,9 @@
+name: Hello, World!
+on: push
+
+jobs:
+  build:
+    name: Greeting
+    runs-on: ip-172-31-46-86
+    steps:
+        - run: echo "Hello, world"
