@@ -3,7 +3,13 @@ on: push
 
 jobs:
   build:
-    name: Greeting
     runs-on: self-hosted
     steps:
-        - run: echo "Hello, world"
+    - name: checkout
+      uses: actions/checkout@v3
+    
+    - name: "install cpplint"
+      run: pip install cpplint
+
+    - name: "lint check"
+      run: make lint
