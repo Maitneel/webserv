@@ -22,7 +22,7 @@ ${OBJS_DIR}%.o : ${SRCS_DIR}%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE_DIR} -c -o $@ $<
 
 $(NAME): ${OBJS_DIR} $(OBJS)
-	$(CXX) $(OBJS) -o $(NAME)
+	$(CXX) ${CXXFLAGS} $(OBJS) -o $(NAME)
 
 clean:
 	rm -rf $(OBJS_DIR)
