@@ -1,4 +1,4 @@
-CXX         = c++
+CXX         := c++
 CXXFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP
 
 NAME        = webserv
@@ -10,10 +10,18 @@ INCLUDE_DIR = ./include
 
 SRCS        = main.cpp
 
+KERNEL      := ${shell uname -s}
+GNU         := ${shell ls /usr/local/bin | grep -e 'g++-' | head -n 1}
+
 ifeq ($(MAKECMDGOALS),debug)
 	OBJS        = ${SRCS:%.cpp=${OBJS_DIR}debug_%.o}
 	DEPS        = ${SRCS:%.cpp=${DEPS_DIR}debug_%.d}
 	CXXFLAGS += -g -fsanitize=address
+	ifeq (${KERNEL},Darwin)
+		ifneq (${GNU},)
+			CXX = ${GNU}
+		endif
+	endif
 else
 	OBJS        = ${SRCS:%.cpp=${OBJS_DIR}%.o}
 	DEPS        = ${SRCS:%.cpp=${DEPS_DIR}%.d}
