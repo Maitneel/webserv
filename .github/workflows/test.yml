@@ -1,0 +1,11 @@
+name: hello-ec2-actions
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: codebuild-github-actions-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - run: echo "Hello World!!"
+      - run: date -u
