@@ -11,7 +11,7 @@ INCLUDE_DIR = ./include
 SRCS        = main.cpp
 
 KERNEL      := ${shell uname -s}
-GNU         := ${shell ls /usr/local/bin | grep -e '^g++-' | head -n 1}
+GNU         := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
 
 ifeq ($(MAKECMDGOALS),debug)
 	OBJS        = ${SRCS:%.cpp=${OBJS_DIR}debug_%.o}
