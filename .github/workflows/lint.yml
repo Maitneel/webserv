@@ -2,6 +2,13 @@ name: CI-lint
 on: push
 
 jobs:
+  build:
+    runs-on: codebuild-github-actions-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: build
+        run: make
   lint:
     runs-on: codebuild-github-actions-runner-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
