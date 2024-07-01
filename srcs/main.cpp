@@ -12,6 +12,7 @@
 #include <iostream>
 
 #define MAX_BACKLOG 5
+#define BUFFER_SIZE 1024
 
 int listen_socket(const char *port)
 {
@@ -49,10 +50,23 @@ int listen_socket(const char *port)
     return -1;
 }
 
-void response_to_client(int fd)
+std::string read_request(int fd)
+{
+    char buf[BUFFER_SIZE];
+
+    int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
+    if (n_read <= 0)
+    {
+        // TODO: error handling
+        exit(1);
+    }
+
+    return std::string(buf, n_read);
+}
+
+void response_to_client(int fd, std::string content)
 {
     std::string response;
-    std::string content = "<h1>Welcome Webserv!</h1>";
     std::ostringstream oss;
 
     oss << content.size() + 2;
@@ -81,8 +95,8 @@ void server_main(int server_fd)
             std::exit(1);
         }
         // TODO: non blocking...
-        
-        response_to_client(sock);
+        std::string request_content = read_request(sock);
+        response_to_client(sock, request_content);
         close(sock);
     }
 }
