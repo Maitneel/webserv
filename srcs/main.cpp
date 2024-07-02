@@ -25,7 +25,7 @@ int listen_socket(const char *port)
     if (getaddrinfo(NULL, port, &hints, &res) != 0)
     {
         // TODO: error handling
-        exit(1);
+        std::exit(1);
     }
 
     for (ai = res; ai; ai=ai->ai_next) {
@@ -58,7 +58,7 @@ std::string read_request(int fd)
     if (n_read <= 0)
     {
         // TODO: error handling
-        exit(1);
+        std::exit(1);
     }
 
     return std::string(buf, n_read);
