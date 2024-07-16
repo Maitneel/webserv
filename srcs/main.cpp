@@ -10,11 +10,21 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <time.h>
 
 #include "http_request.hpp"
 
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
+
+
+std::string get_formated_date() {
+    time_t now = time(NULL);
+    struct tm *now_tm = localtime(&now);
+    std::string now_string(asctime(now_tm));
+    now_string.erase(remove(now_string.begin(), now_string.end(), '\n'), now_string.end());
+    return now_string;    
+}
 
 int listen_socket(const char *port)
 {
@@ -98,6 +108,10 @@ void server_main(int server_fd)
         }
         // TODO: non blocking...
         std::string request_content = read_request(sock);
+
+        HTTP_Request request(request_content);
+        std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
+
         response_to_client(sock, request_content);
         close(sock);
     }
@@ -113,14 +127,13 @@ void test_http_request_class() {
 }
 
 int main() {
-    // int server_fd;
-    // const char* port = "8080";
+    int server_fd;
+    const char* port = "8080";
 
-    // server_fd = listen_socket(port);
-    // server_main(server_fd);
-    // close(server_fd);
+    server_fd = listen_socket(port);
+    server_main(server_fd);
+    close(server_fd);
 
-    // test_path();
-    test_http_request_class();
+    // test_http_request_class();
     return 0;
 }
