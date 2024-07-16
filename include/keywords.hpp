@@ -62,6 +62,7 @@ bool is_safe(char c);           // = "$" | "-" | "_" | "."
 bool is_unsafe(char c);         // = CTL | SP | <"> | "#" | "%" | "<" | ">"
 bool is_national(char c);       // = <any OCTET excluding ALPHA, DIGIT,     reserved, extra, safe, and unsafe>
 
+bool is_http_version(std::string s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
 // 補助的な関数 //
 bool is_token_element(char c);

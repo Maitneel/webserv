@@ -1,5 +1,5 @@
 CXX         := c++
-CXXFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP
+CXXFLAGS    := -Wall -Wextra  -std=c++98 -MMD -MP
 
 NAME        = webserv
 
@@ -9,7 +9,7 @@ DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
 SRCS        =	main.cpp \
-				request_perser.cpp \
+				http_request.cpp \
 				checkers.cpp \
 				getters.cpp \
 
@@ -57,6 +57,9 @@ lint:
 	cpplint ${SRCS}
 
 debug: ${NAME}
+
+test: debug
+	./${NAME}
 
 -include ${DEPS}
 

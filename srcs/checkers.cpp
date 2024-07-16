@@ -281,3 +281,37 @@ bool is_unsafe(char c) {         // = CTL | SP | <"> | "#" | "%" | "<" | ">"
 bool is_national(char c) {       // <any OCTET excluding ALPHA, DIGIT, reserved, extra, safe, and unsafe>
 	return (!(!is_alpha(c) || is_digit(c) || is_reserved(c) || is_extra(c) || is_safe(c) || is_unsafe(c)));
 }
+
+bool is_http_version(std::string s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIGIT
+	try {
+		const std::string http = "HTTP";
+		size_t s_index = 0;
+		for (size_t i = 0; i < http.length(); i++) {
+			if (s.at(s_index) != http.at(i)) {
+				return false;
+			}
+			s_index++;
+		}
+		if (s.at(s_index) != '/' || !is_digit(s.at(s_index + 1))) {
+			return false;
+		}
+		s_index++;
+		while (is_digit(s.at(s_index))) {
+			s_index++;
+		}
+		if (s.at(s_index) != '.' || !is_digit(s.at(s_index + 1))) {
+			return false;
+		}
+		s_index++;
+		while (s_index < s.length() && is_digit(s.at(s_index))) {
+			s_index++;
+		}
+		if (s_index != s.length()) {
+			return false;
+		}
+	} catch (std::out_of_range) {
+		std::cerr << "catch " << std::endl;
+		return false;
+	}
+	return true;
+}
