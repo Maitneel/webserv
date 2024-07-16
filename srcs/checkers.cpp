@@ -1,4 +1,5 @@
 #include "keywords.hpp"
+#include <iostream>
 
 bool is_crlf(std::string s) {
 	if (s.length() != 2) {
@@ -139,17 +140,20 @@ bool is_rel_path(std::string s) {       // = [ path ] [ ";" params ] [ "?" query
 	const std::string::size_type semi_colon_index = s.find(';', 0);
 	const std::string::size_type question_index = s.find('?', 0);
 	const std::string path = s.substr(0, (semi_colon_index == std::string::npos ? question_index : semi_colon_index));
-	const std::string params = s.substr(semi_colon_index, question_index - semi_colon_index);
-	const std::string query = s.substr(question_index);
-
 	if (path != "" && !is_path(path)) {
 		return false;
 	}
-	if (semi_colon_index != std::string::npos && !is_params(params)) {
-		return false;
+	if (semi_colon_index != std::string::npos) {
+		const std::string params = s.substr(semi_colon_index, question_index - semi_colon_index);
+		if (semi_colon_index != std::string::npos && !is_params(params)) {
+			return false;
+		} 
 	} 
-	if (question_index != std::string::npos && !is_query(query)) {
-		return false;
+	if (question_index != std::string::npos) {
+		const std::string query = s.substr(question_index);
+		if (question_index != std::string::npos && !is_query(query)) {
+			return false;
+		}
 	}
 	return true;
 }
@@ -237,7 +241,13 @@ bool is_pchar(std::string s) {          // = uchar | ":" | "@" | "&" | "=" | "+"
 }
 
 bool is_uchar(std::string s) {          // = unreserved | escape
-	return (is_unreserved(s.at(0)) || is_escape(s));
+	bool result = is_unreserved(s.at(0));
+	try {
+		result |= is_escape(s);
+	} catch (std::out_of_range &e) {
+
+	}
+	return result;
 }
 
 bool is_unreserved(char c) {     // = ALPHA | DIGIT | safe | extra | national
