@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <time.h>
+#include <algorithm>
 
 #include "http_request.hpp"
 
@@ -108,7 +109,7 @@ void server_main(int server_fd)
         }
         // TODO: non blocking...
         std::string request_content = read_request(sock);
-
+        std::cerr << "resived " << std::endl;
         HTTP_Request request(request_content);
         std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
 
