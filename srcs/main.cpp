@@ -115,6 +115,12 @@ void server_main(int server_fd)
 
         response_to_client(sock, request_content);
         close(sock);
+
+        // break させるようの処理 //
+        std::string method = request.get_method();
+        if (method == "kill" || method == "KILL" || method == "Kill") {
+            break;
+        }
     }
 }
 

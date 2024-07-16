@@ -137,20 +137,24 @@ bool is_abs_path(std::string s) {       // = "/" rel_path
 }
 
 bool is_rel_path(std::string s) {       // = [ path ] [ ";" params ] [ "?" query ]
-	const std::string::size_type semi_colon_index = s.find(';', 0);
-	const std::string::size_type question_index = s.find('?', 0);
+	std::string::size_type semi_colon_index = s.find(';', 0);
+	std::string::size_type question_index = s.find('?', 0);
+
+	if (question_index < semi_colon_index) {
+		semi_colon_index = std::string::npos;
+	}
 	const std::string path = s.substr(0, (semi_colon_index == std::string::npos ? question_index : semi_colon_index));
 	if (path != "" && !is_path(path)) {
 		return false;
 	}
 	if (semi_colon_index != std::string::npos) {
-		const std::string params = s.substr(semi_colon_index, question_index - semi_colon_index);
+		const std::string params = s.substr(semi_colon_index + 1, question_index - semi_colon_index - 1);
 		if (semi_colon_index != std::string::npos && !is_params(params)) {
 			return false;
 		} 
 	} 
 	if (question_index != std::string::npos) {
-		const std::string query = s.substr(question_index);
+		const std::string query = s.substr(question_index + 1);
 		if (question_index != std::string::npos && !is_query(query)) {
 			return false;
 		}
@@ -190,14 +194,14 @@ bool is_segment(std::string s) {        // = *pchar
 }
 
 bool is_params(std::string s) {         // = param *( ";" param )
-	std::string::size_type semi_colon_index = s.find('/', 0);
+	std::string::size_type semi_colon_index = s.find(';', 0);
 	if (!is_param(s.substr(0, semi_colon_index))) {
 		return false;
 	}
 	while (semi_colon_index != std::string::npos) {
-		const std::string::size_type before_semi_colon_index = semi_colon_index;
-		semi_colon_index = s.find('/', before_semi_colon_index);
-		if (!is_param(s.substr(before_semi_colon_index, semi_colon_index - before_semi_colon_index))) {
+		const std::string::size_type next_word_front = semi_colon_index + 1;
+		semi_colon_index = s.find(';', next_word_front);
+		if (!is_param(s.substr(next_word_front, semi_colon_index - next_word_front))) {
 			return false;
 		}	
 	}
