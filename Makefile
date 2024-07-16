@@ -8,7 +8,11 @@ OBJS_DIR    = ./objs
 DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
-SRCS        = main.cpp
+SRCS        =	main.cpp \
+				request_perser.cpp \
+				checkers.cpp \
+				getters.cpp \
+
 
 KERNEL      := ${shell uname -s}
 GNU         := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
