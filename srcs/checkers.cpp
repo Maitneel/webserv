@@ -32,7 +32,7 @@ bool is_text(const std::string &s) {
 	return true;
 }
 
-bool is_hex(char c) {
+bool is_hex(const char &c) {
 	return (
 		('A' <= c && c <= 'F') ||
 		('a' <= c && c <= 'f') ||
@@ -45,7 +45,7 @@ bool is_word(const std::string &s) {
 	return (is_token(s) || is_quoted_string(s));
 }
 
-bool is_token_element(char c) {
+bool is_token_element(const char &c) {
 	return (!(is_ctl(c) || is_tspecials(c)));
 }
 
@@ -58,7 +58,7 @@ bool is_token(const std::string &s) {
 	return true;
 }
 
-bool is_tspecials(char c) {
+bool is_tspecials(const char &c) {
 	return (
 		c == '(' || c == ')' || c == '<' || c == '>' || c == '@' ||
 		c == ',' || c == ';' || c == ':' || c == '\\' || c == '"' ||
@@ -254,7 +254,7 @@ bool is_uchar(const std::string &s) {          // = unreserved | escape
 	return result;
 }
 
-bool is_unreserved(char c) {     // = ALPHA | DIGIT | safe | extra | national
+bool is_unreserved(const char &c) {     // = ALPHA | DIGIT | safe | extra | national
 	return (is_alpha(c) || is_digit(c) || is_safe(c));
 }
 
@@ -266,23 +266,23 @@ bool is_escape(const std::string &s) {         // = "%" HEX HEX
 }
 
 
-bool is_reserved(char c) {       // = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+"
+bool is_reserved(const char &c) {       // = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+"
 	return (c == ';' || c == '/' || c == '?' || c == ':' || c == '@' || c == '&' || c == '=' || c == '+');
 }
 
-bool is_extra(char c) {          // = "!" | "*" | "'" | "(" | ")" | ","
+bool is_extra(const char &c) {          // = "!" | "*" | "'" | "(" | ")" | ","
 	return (c == '!' || c == '*' || c == '\'' || c == '(' || c == ')' || c == ',');
 }
 
-bool is_safe(char c) {           // = "$" | "-" | "_" | "."
+bool is_safe(const char &c) {           // = "$" | "-" | "_" | "."
 	return (c == '$' || c == '-' || c == '_' || c == '.');
 }
 
-bool is_unsafe(char c) {         // = CTL | SP | <"> | "#" | "%" | "<" | ">"
+bool is_unsafe(const char &c) {         // = CTL | SP | <"> | "#" | "%" | "<" | ">"
 	return (!(is_ctl(c) || is_sp(c) || c == '"' || c == '#' || c == '%' || c == '<' || c == '>'));
 }
 
-bool is_national(char c) {       // <any OCTET excluding ALPHA, DIGIT, reserved, extra, safe, and unsafe>
+bool is_national(const char &c) {       // <any OCTET excluding ALPHA, DIGIT, reserved, extra, safe, and unsafe>
 	return (!(!is_alpha(c) || is_digit(c) || is_reserved(c) || is_extra(c) || is_safe(c) || is_unsafe(c)));
 }
 

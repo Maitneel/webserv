@@ -23,10 +23,10 @@
 bool is_crlf(const std::string &s);
 bool is_lws(const std::string &s);
 bool is_text(const std::string &s);
-bool is_hex(char c);
+bool is_hex(const char &c);
 bool is_word(const std::string &s);
 bool is_token(const std::string &s);
-bool is_tspecials(char c); // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある
+bool is_tspecials(const char &c); // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある
 bool is_comment(const std::string &s);
 bool is_ctext(const std::string &s);
 bool is_quoted_string(const std::string &s);
@@ -53,18 +53,18 @@ bool is_query(const std::string &s);          // = *( uchar | reserved )
 // bool is_fragment(const std::string &s);       // = *( uchar | reserved )
 bool is_pchar(const std::string &s);          // = uchar | ":" | "@" | "&" | "=" | "+"
 bool is_uchar(const std::string &s);          // = unreserved | escape
-bool is_unreserved(char c);     // = ALPHA | DIGIT | safe | extra | national
+bool is_unreserved(const char &c);     // = ALPHA | DIGIT | safe | extra | national
 bool is_escape(const std::string &s);         // = "%" HEX HEX
 
-bool is_reserved(char c);       // = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+"
-bool is_extra(char c);          // = "!" | "*" | "'" | "(" | ")" | ","
-bool is_safe(char c);           // = "$" | "-" | "_" | "."
-bool is_unsafe(char c);         // = CTL | SP | <"> | "#" | "%" | "<" | ">"
-bool is_national(char c);       // = <any OCTET excluding ALPHA, DIGIT,     reserved, extra, safe, and unsafe>
+bool is_reserved(const char &c);       // = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+"
+bool is_extra(const char &c);          // = "!" | "*" | "'" | "(" | ")" | ","
+bool is_safe(const char &c);           // = "$" | "-" | "_" | "."
+bool is_unsafe(const char &c);         // = CTL | SP | <"> | "#" | "%" | "<" | ">"
+bool is_national(const char &c);       // = <any OCTET excluding ALPHA, DIGIT,     reserved, extra, safe, and unsafe>
 
 bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
 // 補助的な関数 //
-bool is_token_element(char c);
+bool is_token_element(const char &c);
 
 #endif
