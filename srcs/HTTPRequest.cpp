@@ -2,7 +2,8 @@
 #include <iostream>
 
 #include "HTTPRequest.hpp"
-#include "keywords.hpp"
+#include "http_validation.hpp"
+#include "get_http_keyword.hpp"
 
 HTTPRequest::HTTPRequest() : method(), request_uri(), protocol() {
 

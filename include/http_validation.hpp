@@ -1,5 +1,5 @@
-#ifndef KEYWORDS_HPP
-# define KEYWORDS_HPP
+#ifndef HTTP_VALIDATION_HPP
+# define HTTP_VALIDATION_HPP
 
 #include <cctype>
 #include <string>
@@ -66,8 +66,5 @@ bool is_http_version(std::string s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "."
 
 // 補助的な関数 //
 bool is_token_element(char c);
-
-// getter 
-std::string get_first_token(std::string s);
 
 #endif
