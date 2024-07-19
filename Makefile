@@ -9,7 +9,7 @@ DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
 SRCS        =	main.cpp \
-				http_request.cpp \
+				HTTPRequest.cpp \
 				checkers.cpp \
 				getters.cpp \
 

@@ -13,7 +13,7 @@
 #include <time.h>
 #include <algorithm>
 
-#include "http_request.hpp"
+#include "HTTPRequest.hpp"
 
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
@@ -110,7 +110,7 @@ void server_main(int server_fd)
         // TODO: non blocking...
         std::string request_content = read_request(sock);
         std::cerr << "resived " << std::endl;
-        HTTP_Request request(request_content);
+        HTTPRequest request(request_content);
         std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
 
         response_to_client(sock, request_content);
@@ -125,9 +125,9 @@ void server_main(int server_fd)
 }
 
 
-void test_http_request_class() {
+void test_HTTPRequest_class() {
     const char *req_header = "GET / HTTP/1.1\r\nHost: localhost:8080 Connection: keep-alive sec-ch-ua: \"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\" sec-ch-ua-mobile: ?0 sec-ch-ua-platform: \"macOS\" Upgrade-Insecure-Requests: 1 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Sec-Purpose: prefetch;prerender Purpose: prefetch Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7 Sec-Fetch-Site: none Sec-Fetch-Mode: navigate Sec-Fetch-User: ?1 Sec-Fetch-Dest: document Accept-Encoding: gzip, deflate, br, zstd Accept-Language: ja,en-US;q=0.9,en;q=0.8";
-    HTTP_Request request(req_header);
+    HTTPRequest request(req_header);
     std::cout << "method     : " << request.get_method() << std::endl;
     std::cout << "request_uri: " << request.get_request_uri() << std::endl;
     std::cout << "protocol   : " << request.get_protocol() << std::endl;
@@ -141,6 +141,6 @@ int main() {
     server_main(server_fd);
     close(server_fd);
 
-    // test_http_request_class();
+    // test_HTTPRequest_class();
     return 0;
 }
