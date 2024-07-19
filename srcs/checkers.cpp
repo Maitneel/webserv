@@ -1,14 +1,14 @@
 #include "http_validation.hpp"
 #include <iostream>
 
-bool is_crlf(std::string s) {
+bool is_crlf(const std::string &s) {
 	if (s.length() != 2) {
 		return false;
 	}
 	return (is_cr(s.at(0)) && is_lf(s.at(1)));
 }
 
-bool is_lws(std::string s) {
+bool is_lws(const std::string &s) {
 	if (s.length() < 3) {
 		return false;
 	}
@@ -23,7 +23,7 @@ bool is_lws(std::string s) {
 	return true;
 }
 
-bool is_text(std::string s) {
+bool is_text(const std::string &s) {
 	for (size_t i = 0; i < s.length(); i++) {
 		if (is_ctl(s.at(i))) {
 			return false;
@@ -41,7 +41,7 @@ bool is_hex(char c) {
 	
 }
 
-bool is_word(std::string s) {
+bool is_word(const std::string &s) {
 	return (is_token(s) || is_quoted_string(s));
 }
 
@@ -49,7 +49,7 @@ bool is_token_element(char c) {
 	return (!(is_ctl(c) || is_tspecials(c)));
 }
 
-bool is_token(std::string s) {
+bool is_token(const std::string &s) {
 	for (size_t i = 0; i < s.length(); i++) {
 		if (!is_token_element(s.at(i))) {
 			return false;
@@ -67,7 +67,7 @@ bool is_tspecials(char c) {
 	);
 }
 
-bool is_comment(std::string s) {
+bool is_comment(const std::string &s) {
 	if (s.length() < 2) {
 		return false;
 	}
@@ -77,11 +77,11 @@ bool is_comment(std::string s) {
 	if (s.length() == 2) {
 		return true;
 	}
-	std::string str = s.substr(1, s.length() - 2);
+	const std::string &str = s.substr(1, s.length() - 2);
 	return (is_ctext(str) || is_comment(str));
 }
 
-bool is_ctext(std::string s) {
+bool is_ctext(const std::string &s) {
 	for (size_t i = 0; i < s.length(); i++) {
 		if (s.at(i) == '(' || s.at(i) == ')') {
 			return false;
@@ -90,7 +90,7 @@ bool is_ctext(std::string s) {
 	return true;
 }
 
-bool is_quoted_string(std::string s) {
+bool is_quoted_string(const std::string &s) {
 	if (s.length() < 2) {
 		return false;
 	}
@@ -100,7 +100,7 @@ bool is_quoted_string(std::string s) {
 	return (is_qdtext(s.substr(1, s.length() - 2)));
 }
 
-bool is_qdtext(std::string s) {
+bool is_qdtext(const std::string &s) {
 	for (size_t i = 0; i < s.length(); i++) {
 		if (is_dquote(s.at(i)) || is_ctl(s.at(i))) {
 			return false;
@@ -109,9 +109,9 @@ bool is_qdtext(std::string s) {
 	return true;
 }
 
-// bool is_uri(std::string s);            // = ( absoluteURI | relativeURI ) [ "#" fragment ]
+// bool is_uri(const std::string &s);            // = ( absoluteURI | relativeURI ) [ "#" fragment ]
 
-bool is_absolute_uri(std::string s) {   // = scheme ":" *( uchar | reserved )
+bool is_absolute_uri(const std::string &s) {   // = scheme ":" *( uchar | reserved )
 	const std::string::size_type colon_index = s.find(':', 0);
 	if (colon_index == std::string::npos) {
 		return false;
@@ -126,17 +126,17 @@ bool is_absolute_uri(std::string s) {   // = scheme ":" *( uchar | reserved )
 	}
 	return true;
 }
-// bool is_relativeURI(std::string s);    // = net_path | abs_path | rel_path
-// bool is_net_path(std::string s);       // = "//" net_loc [ abs_path ]
+// bool is_relativeURI(const std::string &s);    // = net_path | abs_path | rel_path
+// bool is_net_path(const std::string &s);       // = "//" net_loc [ abs_path ]
 
-bool is_abs_path(std::string s) {       // = "/" rel_path
+bool is_abs_path(const std::string &s) {       // = "/" rel_path
 	if (s.at(0) != '/') {
 		return false;
 	}
 	return (is_rel_path(s.substr(1)));
 }
 
-bool is_rel_path(std::string s) {       // = [ path ] [ ";" params ] [ "?" query ]
+bool is_rel_path(const std::string &s) {       // = [ path ] [ ";" params ] [ "?" query ]
 	std::string::size_type semi_colon_index = s.find(';', 0);
 	std::string::size_type question_index = s.find('?', 0);
 
@@ -162,7 +162,7 @@ bool is_rel_path(std::string s) {       // = [ path ] [ ";" params ] [ "?" query
 	return true;
 }
 
-bool is_path(std::string s) {           // = fsegment *( "/" segment )
+bool is_path(const std::string &s) {           // = fsegment *( "/" segment )
 	std::string::size_type slash_index = s.find('/', 0);
 	if (!is_fsegment(s.substr(0, slash_index))) {
 		return false;
@@ -177,14 +177,14 @@ bool is_path(std::string s) {           // = fsegment *( "/" segment )
 	return true;
 }
 
-bool is_fsegment(std::string s) {       // = 1*pchar
+bool is_fsegment(const std::string &s) {       // = 1*pchar
 	if (s.length() < 1) {
 		return false;
 	}
 	return is_segment(s);
 }
 
-bool is_segment(std::string s) {        // = *pchar
+bool is_segment(const std::string &s) {        // = *pchar
 	for (size_t i = 0; i < s.length(); i++) {
 		if (!is_pchar(s.substr(i, 3))) {
 			return false;
@@ -193,7 +193,7 @@ bool is_segment(std::string s) {        // = *pchar
 	return true;
 }
 
-bool is_params(std::string s) {         // = param *( ";" param )
+bool is_params(const std::string &s) {         // = param *( ";" param )
 	std::string::size_type semi_colon_index = s.find(';', 0);
 	if (!is_param(s.substr(0, semi_colon_index))) {
 		return false;
@@ -208,7 +208,7 @@ bool is_params(std::string s) {         // = param *( ";" param )
 	return true;
 }
 
-bool is_param(std::string s) {          // = *( pchar | "/" )
+bool is_param(const std::string &s) {          // = *( pchar | "/" )
 	for (size_t i = 0; i < s.length(); i++) {
 		if (!(is_pchar(s.substr(i, 3)) || s.at(i) == '/')) {
 			return false;
@@ -217,7 +217,7 @@ bool is_param(std::string s) {          // = *( pchar | "/" )
 	return true;
 }
 
-bool is_scheme(std::string s) {         // = 1*( ALPHA | DIGIT | "+" | "-" | "." )
+bool is_scheme(const std::string &s) {         // = 1*( ALPHA | DIGIT | "+" | "-" | "." )
 	for (size_t i = 0; i < s.length(); i++) {
 		if (!(is_alpha(s.at(i)) || is_digit(s.at(i)) || s.at(i) == '+' || s.at(i) == '-' || s.at(i) == '.')) {
 			return false;
@@ -226,8 +226,8 @@ bool is_scheme(std::string s) {         // = 1*( ALPHA | DIGIT | "+" | "-" | "."
 	return true;
 }
 
-// bool is_net_loc(std::string s);        // = *( pchar | ";" | "?" )
-bool is_query(std::string s) {          // = *( uchar | reserved )
+// bool is_net_loc(const std::string &s);        // = *( pchar | ";" | "?" )
+bool is_query(const std::string &s) {          // = *( uchar | reserved )
 	for (size_t i = 0; i < s.length(); i++) {
 		if (!(is_uchar(s.substr(i, 3)) || is_reserved(s.at(i)))) {
 			return false;
@@ -236,15 +236,15 @@ bool is_query(std::string s) {          // = *( uchar | reserved )
 	return true;
 }
 
-// bool is_fragment(std::string s);       // = *( uchar | reserved )
-bool is_pchar(std::string s) {          // = uchar | ":" | "@" | "&" | "=" | "+"
+// bool is_fragment(const std::string &s);       // = *( uchar | reserved )
+bool is_pchar(const std::string &s) {          // = uchar | ":" | "@" | "&" | "=" | "+"
 	if (!(is_uchar(s) || s.at(0) == ':' || s.at(0) == '@' || s.at(0) == '&' || s.at(0) == '=' || s.at(0) == '+')) {
 		return false;
 	}
 	return true;
 }
 
-bool is_uchar(std::string s) {          // = unreserved | escape
+bool is_uchar(const std::string &s) {          // = unreserved | escape
 	bool result = is_unreserved(s.at(0));
 	try {
 		result |= is_escape(s);
@@ -258,7 +258,7 @@ bool is_unreserved(char c) {     // = ALPHA | DIGIT | safe | extra | national
 	return (is_alpha(c) || is_digit(c) || is_safe(c));
 }
 
-bool is_escape(std::string s) {         // = "%" HEX HEX
+bool is_escape(const std::string &s) {         // = "%" HEX HEX
 	if (s.length() != 3) {
 		return false;
 	}
@@ -286,7 +286,7 @@ bool is_national(char c) {       // <any OCTET excluding ALPHA, DIGIT, reserved,
 	return (!(!is_alpha(c) || is_digit(c) || is_reserved(c) || is_extra(c) || is_safe(c) || is_unsafe(c)));
 }
 
-bool is_http_version(std::string s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIGIT
+bool is_http_version(const std::string &s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 	try {
 		const std::string http = "HTTP";
 		size_t s_index = 0;
