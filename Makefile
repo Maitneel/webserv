@@ -3,15 +3,16 @@ CXXFLAGS    := -Wall -Wextra  -std=c++98 -MMD -MP
 
 NAME        = webserv
 
-SRCS_DIR    = ./srcs
-OBJS_DIR    = ./objs
+SRCS_DIR    = ./srcs/
+OBJS_DIR    = ./objs/
+HTTP_DIR	= http/
 DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
 SRCS        =	main.cpp \
-				HTTPRequest.cpp \
-				checkers.cpp \
-				getters.cpp \
+				${HTTP_DIR}HTTPRequest.cpp \
+				${HTTP_DIR}checkers.cpp \
+				${HTTP_DIR}getters.cpp \
 
 
 KERNEL      := ${shell uname -s}
@@ -35,6 +36,7 @@ all:  $(NAME)
 
 ${OBJS_DIR} :
 	mkdir -p $@
+	mkdir -p ${OBJS_DIR}${HTTP_DIR}
 
 ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE_DIR} -c -o $@ $<
@@ -62,5 +64,8 @@ test: debug
 	./${NAME}
 
 -include ${DEPS}
+
+echo:
+	@echo ${OBJS}
 
 .PHONY: all clean fclean re test lint
