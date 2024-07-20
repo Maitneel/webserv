@@ -1,14 +1,19 @@
 CXX         := c++
-CXXFLAGS    := -Wall -Wextra -Werror -std=c++98 -MMD -MP
+CXXFLAGS    := -Wall -Wextra  -std=c++98 -MMD -MP
 
 NAME        = webserv
 
-SRCS_DIR    = ./srcs
-OBJS_DIR    = ./objs
+SRCS_DIR    = ./srcs/
+OBJS_DIR    = ./objs/
+HTTP_DIR	= http/
 DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
-SRCS        = main.cpp
+SRCS        =	main.cpp \
+				${HTTP_DIR}HTTPRequest.cpp \
+				${HTTP_DIR}checkers.cpp \
+				${HTTP_DIR}getters.cpp \
+
 
 KERNEL      := ${shell uname -s}
 GNU         := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
@@ -31,6 +36,7 @@ all:  $(NAME)
 
 ${OBJS_DIR} :
 	mkdir -p $@
+	mkdir -p ${OBJS_DIR}${HTTP_DIR}
 
 ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE_DIR} -c -o $@ $<
@@ -54,6 +60,12 @@ lint:
 
 debug: ${NAME}
 
+test: debug
+	./${NAME}
+
 -include ${DEPS}
+
+echo:
+	@echo ${OBJS}
 
 .PHONY: all clean fclean re test lint
