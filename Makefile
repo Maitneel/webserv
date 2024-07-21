@@ -11,7 +11,7 @@ INCLUDE_DIR = ./include
 
 SRCS        =	main.cpp \
 				${HTTP_DIR}HTTPRequest.cpp \
-				${HTTP_DIR}checkers.cpp \
+				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
 
 
