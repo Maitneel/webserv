@@ -10,6 +10,9 @@ typedef enum e_HTTPRequest_except_type {
 
 class HTTPRequest {
 private:
+	// internal variable
+	bool is_simple_request;
+
 	// request-line
 	std::string method;
 	std::string request_uri;

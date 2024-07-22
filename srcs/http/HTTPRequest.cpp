@@ -13,7 +13,7 @@ HTTPRequest::HTTPRequest(const int fd) {
 	// TODO
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) {
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 	std::string crlf;
 	crlf += CR;
 	crlf += LF;
@@ -23,7 +23,6 @@ HTTPRequest::HTTPRequest(std::string buffer) {
 		this->method = get_first_token(buffer);
 		front += this->method.length();
 		if (!is_sp(buffer[front])) {
-			std::cerr << "flag1" << std::endl;
 			throw InvalidRequest(REQUEST_LINE);
 		}
 		front++;
@@ -32,21 +31,19 @@ HTTPRequest::HTTPRequest(std::string buffer) {
 			request_uri_end = buffer.find(crlf, front);
 		}
 		if (request_uri_end == std::string::npos) {
-			std::cerr << "flag2" << std::endl;
 			throw InvalidRequest(REQUEST_LINE);
 		}
 		this->request_uri = buffer.substr(front, request_uri_end - front);
 		if (!(is_absolute_uri(this->request_uri) || is_abs_path(this->request_uri))) {
-			std::cerr << "flag6" <<std::endl;
 			throw InvalidRequest(REQUEST_LINE);
 		}
 		front = request_uri_end;
 		const std::string::size_type crlf_index = buffer.find(crlf, 0);
 		if (crlf_index == front) {
 			protocol = "HTTP/0.9";
+			is_simple_request = true;
 		} else {
 			if (!is_sp(buffer.at(front))) {
-				std::cerr << "fla5" << std::endl;
 				throw InvalidRequest(REQUEST_LINE);
 			}
 			front++;
@@ -57,7 +54,6 @@ HTTPRequest::HTTPRequest(std::string buffer) {
 			}
 		}
 	} catch (const std::out_of_range e) {
-		std::cerr << "flag3" << std::endl;
 		throw InvalidRequest(REQUEST_LINE);
 	}
 
