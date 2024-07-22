@@ -1,9 +1,12 @@
 #include <stdexcept>
 #include <iostream>
+#include <vector>
 
 #include "HTTPRequest.hpp"
 #include "http_validation.hpp"
 #include "get_http_keyword.hpp"
+#include "http_header.hpp"
+#include "extend_stdlib.hpp"
 
 HTTPRequest::HTTPRequest() : method(), request_uri(), protocol() {
 
@@ -17,6 +20,8 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 	std::string crlf;
 	crlf += CR;
 	crlf += LF;
+	std::vector<std::string> splited_buffer = escaped_quote_split(buffer, crlf);
+	// ここあとでかきなおす //
 	try {
 		size_t front = 0;
 
@@ -55,7 +60,18 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 		}
 	} catch (const std::out_of_range e) {
 		throw InvalidRequest(REQUEST_LINE);
+	}	
+
+	for (size_t i = 1; i < splited_buffer.size(); i++) {
+		if (is_crlf(splited_buffer[i])) {
+			break;
+		}
+		if (!is_valid_http_header(splited_buffer[i])) {
+			throw InvalidRequest(HTTP_HEADER);
+		}
+		this->header.insert(make_header_pair(splited_buffer[i]));
 	}
+	
 
 }
 
@@ -104,7 +120,9 @@ const char *HTTPRequest::InvalidRequest::what() const throw() {
 	case REQUEST_LINE:
 		return "HTTPRequest: inccorected request-line";
 		break;
-	
+	case HTTP_HEADER:
+		return "HTTPRequest: inccorected HTTP-Header";
+		break;
 	default:
 		break;
 	}

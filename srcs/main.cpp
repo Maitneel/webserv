@@ -112,7 +112,10 @@ void server_main(int server_fd)
         std::cerr << "resived " << std::endl;
         HTTPRequest request(request_content);
         std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
-
+        for (auto i = request.header.begin(); i != request.header.end(); i++) {
+            std::cout << "    " << i->first << ": " << i->second << std::endl;
+        }
+        
         response_to_client(sock, request_content);
         close(sock);
 

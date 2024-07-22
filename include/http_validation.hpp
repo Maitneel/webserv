@@ -32,6 +32,7 @@ bool is_ctext(const std::string &s);
 bool is_quoted_string(const std::string &s);
 bool is_qdtext(const std::string &s);
 
+bool is_valid_http_header(const std::string &str);
 
 // TODO コメントアウトしてるやつ
 // ゆるして.............
@@ -66,5 +67,6 @@ bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DI
 
 // 補助的な関数 //
 bool is_token_element(const char &c);
+#define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))
 
 #endif

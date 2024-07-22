@@ -13,6 +13,8 @@ SRCS        =	main.cpp \
 				${HTTP_DIR}HTTPRequest.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
+				${HTTP_DIR}http_header.cpp \
+				split.cpp \
 
 
 KERNEL      := ${shell uname -s}
