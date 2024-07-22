@@ -21,6 +21,7 @@ private:
 	std::string protocol;
 public:
 	std::map<std::string, std::string> header; // 一時的にpublic //
+	std::string entity_body; // これstringでいいのか要検討 //
 
 	HTTPRequest();
 	HTTPRequest(const int fd);

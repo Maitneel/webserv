@@ -342,3 +342,15 @@ bool is_valid_http_header(const std::string &str) {
 	}
 	return true;
 }
+
+bool is_correct_content_length(const std::string &str) {
+	if (str.length() == 0) {
+		return false;
+	}
+	for (size_t i = 0; i < str.length(); i++) {
+		if (!is_digit(str.at(i))) {
+			return false;
+		}
+	}
+	return true;
+}

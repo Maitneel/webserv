@@ -65,6 +65,8 @@ bool is_national(const char &c);       // = <any OCTET excluding ALPHA, DIGIT,  
 
 bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
+bool is_correct_content_length(const std::string &str);
+
 // 補助的な関数 //
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))

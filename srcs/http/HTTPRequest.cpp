@@ -21,6 +21,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 	crlf += CR;
 	crlf += LF;
 	std::vector<std::string> splited_buffer = escaped_quote_split(buffer, crlf);
+	size_t crlf_count = 0;
 	// ここあとでかきなおす //
 	try {
 		size_t front = 0;
@@ -61,8 +62,10 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 	} catch (const std::out_of_range e) {
 		throw InvalidRequest(REQUEST_LINE);
 	}	
+	crlf_count++;
 
 	for (size_t i = 1; i < splited_buffer.size(); i++) {
+		crlf_count++;
 		if (is_crlf(splited_buffer[i])) {
 			break;
 		}
@@ -71,8 +74,20 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 		}
 		this->header.insert(make_header_pair(splited_buffer[i]));
 	}
-	
 
+	if (crlf_count < splited_buffer.size()) {
+		if (this->header.find("Content-Length") == this->header.end() && is_correct_content_length(header.find("Content-Length")->second)) {
+			throw InvalidRequest(HTTP_HEADER);
+		}
+		try {
+			std::string entity_length_str = (this->header.find("Content-Length"))->second;
+			int entity_length =  std::atoi(entity_length_str.c_str());
+			this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
+		} catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			// throw いんたーなるさーばーえらー的なやつ //
+		}
+	}
 }
 
 HTTPRequest::HTTPRequest(const HTTPRequest &src) : method(src.method), request_uri(src.request_uri), protocol(src.protocol) {
