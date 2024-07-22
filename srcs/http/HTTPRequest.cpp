@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <vector>
+#include <cstdlib>
 
 #include "HTTPRequest.hpp"
 #include "http_validation.hpp"
