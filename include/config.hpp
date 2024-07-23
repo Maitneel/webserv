@@ -27,3 +27,5 @@ public:
     int         port;
     std::vector<LocastionConfig> location_configs;
 };
+
+std::vector<ServerConfig> parse_config(std::string path);
