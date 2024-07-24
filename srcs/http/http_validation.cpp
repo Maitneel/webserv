@@ -343,7 +343,7 @@ bool is_valid_http_header(const std::string &str) {
 	return true;
 }
 
-bool is_correct_content_length(const std::string &str) {
+bool is_valid_content_length(const std::string &str) {
 	if (str.length() == 0) {
 		return false;
 	}

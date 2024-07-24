@@ -77,7 +77,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 	}
 
 	if (crlf_count < splited_buffer.size()) {
-		if (this->header.find("Content-Length") == this->header.end() && is_correct_content_length(header.find("Content-Length")->second)) {
+		if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {
 			throw InvalidRequest(HTTP_HEADER);
 		}
 		try {
@@ -134,10 +134,10 @@ HTTPRequest::InvalidRequest::InvalidRequest(t_http_request_except_type except_ty
 const char *HTTPRequest::InvalidRequest::what() const throw() {
 	switch (this->except_type) {
 	case REQUEST_LINE:
-		return "HTTPRequest: inccorected request-line";
+		return "HTTPRequest: invalid request-line";
 		break;
 	case HTTP_HEADER:
-		return "HTTPRequest: inccorected HTTP-Header";
+		return "HTTPRequest: invalid HTTP-Header";
 		break;
 	default:
 		break;

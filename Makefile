@@ -6,6 +6,7 @@ NAME        = webserv
 SRCS_DIR    = ./srcs/
 OBJS_DIR    = ./objs/
 HTTP_DIR	= http/
+UTILS_DIR	= utils/
 DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
@@ -14,7 +15,7 @@ SRCS        =	main.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
 				${HTTP_DIR}http_header.cpp \
-				split.cpp \
+				${UTILS_DIR}split.cpp \
 
 
 KERNEL      := ${shell uname -s}
@@ -39,6 +40,9 @@ all:  $(NAME)
 ${OBJS_DIR} :
 	mkdir -p $@
 	mkdir -p ${OBJS_DIR}${HTTP_DIR}
+	mkdir -p ${OBJS_DIR}${HTTP_DIR}
+	mkdir -p ${OBJS_DIR}${UTILS_DIR}
+
 
 ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE_DIR} -c -o $@ $<
