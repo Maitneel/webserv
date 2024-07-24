@@ -15,7 +15,7 @@
 #include <iterator>
 #include <map>
 
-#include "HTTPRequest.hpp"
+#include "http_request.hpp"
 
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024

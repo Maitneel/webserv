@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdlib>
 
-#include "HTTPRequest.hpp"
+#include "http_request.hpp"
 #include "http_validation.hpp"
 #include "get_http_keyword.hpp"
 #include "http_header.hpp"

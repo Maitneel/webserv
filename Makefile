@@ -11,7 +11,7 @@ DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
 SRCS        =	main.cpp \
-				${HTTP_DIR}HTTPRequest.cpp \
+				${HTTP_DIR}http_request.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
 				${HTTP_DIR}http_header.cpp \
