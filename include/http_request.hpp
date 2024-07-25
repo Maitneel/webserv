@@ -44,4 +44,4 @@ class HTTPRequest {
     };
 };
 
-#endif
+#endif  // INCLUDE_HTTP_REQUEST_HPP_

@@ -5,4 +5,4 @@
 
 std::string get_first_token(std::string s);
 
-#endif
+#endif  // INCLUDE_GET_HTTP_KEYWORD_HPP_

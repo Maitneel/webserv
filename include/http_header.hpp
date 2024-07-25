@@ -6,4 +6,4 @@
 
 std::pair<std::string, std::string> make_header_pair(std::string src);
 
-#endif
+#endif  // INCLUDE_HTTP_HEADER_HPP_

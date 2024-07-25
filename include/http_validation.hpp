@@ -71,4 +71,4 @@ bool is_valid_content_length(const std::string &str);
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))
 
-#endif
+#endif  // INCLUDE_HTTP_VALIDATION_HPP_

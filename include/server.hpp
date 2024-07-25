@@ -1,5 +1,5 @@
-#ifndef INCLUDE_HTTP_VALIDATION_HPP_
-#define INCLUDE_HTTP_VALIDATION_HPP_
+#ifndef INCLUDE_SERVER_HPP_
+#define INCLUDE_SERVER_HPP_
 
 #include <vector>
 #include "config.hpp"
@@ -27,4 +27,4 @@ class Server {
     void eventLoop();
 };
 
-#endif
+#endif  // INCLUDE_SERVER_HPP_
