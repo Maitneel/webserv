@@ -58,7 +58,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
         }
     } catch (const std::out_of_range e) {
         throw InvalidRequest(REQUEST_LINE);
-    }  
+    }
     crlf_count++;
 
     for (size_t i = 1; i < splited_buffer.size(); i++) {
@@ -91,7 +91,7 @@ HTTPRequest::~HTTPRequest() {
 }
 
 
-// getter 
+// getter //
 const std::string &HTTPRequest::get_method() const {
     return this->method;
 }
