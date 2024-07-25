@@ -10,7 +10,7 @@ class Socket {
 private:
     int          socket_fd;
     ServerConfig config;
-public:
+ public :
     Socket(int socket_fd, ServerConfig config);
     ~Socket();
     int   getSocketFd();
@@ -20,8 +20,8 @@ public:
 class Server {
 private:
     std::vector<Socket> sockets;
-public:
-    Server(std::vector<ServerConfig> confs);
+ public :
+    explicit Server(std::vector<ServerConfig> confs);
     ~Server();
     void eventLoop();
 };

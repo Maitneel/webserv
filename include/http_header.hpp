@@ -1,5 +1,5 @@
-#ifndef HTTP_HEADER_HPP
-# define HTTP_HEADER_HPP
+#ifndef INCLUDE_HTTP_HEADER_HPP_
+# define INCLUDE_HTTP_HEADER_HPP_
 
 #include <utility>
 #include <string>

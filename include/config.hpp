@@ -10,7 +10,7 @@ enum HTTPMethod {
 };
 
 class LocastionConfig {
-public:
+ public :
     std::string             name;
     std::string             document_root;
     std::vector<HTTPMethod> methods;
@@ -21,7 +21,7 @@ public:
 };
 
 class ServerConfig {
-public:
+ public :
     std::vector<std::string> server_names;
     std::string document_root;
     int         port;

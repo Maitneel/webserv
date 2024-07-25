@@ -1,10 +1,10 @@
-#ifndef HTTP_VALIDATION_HPP
-# define HTTP_VALIDATION_HPP
+#ifndef INCLUDE_HTTP_VALIDATION_HPP_
+# define INCLUDE_HTTP_VALIDATION_HPP_
 
 #include <cctype>
 #include <string>
 
-#define CR 13 
+#define CR 13
 #define LF 10
 
 // 関数にしてもいいけど、そこまで複雑じゃないし、こっちの方が処理的に良い気がするからとりあえずこうしてる
@@ -26,7 +26,7 @@ bool is_text(const std::string &s);
 bool is_hex(const char &c);
 bool is_word(const std::string &s);
 bool is_token(const std::string &s);
-bool is_tspecials(const char &c); // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある
+bool is_tspecials(const char &c);  // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある
 bool is_comment(const std::string &s);
 bool is_ctext(const std::string &s);
 bool is_quoted_string(const std::string &s);

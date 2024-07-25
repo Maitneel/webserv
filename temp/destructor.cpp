@@ -3,7 +3,7 @@
 using namespace std;
 
 class hoge {
-public:
+ public :
     hoge();
     ~hoge();
 };
