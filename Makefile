@@ -7,6 +7,8 @@ SRCS_DIR    = ./srcs/
 OBJS_DIR    = ./objs/
 HTTP_DIR	= http/
 UTILS_DIR	= utils/
+SERVER_DIR  = server/
+CONFIG_DIR  = config/
 DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
@@ -16,10 +18,13 @@ SRCS        =	main.cpp \
 				${HTTP_DIR}getters.cpp \
 				${HTTP_DIR}http_header.cpp \
 				${UTILS_DIR}split.cpp \
-
+				${SERVER_DIR}server.cpp \
+				${CONFIG_DIR}config.cpp \
 
 KERNEL      := ${shell uname -s}
 GNU         := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
+CPP_FILES   := ${shell find ${SRCS_DIR} -name "*.cpp"}
+HPP_FILES   := ${shell find ${INCLUDE_DIR} -name "*.hpp"}
 
 ifeq ($(MAKECMDGOALS),debug)
 	OBJS        = ${SRCS:%.cpp=${OBJS_DIR}/debug_%.o}
@@ -43,6 +48,8 @@ ${OBJS_DIR} :
 	mkdir -p ${OBJS_DIR}${HTTP_DIR}
 	mkdir -p ${OBJS_DIR}${UTILS_DIR}
 
+	mkdir -p ${OBJS_DIR}${SERVER_DIR}
+	mkdir -p ${OBJS_DIR}${CONFIG_DIR}
 
 ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE_DIR} -c -o $@ $<
@@ -62,7 +69,8 @@ fclean: clean
 re: fclean all
 
 lint:
-	cpplint ${SRCS}
+	cpplint ${CPP_FILES}
+	cpplint ${HPP_FILES}
 
 debug: ${NAME}
 
