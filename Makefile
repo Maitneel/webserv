@@ -14,6 +14,7 @@ INCLUDE_DIR = ./include
 
 SRCS		=	main.cpp \
 				${HTTP_DIR}http_request.cpp \
+				${HTTP_DIR}http_response.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
 				${HTTP_DIR}http_header.cpp \
@@ -45,9 +46,7 @@ all:  $(NAME)
 ${OBJS_DIR} :
 	mkdir -p $@
 	mkdir -p ${OBJS_DIR}${HTTP_DIR}
-	mkdir -p ${OBJS_DIR}${HTTP_DIR}
 	mkdir -p ${OBJS_DIR}${UTILS_DIR}
-
 	mkdir -p ${OBJS_DIR}${SERVER_DIR}
 	mkdir -p ${OBJS_DIR}${CONFIG_DIR}
 

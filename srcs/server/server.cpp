@@ -14,7 +14,7 @@
 
 #include "server.hpp"
 #include "http_request.hpp"
-
+#include "http_response.hpp"
 
 std::string int_to_str(int n) {
     std::stringstream ss;
@@ -48,20 +48,10 @@ std::string read_request(int fd) {
     return std::string(buf, n_read);
 }
 
-void response_to_client(int fd, std::string content) {
-    std::string response;
-    std::ostringstream oss;
-
-    oss << content.size() + 2;
-    response += "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: ";
-    response += oss.str() + "\r\n";
-    response += "\r\n";
-    response += content;
-    response += "\r\n";
-
-    send(fd, response.c_str(), response.length(), 0);
+void response_to_client(int fd, const HTTPResponse& response) {
+    std::string response_raw = response.toString();
+    if (send(fd, response_raw.c_str(), response_raw.length(), 0) != 0)
+        close(fd);
     return;
 }
 
@@ -125,6 +115,19 @@ const ServerConfig& Socket::getConfig() {
     return this->config;
 }
 
+void http_log(HTTPRequest& request) {
+    std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
+    std::cout << "    header : {" << std::endl;
+    for (std::map<std::string, std::string>::iterator i = request.header.begin(); i != request.header.end(); i++) {
+        std::cout << "        " << i->first << ": " << i->second << std::endl;
+    }
+    std::cout << "    }" << std::endl;
+    std::cout << "    body : {" << std::endl;
+    std::cout << "        " << request.entity_body << std::endl;
+    std::cout << "    }" << std::endl;
+    return;
+}
+
 void Server::eventLoop() {
     // 一旦、最初のFDのみ
     int server_fd = this->sockets[0].getSocketFd();
@@ -141,17 +144,10 @@ void Server::eventLoop() {
         std::string request_content = read_request(sock);
         std::cerr << "resived " << std::endl;
         HTTPRequest request(request_content);
-        std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
-        std::cout << "    header : {" << std::endl;
-        for (std::map<std::string, std::string>::iterator i = request.header.begin(); i != request.header.end(); i++) {
-            std::cout << "        " << i->first << ": " << i->second << std::endl;
-        }
-        std::cout << "    }" << std::endl;
-        std::cout << "    body : {" << std::endl;
-        std::cout << "        " << request.entity_body << std::endl;
-        std::cout << "    }" << std::endl;
+        http_log(request);
 
-        response_to_client(sock, request_content);
+        HTTPResponse response(200, request.header, request.entity_body);
+        response_to_client(sock, response);
         close(sock);
 
         // break させるようの処理 //
