@@ -1,5 +1,5 @@
-#ifndef INCLUDE_HTTP_REQUEST_HPP_
-# define INCLUDE_HTTP_REQUEST_HPP_
+#ifndef _INCLUDE_HTTP_REQUEST_HPP_
+# define _INCLUDE_HTTP_REQUEST_HPP_
 
 #include <string>
 #include <map>
@@ -11,7 +11,7 @@ typedef enum e_HTTPRequest_except_type {
 } t_http_request_except_type;
 
 class HTTPRequest {
-private:
+ private:
     // internal variable
     bool is_simple_request;
 
@@ -35,7 +35,7 @@ private:
 
     // exception class
     class InvalidRequest :  public  std::exception {
-    private:
+     private:
         const t_http_request_except_type except_type;
      public :
         explicit InvalidRequest(t_http_request_except_type except_type_src);

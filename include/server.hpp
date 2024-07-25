@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _INCLUDE_HTTP_VALIDATION_HPP_
+# define _INCLUDE_HTTP_VALIDATION_HPP_
 
 #include <vector>
 #include "config.hpp"
@@ -7,7 +8,7 @@
 #define BUFFER_SIZE 1024
 
 class Socket {
-private:
+ private:
     int          socket_fd;
     ServerConfig config;
  public :
@@ -18,10 +19,12 @@ private:
 };
 
 class Server {
-private:
+ private:
     std::vector<Socket> sockets;
  public :
     explicit Server(std::vector<ServerConfig> confs);
     ~Server();
     void eventLoop();
 };
+
+#endif
