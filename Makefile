@@ -6,15 +6,18 @@ NAME        = webserv
 SRCS_DIR    = ./srcs/
 OBJS_DIR    = ./objs/
 HTTP_DIR	= http/
+UTILS_DIR	= utils/
 SERVER_DIR  = server/
 CONFIG_DIR  = config/
 DEPS_DIR    = ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
 SRCS        =	main.cpp \
-				${HTTP_DIR}HTTPRequest.cpp \
+				${HTTP_DIR}http_request.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
+				${HTTP_DIR}http_header.cpp \
+				${UTILS_DIR}split.cpp \
 				${SERVER_DIR}server.cpp \
 				${CONFIG_DIR}config.cpp \
 
@@ -42,6 +45,9 @@ all:  $(NAME)
 ${OBJS_DIR} :
 	mkdir -p $@
 	mkdir -p ${OBJS_DIR}${HTTP_DIR}
+	mkdir -p ${OBJS_DIR}${HTTP_DIR}
+	mkdir -p ${OBJS_DIR}${UTILS_DIR}
+
 	mkdir -p ${OBJS_DIR}${SERVER_DIR}
 	mkdir -p ${OBJS_DIR}${CONFIG_DIR}
 

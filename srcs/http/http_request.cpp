@@ -1,9 +1,13 @@
 #include <stdexcept>
 #include <iostream>
+#include <vector>
+#include <cstdlib>
 
-#include "HTTPRequest.hpp"
+#include "http_request.hpp"
 #include "http_validation.hpp"
 #include "get_http_keyword.hpp"
+#include "http_header.hpp"
+#include "extend_stdlib.hpp"
 
 HTTPRequest::HTTPRequest() : method(), request_uri(), protocol() {
 
@@ -13,17 +17,19 @@ HTTPRequest::HTTPRequest(const int fd) {
 	// TODO
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) {
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
 	std::string crlf;
 	crlf += CR;
 	crlf += LF;
+	std::vector<std::string> splited_buffer = escaped_quote_split(buffer, crlf);
+	size_t crlf_count = 0;
+	// ここあとでかきなおす //
 	try {
 		size_t front = 0;
 
 		this->method = get_first_token(buffer);
 		front += this->method.length();
 		if (!is_sp(buffer[front])) {
-			std::cerr << "flag1" << std::endl;
 			throw InvalidRequest(REQUEST_LINE);
 		}
 		front++;
@@ -32,21 +38,19 @@ HTTPRequest::HTTPRequest(std::string buffer) {
 			request_uri_end = buffer.find(crlf, front);
 		}
 		if (request_uri_end == std::string::npos) {
-			std::cerr << "flag2" << std::endl;
 			throw InvalidRequest(REQUEST_LINE);
 		}
 		this->request_uri = buffer.substr(front, request_uri_end - front);
 		if (!(is_absolute_uri(this->request_uri) || is_abs_path(this->request_uri))) {
-			std::cerr << "flag6" <<std::endl;
 			throw InvalidRequest(REQUEST_LINE);
 		}
 		front = request_uri_end;
 		const std::string::size_type crlf_index = buffer.find(crlf, 0);
 		if (crlf_index == front) {
 			protocol = "HTTP/0.9";
+			is_simple_request = true;
 		} else {
 			if (!is_sp(buffer.at(front))) {
-				std::cerr << "fla5" << std::endl;
 				throw InvalidRequest(REQUEST_LINE);
 			}
 			front++;
@@ -57,10 +61,34 @@ HTTPRequest::HTTPRequest(std::string buffer) {
 			}
 		}
 	} catch (const std::out_of_range e) {
-		std::cerr << "flag3" << std::endl;
 		throw InvalidRequest(REQUEST_LINE);
+	}	
+	crlf_count++;
+
+	for (size_t i = 1; i < splited_buffer.size(); i++) {
+		crlf_count++;
+		if (is_crlf(splited_buffer[i])) {
+			break;
+		}
+		if (!is_valid_http_header(splited_buffer[i])) {
+			throw InvalidRequest(HTTP_HEADER);
+		}
+		this->header.insert(make_header_pair(splited_buffer[i]));
 	}
 
+	if (crlf_count < splited_buffer.size()) {
+		if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {
+			throw InvalidRequest(HTTP_HEADER);
+		}
+		try {
+			std::string entity_length_str = (this->header.find("Content-Length"))->second;
+			int entity_length =  std::atoi(entity_length_str.c_str());
+			this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
+		} catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			// throw いんたーなるさーばーえらー的なやつ //
+		}
+	}
 }
 
 HTTPRequest::HTTPRequest(const HTTPRequest &src) : method(src.method), request_uri(src.request_uri), protocol(src.protocol) {
@@ -106,9 +134,11 @@ HTTPRequest::InvalidRequest::InvalidRequest(t_http_request_except_type except_ty
 const char *HTTPRequest::InvalidRequest::what() const throw() {
 	switch (this->except_type) {
 	case REQUEST_LINE:
-		return "HTTPRequest: inccorected request-line";
+		return "HTTPRequest: invalid request-line";
 		break;
-	
+	case HTTP_HEADER:
+		return "HTTPRequest: invalid HTTP-Header";
+		break;
 	default:
 		break;
 	}

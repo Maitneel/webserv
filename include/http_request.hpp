@@ -2,19 +2,27 @@
 # define HTTPRequest_HPP
 
 #include <string>
+#include <map>
 #include <stdexcept>
 
 typedef enum e_HTTPRequest_except_type {
-	REQUEST_LINE
+	REQUEST_LINE,
+	HTTP_HEADER
 } t_http_request_except_type;
 
 class HTTPRequest {
 private:
+	// internal variable
+	bool is_simple_request;
+
 	// request-line
 	std::string method;
 	std::string request_uri;
 	std::string protocol;
 public:
+	std::map<std::string, std::string> header; // 一時的にpublic //
+	std::string entity_body; // これstringでいいのか要検討 //
+
 	HTTPRequest();
 	HTTPRequest(const int fd);
 	HTTPRequest(std::string buffer);

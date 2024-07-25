@@ -13,7 +13,7 @@
 #include <stdexcept>
 
 #include "server.hpp"
-#include "HTTPRequest.hpp"
+#include "http_request.hpp"
 
 
 std::string int_to_str(int n) {
@@ -137,6 +137,14 @@ void Server::eventLoop() {
         std::cerr << "resived " << std::endl;
         HTTPRequest request(request_content);
         std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
+        std::cout << "    header : {" << std::endl;
+        for (std::map<std::string, std::string>::iterator i = request.header.begin(); i != request.header.end(); i++) {
+            std::cout << "        " << i->first << ": " << i->second << std::endl;
+        }
+        std::cout << "    }" << std::endl;
+        std::cout << "    body : {" << std::endl;
+        std::cout << "        " << request.entity_body << std::endl;
+        std::cout << "    }" << std::endl;
 
         response_to_client(sock, request_content);
         close(sock);

@@ -1,4 +1,6 @@
 #include "http_validation.hpp"
+#include "get_http_keyword.hpp"
+
 #include <iostream>
 
 bool is_crlf(const std::string &s) {
@@ -316,6 +318,39 @@ bool is_http_version(const std::string &s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIG
 	} catch (std::out_of_range) {
 		std::cerr << "catch " << std::endl;
 		return false;
+	}
+	return true;
+}
+
+bool is_valid_http_header(const std::string &str) {
+	try {
+		std::string removed_crlf = str.substr(0, str.length() - 2);
+		std::string field_name = get_first_token(removed_crlf);
+		std::string filed_value = removed_crlf.substr(field_name.length() + 1);
+		if (removed_crlf.at(field_name.length()) != ':' && !is_crlf(str.substr(str.length() - 2))) {
+			return false;
+		}
+		for (size_t i = 0; i < removed_crlf.length(); i++) {
+			if (!is_text_element(removed_crlf.at(i))) {
+				if (!is_lws(removed_crlf.substr(i, 3))) {
+					return false;
+				}
+			}
+		}
+	} catch (std::out_of_range &e) {
+		return false;
+	}
+	return true;
+}
+
+bool is_valid_content_length(const std::string &str) {
+	if (str.length() == 0) {
+		return false;
+	}
+	for (size_t i = 0; i < str.length(); i++) {
+		if (!is_digit(str.at(i))) {
+			return false;
+		}
 	}
 	return true;
 }
