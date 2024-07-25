@@ -106,12 +106,23 @@ Server::Server(std::vector<ServerConfig> confs) {
     }
 }
 
+Server::~Server() {}
+
 Socket::Socket(int socket_fd, ServerConfig config): socket_fd(socket_fd), config(config) {}
 
+Socket::~Socket() {}
+
+int Socket::getSocketFd() {
+    return this->socket_fd;
+}
+
+const ServerConfig& Socket::getConfig() {
+    return this->config;
+}
 
 void Server::eventLoop() {
     // 一旦、最初のFDのみ
-    int server_fd = this->sockets[0].socket_fd;
+    int server_fd = this->sockets[0].getSocketFd();
     while(true) {
         struct sockaddr_storage addr;
         socklen_t addrlen = sizeof addr;
