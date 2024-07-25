@@ -4,22 +4,22 @@ using namespace std;
 
 class hoge {
 public:
-	hoge();
-	~hoge();
+    hoge();
+    ~hoge();
 };
 
 hoge::hoge() {
-	cout << "constructor" << endl;	
+    cout << "constructor" << endl;    
 }
 
 hoge::~hoge() {
-	cout << "destructor" << endl;
+    cout << "destructor" << endl;
 }
 
 void func() {
-	vector<hoge> a(2);
+    vector<hoge> a(2);
 }
 
 int main() {
-	func();
+    func();
 }

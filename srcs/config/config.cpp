@@ -1,7 +1,7 @@
 #include "config.hpp"
 
 std::vector<ServerConfig> parse_config(std::string path) {
-    // TODO: implement
+    // TODO(taksaito): implement
     // 一旦固定値を返す
 
     LocastionConfig location_conf;
@@ -15,6 +15,6 @@ std::vector<ServerConfig> parse_config(std::string path) {
 
     std::vector<ServerConfig> configs;
     configs.push_back(server_config);
-    
+
     return configs;
 }

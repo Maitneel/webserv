@@ -34,7 +34,7 @@ bool is_qdtext(const std::string &s);
 
 bool is_valid_http_header(const std::string &str);
 
-// TODO コメントアウトしてるやつ
+// TODO(maitneel): コメントアウトしてるやつ
 // ゆるして.............
 
 // bool is_uri(const std::string &s);            // = ( absoluteURI | relativeURI ) [ "#" fragment ]
