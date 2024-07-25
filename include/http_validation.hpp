@@ -1,5 +1,5 @@
 #ifndef _INCLUDE_HTTP_VALIDATION_HPP_
-# define _INCLUDE_HTTP_VALIDATION_HPP_
+#define _INCLUDE_HTTP_VALIDATION_HPP_
 
 #include <cctype>
 #include <string>

@@ -1,5 +1,5 @@
 #ifndef _INCLUDE_HTTP_REQUEST_HPP_
-# define _INCLUDE_HTTP_REQUEST_HPP_
+#define _INCLUDE_HTTP_REQUEST_HPP_
 
 #include <string>
 #include <map>

@@ -1,5 +1,5 @@
 #ifndef _INCLUDE_GET_HTTP_KEYWORD_HPP_
-# define _INCLUDE_GET_HTTP_KEYWORD_HPP_
+#define _INCLUDE_GET_HTTP_KEYWORD_HPP_
 
 #include <string>
 
