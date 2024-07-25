@@ -87,16 +87,6 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
     }
 }
 
-const HTTPRequest &HTTPRequest::operator=(const HTTPRequest &src) {
-    if (this == &src) {
-        return *this;
-    }
-    this->method = src.get_method();
-    this->request_uri = src.get_request_uri();
-    this->protocol = src.get_protocol();
-    return *this;
-}
-
 HTTPRequest::~HTTPRequest() {
 }
 
