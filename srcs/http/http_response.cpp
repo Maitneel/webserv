@@ -2,12 +2,12 @@
 #include "http_response.hpp"
 
 HTTPResponse::HTTPResponse(
-    int status_code,
-    std::map<std::string, std::string> headers,
+    int         status_code,
+    std::string content_type,
     std::string body
 ):
 status_code(status_code),
-headers(headers),
+content_type(content_type),
 body(body) {}
 
 HTTPResponse::~HTTPResponse() {}
@@ -17,7 +17,7 @@ std::string HTTPResponse::toString() const {
 
     // TODO(taksaito): Content-Type の判定や、description の文字の処理を実装。
     ss << "HTTP/1.1 " << this->status_code << " OK" << "\r\n";
-    ss << "Content-Type: text/html\r\n";
+    ss << "Content-Type: " << this->content_type << "\r\n";
     ss << "Content-Length: ";
     ss << body.length() << "\r\n";
     ss << "\r\n";
