@@ -1,4 +1,5 @@
-#pragma once
+#ifndef INCLUDE_SERVER_HPP_
+#define INCLUDE_SERVER_HPP_
 
 #include <vector>
 #include "config.hpp"
@@ -7,10 +8,10 @@
 #define BUFFER_SIZE 1024
 
 class Socket {
-private:
+ private:
     int          socket_fd;
     ServerConfig config;
-public:
+ public :
     Socket(int socket_fd, ServerConfig config);
     ~Socket();
     int   getSocketFd();
@@ -18,10 +19,12 @@ public:
 };
 
 class Server {
-private:
+ private:
     std::vector<Socket> sockets;
-public:
-    Server(std::vector<ServerConfig> confs);
+ public :
+    explicit Server(std::vector<ServerConfig> confs);
     ~Server();
     void eventLoop();
 };
+
+#endif  // INCLUDE_SERVER_HPP_

@@ -1,18 +1,18 @@
-CXX         := c++
-CXXFLAGS    := -Wall -Wextra  -std=c++98 -MMD -MP
+CXX		 := c++
+CXXFLAGS	:= -Wall -Wextra  -std=c++98 -MMD -MP
 
-NAME        = webserv
+NAME		= webserv
 
-SRCS_DIR    = ./srcs/
-OBJS_DIR    = ./objs/
+SRCS_DIR	= ./srcs/
+OBJS_DIR	= ./objs/
 HTTP_DIR	= http/
 UTILS_DIR	= utils/
 SERVER_DIR  = server/
 CONFIG_DIR  = config/
-DEPS_DIR    = ${OBJS_DIR}
+DEPS_DIR	= ${OBJS_DIR}
 INCLUDE_DIR = ./include
 
-SRCS        =	main.cpp \
+SRCS		=	main.cpp \
 				${HTTP_DIR}http_request.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
@@ -21,14 +21,14 @@ SRCS        =	main.cpp \
 				${SERVER_DIR}server.cpp \
 				${CONFIG_DIR}config.cpp \
 
-KERNEL      := ${shell uname -s}
-GNU         := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
+KERNEL	  := ${shell uname -s}
+GNU		 := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
 CPP_FILES   := ${shell find ${SRCS_DIR} -name "*.cpp"}
 HPP_FILES   := ${shell find ${INCLUDE_DIR} -name "*.hpp"}
 
 ifeq ($(MAKECMDGOALS),debug)
-	OBJS        = ${SRCS:%.cpp=${OBJS_DIR}/debug_%.o}
-	DEPS        = ${SRCS:%.cpp=${DEPS_DIR}/debug_%.d}
+	OBJS		= ${SRCS:%.cpp=${OBJS_DIR}/debug_%.o}
+	DEPS		= ${SRCS:%.cpp=${DEPS_DIR}/debug_%.d}
 	CXXFLAGS += -g -fsanitize=address
 #	ifeq (${KERNEL},Darwin)
 #		ifneq (${GNU},)
@@ -36,8 +36,8 @@ ifeq ($(MAKECMDGOALS),debug)
 #		endif
 #	endif
 else
-	OBJS        = ${SRCS:%.cpp=${OBJS_DIR}/%.o}
-	DEPS        = ${SRCS:%.cpp=${DEPS_DIR}/%.d}
+	OBJS		= ${SRCS:%.cpp=${OBJS_DIR}/%.o}
+	DEPS		= ${SRCS:%.cpp=${DEPS_DIR}/%.d}
 endif
 
 all:  $(NAME)
