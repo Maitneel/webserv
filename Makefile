@@ -1,4 +1,4 @@
-CXX		 := c++-13
+CXX		 := c++
 CXXFLAGS	:= -Wall -Wextra  -std=c++98 -MMD -MP
 
 NAME		= webserv
@@ -27,6 +27,10 @@ KERNEL	  := ${shell uname -s}
 GNU		 := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
 CPP_FILES   := ${shell find ${SRCS_DIR} -name "*.cpp"}
 HPP_FILES   := ${shell find ${INCLUDE_DIR} -name "*.hpp"}
+
+ifeq (${GNU},g++-13)
+	CXX = ${GNU}
+endif
 
 ifeq ($(MAKECMDGOALS),debug)
 	OBJS		= ${SRCS:%.cpp=${OBJS_DIR}/debug_%.o}
@@ -81,5 +85,8 @@ test: debug
 
 echo:
 	@echo ${OBJS}
+	@echo ${HOGE}
+	@echo ${CXX13}
+	@echo gun: ${GUN}
 
 .PHONY: all clean fclean re test lint

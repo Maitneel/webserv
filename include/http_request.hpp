@@ -35,8 +35,10 @@ class HTTPRequest {
     void valid_authorization(const std::string &value);
     void valid_content_encoding(const std::string &value);
 
+    // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
-  public:
+
+ public:
     std::map<std::string, std::string> header;  // 一時的に public  //
     std::string entity_body;  // これstringでいいのか要検討 //
     std::vector<std::string> allow;
