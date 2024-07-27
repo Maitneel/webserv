@@ -279,8 +279,12 @@ void Server::EventLoop() {
         }
         std::cout << "]" << std::endl;
         std::cout << std::left << std::setw(20) << "    Content-Encoding" << " : " << '"' << request.content_encoding << '"' << std::endl;
-        std::cout << std::left << std::setw(20) << "    Content-length" << " : " << '"' << request.content_length
-                  << '"' << std::endl;
+        std::cout << std::left << std::setw(20) << "    Content-length" << " : " << '"' << request.content_length << '"' << std::endl;
+        std::cout << std::left << std::setw(20) << "    Content-Type" << " : " << '"' << request.content_type.type << '/' << request.content_type.subtype << '"' << " parameter : ";
+        for (std::multimap<std::string, std::string>::iterator i = request.content_type.parameter.begin(); i != request.content_type.parameter.end(); i++) {
+            std::cout << "{" << i->first << ":" << i->second << "}, ";
+        }
+        std::cout << std::endl;
         response_to_client(sock, request_content);
         close(sock);
 >>>>>>> 3577ff1 (feat: implement validation 'Content-encoding' header)

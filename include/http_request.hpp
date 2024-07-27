@@ -17,8 +17,16 @@ typedef enum e_HTTPHeader_except_type {
     ALLOW,
     CONTENT_ENCODING,
     CONTENT_LENGTH,
+    CONTENT_TYPE,
     CONVERT_FAIL,
 } t_http_header_except_type;
+
+class MIMEType {
+ public:
+    std::string type;
+    std::string subtype;
+    std::multimap<std::string, std::string> parameter;
+};
 
 class HTTPRequest {
  private:
@@ -37,6 +45,7 @@ class HTTPRequest {
     void valid_authorization(const std::string &value);
     void valid_content_encoding(const std::string &value);
     void valid_content_length(const std::string &value);
+    void valid_content_type(const std::string &value);
 
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
@@ -47,6 +56,7 @@ class HTTPRequest {
     std::vector<std::string> allow;
     std::string content_encoding;
     int content_length;
+    MIMEType content_type;
 
     explicit HTTPRequest(const int fd);
     explicit HTTPRequest(std::string buffer);

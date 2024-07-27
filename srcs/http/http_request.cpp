@@ -11,6 +11,13 @@
 #include "extend_stdlib.hpp"
 
 
+size_t get_front(const std::string &str) {
+    size_t result = 0;
+    while (result < str.length() && (str.at(result) == ' ' || str.at(result) == '\t')) {
+        result++;
+    }
+    return result;
+}
 
 void HTTPRequest::valid_allow(const std::string &value) {
     try {
@@ -25,10 +32,7 @@ void HTTPRequest::valid_authorization(const std::string &value) {
 }
 
 void HTTPRequest::valid_content_encoding(const std::string &value) {
-    size_t front = 0;
-    while (value.at(front) == ' ' || value.at(front) == '\t') {
-        front++;
-    }
+    size_t front = get_front(value);
     this->content_encoding = value.substr(front);
     if (!is_token(this->content_encoding)) {
         throw InvalidHeader(CONTENT_ENCODING);
@@ -58,23 +62,59 @@ void HTTPRequest::valid_content_length(const std::string &value) {
     }
 }
 
+void HTTPRequest::valid_content_type(const std::string &value) {
+    size_t front = get_front(value);
+    std::string::size_type slash_index = value.find('/');
+    std::string::size_type semi_colon_index = value.find(';');
+    if (slash_index == std::string::npos) {
+        throw InvalidHeader(CONTENT_TYPE);
+    }
+    try {
+        this->content_type.type = value.substr(front, slash_index - 1);
+        this->content_type.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
+    } catch (std::out_of_range) {
+        throw InvalidHeader(CONTENT_TYPE);
+    }
+    if (!is_token(this->content_type.type) || !is_token(this->content_type.subtype)) {
+        throw InvalidHeader(CONTENT_TYPE);
+    }
+    if (semi_colon_index == std::string::npos) {
+        return;
+    }
+    try {
+        std::vector<std::string> splited_parameter = escaped_quote_split(value.substr(semi_colon_index + 1), ";");
+        for (size_t i = 0; i < splited_parameter.size(); i++) {
+            std::cerr << splited_parameter.at(i) << std::endl;
+            if (splited_parameter.at(i) == ";" || splited_parameter.at(i) == "") {
+                continue;
+            }
+            size_t equal_index = splited_parameter.at(i).find('=');
+            std::string attribute = splited_parameter.at(i).substr(0, equal_index);
+            std::string parameter_value = splited_parameter.at(i).substr(equal_index + 1);
+            if (parameter_value.at(parameter_value.length() - 1) == ';') {
+                parameter_value.erase(parameter_value.end() - 1, parameter_value.end());
+            }
+            if (!is_token(attribute) || (!is_token(parameter_value) && !is_quoted_string(parameter_value))) {
+                throw InvalidHeader(CONTENT_TYPE);
+            }
+            this->content_type.parameter.insert(make_pair(attribute, parameter_value));
+        }
+    } catch (std::out_of_range) {
+        throw InvalidHeader(CONTENT_TYPE);
+    }
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) :
-    is_simple_request(false),
-    header(),
-    entity_body(),
-    allow(),
-    content_encoding(),
-    content_length()
-{
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(), entity_body(), allow(), content_encoding(), content_length() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
     validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
     validation_func_pair.push_back(std::make_pair("Content-Encoding", &HTTPRequest::valid_content_encoding));
     validation_func_pair.push_back(std::make_pair("Content-Length", &HTTPRequest::valid_content_length));
+    validation_func_pair.push_back(std::make_pair("Content-Type", &HTTPRequest::valid_content_type));
 
     std::string crlf;
     crlf += CR;
@@ -201,7 +241,7 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     case CONTENT_ENCODING:
         return "HTTPHeader: invalid 'Content-Encoding' header";
         break;
-    case CONTENT_LENGTH: 
+    case CONTENT_LENGTH:
         return "HTTPHeader: invalid 'Content-Length' header";
         break;
     }
