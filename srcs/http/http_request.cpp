@@ -35,15 +35,46 @@ void HTTPRequest::valid_content_encoding(const std::string &value) {
     }
 }
 
+void HTTPRequest::valid_content_length(const std::string &value) {
+    size_t front = 0;;
+    while (front < value.length() && (value.at(front) == ' ' || value.at(front) == '\t')) {
+        front++;
+    }
+    if (value.length() == front) {
+        throw InvalidHeader(CONTENT_LENGTH);
+    }
+    for (size_t i = front; i < value.length(); i++) {
+        if (!is_digit(value.at(i))) {
+            throw InvalidHeader(CONTENT_LENGTH);
+        }
+    }
+    try {
+        std::cerr << atoi(value.substr(front).c_str()) << std::endl;;
+        std::cerr << safe_atoi(value.substr(front)) << std::endl;
+        this->content_length = safe_atoi(value.substr(front));
+    } catch (std::runtime_error) {
+        // InvalidHeader ではない気がする //
+        throw InvalidHeader(CONVERT_FAIL);
+    }
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
+HTTPRequest::HTTPRequest(std::string buffer) :
+    is_simple_request(false),
+    header(),
+    entity_body(),
+    allow(),
+    content_encoding(),
+    content_length()
+{
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
     validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
     validation_func_pair.push_back(std::make_pair("Content-Encoding", &HTTPRequest::valid_content_encoding));
+    validation_func_pair.push_back(std::make_pair("Content-Length", &HTTPRequest::valid_content_length));
 
     std::string crlf;
     crlf += CR;
@@ -112,13 +143,11 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
     }
 
     if (crlf_count < splited_buffer.size()) {
-        if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {
+        if (this->header.find("Content-Length") == this->header.end()) {
             throw InvalidRequest(HTTP_HEADER);
         }
         try {
-            std::string entity_length_str = (this->header.find("Content-Length"))->second;
-            int entity_length = std::atoi(entity_length_str.c_str());
-            this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
+            this->entity_body = splited_buffer[crlf_count].substr(0, this->content_length);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
             // throw いんたーなるさーばーえらー的なやつ //
@@ -171,6 +200,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case CONTENT_ENCODING:
         return "HTTPHeader: invalid 'Content-Encoding' header";
+        break;
+    case CONTENT_LENGTH: 
+        return "HTTPHeader: invalid 'Content-Length' header";
         break;
     }
 }
