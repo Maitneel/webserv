@@ -1,4 +1,3 @@
-#include <chrono>
 #include <stdexcept>
 #include <iostream>
 #include <vector>
@@ -40,8 +39,7 @@ HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false)
-{
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
     validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
@@ -112,8 +110,6 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false)
             (this->*(target.second))(this->header.at(target.first));
         }
     }
-    
-
 
     if (crlf_count < splited_buffer.size()) {
         if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {

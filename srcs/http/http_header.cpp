@@ -35,4 +35,4 @@ std::vector<std::string> convert_allow_to_vector(std::string src) {
         }
     }
     return allow;
-} 
+}
