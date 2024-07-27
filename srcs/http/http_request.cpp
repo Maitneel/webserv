@@ -1,3 +1,4 @@
+#include <chrono>
 #include <stdexcept>
 #include <iostream>
 #include <vector>
@@ -72,6 +73,14 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
         this->header.insert(make_header_pair(splited_buffer[i]));
     }
 
+    if (this->header.find("Allow") != this->header.end()) {
+        try {
+            this->allow = convert_allow_to_vector(this->header.find("Allow")->second);
+        } catch (InvalidHeader &e) {
+            // TODO(maitneel)  : 後で考える
+        }
+    }
+
     if (crlf_count < splited_buffer.size()) {
         if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {
             throw InvalidRequest(HTTP_HEADER);
@@ -121,3 +130,15 @@ const char *HTTPRequest::InvalidRequest::what() const throw() {
         break;
     }
 }
+
+HTTPRequest::InvalidHeader::InvalidHeader(t_http_header_except_type except_type_src) : except_type(except_type_src) {
+}
+
+const char *HTTPRequest::InvalidHeader::what() const throw() {
+    switch (this->except_type) {
+    case ALLOW:
+            return "HTTPHeader: invalid allow header";
+            break;
+    }
+}
+
