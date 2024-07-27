@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "config.hpp"
+#include "http_request.hpp"
+#include "http_response.hpp"
 
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
@@ -24,6 +26,8 @@ class Server {
  public :
     explicit Server(std::vector<ServerConfig> confs);
     ~Server();
+    ServerConfig getConfigByFd(int fd);
+    HTTPResponse getHandler(int fd, const HTTPRequest& req);
     void eventLoop();
 };
 

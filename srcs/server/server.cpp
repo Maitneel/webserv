@@ -3,11 +3,13 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
+#include <fcntl.h>
 #include <cstdlib>
 #include <cstring>
 
 #include <string>
 #include <sstream>
+#include <fstream>
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
@@ -38,14 +40,21 @@ std::string get_formated_date() {
 
 std::string read_request(int fd) {
     char buf[BUFFER_SIZE];
-
-    int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
-    if (n_read <= 0) {
-        // TODO(taksaito): error handling
-        std::exit(1);
+    std::string content;
+    while (true) {
+        int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
+        if (n_read == 0) {
+            break;
+        } else if (n_read == -1) {
+            close(0);
+            return "";
+        }
+        buf[n_read] = '\0';
+        content += std::string(buf);
+        if (content.rfind("\r\n\r\n"))  // keep alive リクエストの場合
+            break;
     }
-
-    return std::string(buf, n_read);
+    return content;
 }
 
 void response_to_client(int fd, const HTTPResponse& response) {
@@ -128,14 +137,42 @@ void http_log(const HTTPRequest& request) {
     return;
 }
 
+ServerConfig Server::getConfigByFd(int fd) {
+    std::vector<Socket>::iterator it;
+    for (it = this->sockets.begin(); it != this->sockets.end(); it++) {
+        if (it->getSocketFd() == fd)
+            return it->getConfig();
+    }
+    throw std::invalid_argument("invalid fd");
+}
+
+HTTPResponse Server::getHandler(int sock, const HTTPRequest& req) {
+    ServerConfig conf = this->getConfigByFd(sock);
+    std::string path = conf.document_root + req.get_request_uri();
+
+    std::cout << path << std::endl;
+    if (access(path.c_str(), F_OK) == -1) {
+        return HTTPResponse(HTTPResponse::kNotFound, "text/html", "Not Found");
+    }
+
+    std::ifstream ifs(path);
+    if (ifs.fail()) {
+        ifs.close();
+        return HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+    }
+
+    std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    return HTTPResponse(HTTPResponse::kOK, "text/html", content);
+}
+
 void Server::eventLoop() {
     // 一旦、最初のFDのみ
-    int server_fd = this->sockets[0].getSocketFd();
+    int socket_fd = this->sockets[0].getSocketFd();
     while(true) {
         struct sockaddr_storage addr;
         socklen_t addrlen = sizeof addr;
 
-        int sock = accept(server_fd, (struct sockaddr*)&addr, &addrlen);
+        int sock = accept(socket_fd, (struct sockaddr*)&addr, &addrlen);
         if (sock < 0) {
             // TODO(taksaito): error handling
             std::exit(1);
@@ -146,8 +183,8 @@ void Server::eventLoop() {
         HTTPRequest request(request_content);
         http_log(request);
 
-        HTTPResponse response(200, "text/html", request.entity_body);
-        response_to_client(sock, response);
+        HTTPResponse res = this->getHandler(socket_fd, request);
+        response_to_client(sock, res);
         close(sock);
 
         // break させるようの処理 //
