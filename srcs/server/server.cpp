@@ -267,7 +267,7 @@ void Server::EventLoop() {
         std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
         std::cout << "    header : {" << std::endl;
         for (std::map<std::string, std::string>::iterator i = request.header.begin(); i != request.header.end(); i++) {
-            std::cout << "        " << i->first << ": " << i->second << std::endl;
+            std::cout << "        " << i->first << ": '" << i->second << "'" << std::endl;
         }
         std::cout << "    }" << std::endl;
         std::cout << "    body : {" << std::endl;

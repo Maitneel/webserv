@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <utility>
 
 #include "http_request.hpp"
 #include "http_validation.hpp"
@@ -10,11 +11,42 @@
 #include "http_header.hpp"
 #include "extend_stdlib.hpp"
 
+
+
+void HTTPRequest::valid_allow(const std::string &value) {
+    try {
+        this->allow = convert_allow_to_vector(value);
+    } catch (InvalidHeader &e) {
+        // TODO(maitneel)  : 後で考える
+    }
+}
+
+void HTTPRequest::valid_authorization(const std::string &value) {
+    // TODO(maitneel)
+}
+
+void HTTPRequest::valid_content_encoding(const std::string &value) {
+    size_t front = 0;
+    while (value.at(front) == ' ' || value.at(front) == '\t') {
+        front++;
+    }
+    this->content_encoding = value.substr(front);
+    if (!is_token(this->content_encoding)) {
+        throw InvalidHeader(CONTENT_ENCODING);
+    }
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false)
+{
+    // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
+    validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
+    validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
+    validation_func_pair.push_back(std::make_pair("Content-Encoding", &HTTPRequest::valid_content_encoding));
+
     std::string crlf;
     crlf += CR;
     crlf += LF;
@@ -74,42 +106,28 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
     }
 
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
-    if (this->header.find("Allow") != this->header.end()) {
-        try {
-            this->allow = convert_allow_to_vector(this->header.find("Allow")->second);
-        } catch (InvalidHeader &e) {
-            // TODO(maitneel)  : 後で考える
+    for (size_t i = 0; i < HTTPRequest::validation_func_pair.size(); i++) {
+        std::pair<std::string, void(HTTPRequest::*)(const std::string &)> target = this->validation_func_pair.at(i);
+        if (this->header.find(target.first) != this->header.end()) {
+            (this->*(target.second))(this->header.at(target.first));
         }
     }
-    if (this->header.find("Authorization") != this->header.end()) {
-        // TODO(maitnell)
-    }
-    if (this->header.find("Content-Encoding") != this->header.end()) {
-        std::string str = this->header.find("Content-Encoding")->second;
-        size_t front = 0;
-        while (str.at(front) == ' ' || str.at(front) == '\t') {
-            front++;
-        }
-        this->content_encoding = str.substr(front);
-        if (!is_token(this->content_encoding)) {
-            throw InvalidHeader(CONTENT_ENCODING);
-        }
-    }
+    
 
-        if (crlf_count < splited_buffer.size()) {
-            if (this->header.find("Content-Length") == this->header.end() &&
-                is_valid_content_length(header.find("Content-Length")->second)) {
-                throw InvalidRequest(HTTP_HEADER);
-            }
-            try {
-                std::string entity_length_str = (this->header.find("Content-Length"))->second;
-                int entity_length = std::atoi(entity_length_str.c_str());
-                this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
-            } catch (std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                // throw いんたーなるさーばーえらー的なやつ //
-            }
+
+    if (crlf_count < splited_buffer.size()) {
+        if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {
+            throw InvalidRequest(HTTP_HEADER);
         }
+        try {
+            std::string entity_length_str = (this->header.find("Content-Length"))->second;
+            int entity_length = std::atoi(entity_length_str.c_str());
+            this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
+        } catch (std::exception &e) {
+            std::cerr << e.what() << std::endl;
+            // throw いんたーなるさーばーえらー的なやつ //
+        }
+    }
 }
 
 HTTPRequest::~HTTPRequest() {
