@@ -73,6 +73,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
         this->header.insert(make_header_pair(splited_buffer[i]));
     }
 
+    // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (this->header.find("Allow") != this->header.end()) {
         try {
             this->allow = convert_allow_to_vector(this->header.find("Allow")->second);
@@ -80,20 +81,35 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false) {
             // TODO(maitneel)  : 後で考える
         }
     }
-
-    if (crlf_count < splited_buffer.size()) {
-        if (this->header.find("Content-Length") == this->header.end() && is_valid_content_length(header.find("Content-Length")->second)) {
-            throw InvalidRequest(HTTP_HEADER);
+    if (this->header.find("Authorization") != this->header.end()) {
+        // TODO(maitnell)
+    }
+    if (this->header.find("Content-Encoding") != this->header.end()) {
+        std::string str = this->header.find("Content-Encoding")->second;
+        size_t front = 0;
+        while (str.at(front) == ' ' || str.at(front) == '\t') {
+            front++;
         }
-        try {
-            std::string entity_length_str = (this->header.find("Content-Length"))->second;
-            int entity_length =  std::atoi(entity_length_str.c_str());
-            this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
-        } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            // throw いんたーなるさーばーえらー的なやつ //
+        this->content_encoding = str.substr(front);
+        if (!is_token(this->content_encoding)) {
+            throw InvalidHeader(CONTENT_ENCODING);
         }
     }
+
+        if (crlf_count < splited_buffer.size()) {
+            if (this->header.find("Content-Length") == this->header.end() &&
+                is_valid_content_length(header.find("Content-Length")->second)) {
+                throw InvalidRequest(HTTP_HEADER);
+            }
+            try {
+                std::string entity_length_str = (this->header.find("Content-Length"))->second;
+                int entity_length = std::atoi(entity_length_str.c_str());
+                this->entity_body = splited_buffer[crlf_count].substr(0, entity_length);
+            } catch (std::exception &e) {
+                std::cerr << e.what() << std::endl;
+                // throw いんたーなるさーばーえらー的なやつ //
+            }
+        }
 }
 
 HTTPRequest::~HTTPRequest() {
@@ -137,8 +153,11 @@ HTTPRequest::InvalidHeader::InvalidHeader(t_http_header_except_type except_type_
 const char *HTTPRequest::InvalidHeader::what() const throw() {
     switch (this->except_type) {
     case ALLOW:
-            return "HTTPHeader: invalid allow header";
-            break;
+        return "HTTPHeader: invalid 'Allow' header";
+        break;
+    case CONTENT_ENCODING:
+        return "HTTPHeader: invalid 'Content-Encoding' header";
+        break;
     }
 }
 
