@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <vector>
 #include <utility>
+#include <ostream>
 
 typedef enum e_HTTPRequest_except_type {
     REQUEST_LINE,
@@ -75,6 +76,10 @@ class HTTPRequest {
     const std::string &get_method() const;
     const std::string &get_request_uri() const;
     const std::string &get_protocol() const;
+
+    // print funcs
+    void print_info();
+    void print_info(std::ostream &stream);
 
     // exception class
     class InvalidRequest :  public  std::exception {

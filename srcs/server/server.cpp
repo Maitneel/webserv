@@ -222,7 +222,6 @@ void Server::EventLoop() {
     // 一旦、最初のFDのみ
     int socket_fd = this->sockets[0].GetSocketFd();
 
-<<<<<<< HEAD
     PollSelector selector;
 
     selector.Register(socket_fd, kEventRead);
@@ -254,43 +253,6 @@ void Server::EventLoop() {
                 buffer.erase(it->fd);
                 HTTPRequest request(request_content);
                 http_log(request);
-=======
-        int sock = accept(server_fd, (struct sockaddr*)&addr, &addrlen);
-        if (sock < 0) {
-            // TODO(taksaito): error handling
-            std::exit(1);
-        }
-        // TODO(taksaito): non blocking...
-        std::string request_content = read_request(sock);
-        std::cerr << "resived " << std::endl;
-        HTTPRequest request(request_content);
-        std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
-        std::cout << "    header : {" << std::endl;
-        for (std::map<std::string, std::string>::iterator i = request.header.begin(); i != request.header.end(); i++) {
-            std::cout << "        " << i->first << ": '" << i->second << "'" << std::endl;
-        }
-        std::cout << "    }" << std::endl;
-        std::cout << "    body : {" << std::endl;
-        std::cout << "        " << request.entity_body << std::endl;
-        std::cout << "    }" << std::endl;
-        std::cout << std::left << std::setw(20) << "    Allow" << " : [";
-        for (size_t i = 0; i < request.allow.size(); i++) {
-            std::cout << '"' << request.allow.at(i) << '"' << ", ";
-        }
-        std::cout << "]" << std::endl;
-        std::cout << std::left << std::setw(20) << "    Content-Encoding" << " : " << '"' << request.content_encoding << '"' << std::endl;
-        std::cout << std::left << std::setw(20) << "    Content-length" << " : " << '"' << request.content_length << '"' << std::endl;
-        std::cout << std::left << std::setw(20) << "    Content-Type" << " : " << '"' << request.content_type.type << '/' << request.content_type.subtype << '"' << " parameter : ";
-        for (std::multimap<std::string, std::string>::iterator i = request.content_type.parameter.begin(); i != request.content_type.parameter.end(); i++) {
-            std::cout << "{" << i->first << ":" << i->second << "}, ";
-        }
-        std::cout << std::endl;
-        std::cout << std::left << std::setw(20) << "    Date" << " : " << '"' << request.date << '"' << std::endl;
-        std::cout << std::left << std::setw(20) << "    Expries" << " : " << '"' << request.expires << '"' << std::endl;
-        std::cout << std::left << std::setw(20) << "    Form" << " : " << '"' << request.form << '"' << std::endl;
-        response_to_client(sock, request_content);
-        close(sock);
->>>>>>> 3577ff1 (feat: implement validation 'Content-encoding' header)
 
                 std::string method = request.get_method();
                 HTTPResponse res;

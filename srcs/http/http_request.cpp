@@ -1,5 +1,7 @@
 #include <stdexcept>
 #include <iostream>
+#include <ostream>
+#include <iomanip>
 #include <vector>
 #include <cstdlib>
 #include <utility>
@@ -248,6 +250,37 @@ const std::string &HTTPRequest::get_protocol() const {
     return this->protocol;
 }
 
+// print func
+void HTTPRequest::print_info() {
+    this->print_info(std::cout);
+}
+
+void HTTPRequest::print_info(std::ostream &stream) {
+    stream << '[' << get_formated_date() << "] " << this->get_method() << ' ' << this->get_request_uri() << ' ' << this->get_protocol() << std::endl;
+    stream << "    header : {" << std::endl;
+    for (std::map<std::string, std::string>::iterator i = this->header.begin(); i != this->header.end(); i++) {
+        stream << "        " << i->first << ": '" << i->second << "'" << std::endl;
+    }
+    stream << "    }" << std::endl;
+    stream << "    body : {" << std::endl;
+    stream << "        " << this->entity_body << std::endl;
+    stream << "    }" << std::endl;
+    stream << std::left << std::setw(20) << "    Allow" << " : [";
+    for (size_t i = 0; i < this->allow.size(); i++) {
+        stream << '"' << this->allow.at(i) << '"' << ", ";
+    }
+    stream << "]" << std::endl;
+    stream << std::left << std::setw(20) << "    Content-Encoding" << " : " << '"' << this->content_encoding << '"' << std::endl;
+    stream << std::left << std::setw(20) << "    Content-length" << " : " << '"' << this->content_length << '"' << std::endl;
+    stream << std::left << std::setw(20) << "    Content-Type" << " : " << '"' << this->content_type.type << '/' << this->content_type.subtype << '"' << " parameter : ";
+    for (std::multimap<std::string, std::string>::iterator i = this->content_type.parameter.begin(); i != this->content_type.parameter.end(); i++) {
+        stream << "{" << i->first << ":" << i->second << "}, ";
+    }
+    stream << std::endl;
+    stream << std::left << std::setw(20) << "    Date" << " : " << '"' << this->date << '"' << std::endl;
+    stream << std::left << std::setw(20) << "    Expries" << " : " << '"' << this->expires << '"' << std::endl;
+    stream << std::left << std::setw(20) << "    Form" << " : " << '"' << this->form << '"' << std::endl;
+}
 
 // exception class
 HTTPRequest::InvalidRequest::InvalidRequest(t_http_request_except_type except_type_src) : except_type(except_type_src) {
