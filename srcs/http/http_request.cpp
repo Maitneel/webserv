@@ -180,18 +180,47 @@ void HTTPRequest::valid_pragma(const std::string &value) {
     }
 }
 
-// Referer        = "Referer" ":" ( absoluteURI | relativeURI )
-
 void HTTPRequest::valid_referer(const std::string &value) {
     size_t front = get_front(value);
     std::string trimed_value = value.substr(front);
     is_absolute_uri(trimed_value);
-    std::cerr << "------------------------end" << std::endl;
     is_relative_uri(trimed_value);
     if (!is_absolute_uri(trimed_value) && !is_relative_uri(trimed_value)) {
         throw InvalidHeader(REFERER);
     }
     this->referer = trimed_value;
+}
+
+static size_t is_opening_parentheses(const std::string &s) {
+    size_t result = 0;
+    for (size_t i = 0; i < s.length(); i++) {
+        if (s.at(i) == '(') {
+            result++;
+        }
+        if (result && s.at(i) == ')') {
+            result--;
+        }
+    }
+    return result;
+}
+
+void HTTPRequest::valid_user_agent(const std::string &value) {
+    size_t front = get_front(value);
+    std::vector<std::string> splited_token = split(value.substr(front), " ");
+    for (size_t i = 0; i < splited_token.size(); i++) {
+        std::string processing = splited_token.at(i);
+        while (i + 1 < splited_token.size() && is_opening_parentheses(processing)) {
+            processing += splited_token.at(i + 1);
+            i++;
+        }
+        if (processing.at(processing.length() - 1) == ' ') {
+            processing.erase(processing.end() - 1, processing.end());
+        }
+        if (!is_product(processing) && !is_comment(processing)) {
+            throw InvalidHeader(USER_AGENT);
+        }
+        this->user_agent.push_back(processing);
+    }
 }
 
 HTTPRequest::HTTPRequest(const int fd) {
@@ -210,6 +239,8 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
     validation_func_pair.push_back(std::make_pair("Form", &HTTPRequest::valid_form));
     validation_func_pair.push_back(std::make_pair("Pragma", &HTTPRequest::valid_pragma));
     validation_func_pair.push_back(std::make_pair("Referer", &HTTPRequest::valid_referer));
+    validation_func_pair.push_back(std::make_pair("User-Agent", &HTTPRequest::valid_user_agent));
+
 
     std::string crlf;
     crlf += CR;
@@ -347,7 +378,11 @@ void HTTPRequest::print_info(std::ostream &stream) {
     }
     stream << "]" << std::endl;
     stream << std::left << std::setw(width) << "    Referer" << " : " << '"' << this->referer << '"' << std::endl;
-
+    stream << std::left << std::setw(width) << "    User-Agent" << " : " << "[";
+    for (size_t i = 0; i < this->user_agent.size(); i++) {
+        stream << "'" << this->user_agent.at(i) << "', ";
+    }
+    stream << "]" << std::endl;
 }
 
 // exception class

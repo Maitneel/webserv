@@ -80,6 +80,8 @@ bool is_month(const std::string &s);             // month          = "Jan" | "Fe
 bool is_pragma_directive(const std::string &s);
 bool is_extension_pragma(const std::string &s);
 
+bool is_product(const std::string &s);
+
 // 補助的な関数 //
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))

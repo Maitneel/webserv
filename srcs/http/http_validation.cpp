@@ -577,6 +577,15 @@ bool is_extension_pragma(const std::string &s) {
     }
 }
 
+bool is_product(const std::string &s) {
+    std::string::size_type slash_index = s.find('/');
+    if (slash_index == std::string::npos) {
+        return (is_token(s));
+    } else {
+        return (is_token(s.substr(0, slash_index)) && is_token(s.substr(slash_index + 1)));
+    }
+}
+
 // int main () {
 //     std::string d = "Mon Jun 22 08:12:31 2222";
 //     // std::vector<std::string> sp = split(d, " ");
