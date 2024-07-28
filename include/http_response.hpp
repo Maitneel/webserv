@@ -5,10 +5,11 @@
 
 class HTTPResponse {
  private:
-    int         status_code;
-    std::string description;
-    std::string content_type;
-    std::string body;
+    int               status_code_;
+    std::string       description_;
+    std::string       content_type_;
+    std::string       body_;
+    static const char kHTTPVersion[];
  public:
     enum StatusCode {
         kOK                   = 200,

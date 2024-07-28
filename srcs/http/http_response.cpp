@@ -1,6 +1,8 @@
 #include <sstream>
 #include "http_response.hpp"
 
+const char HTTPResponse::kHTTPVersion[] = "HTTP/1.1";
+
 std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
     switch (status_code) {
         case HTTPResponse::kOK:
@@ -24,10 +26,10 @@ HTTPResponse::HTTPResponse(
     std::string    content_type,
     std::string    body
 ):
-status_code(status_code),
-content_type(content_type),
-body(body) {
-    this->description = GenerateDescription(status_code);
+status_code_(status_code),
+content_type_(content_type),
+body_(body) {
+    this->description_ = GenerateDescription(status_code);
 }
 
 HTTPResponse::~HTTPResponse() {}
@@ -36,12 +38,12 @@ std::string HTTPResponse::toString() const {
     std::stringstream ss;
 
     // TODO(taksaito): Content-Type の判定や、description の文字の処理を実装。
-    ss << "HTTP/1.1 " << this->status_code << " " << this->description << "\r\n";
-    ss << "Content-Type: " << this->content_type << "\r\n";
+    ss <<  HTTPResponse::kHTTPVersion << " " << this->status_code_ << " " << this->description_ << "\r\n";
+    ss << "Content-Type: " << this->content_type_ << "\r\n";
     ss << "Content-Length: ";
-    ss << body.length() << "\r\n";
+    ss << this->body_.length() << "\r\n";
     ss << "\r\n";
-    ss << body;
+    ss << this->body_;
     ss << "\r\n";
     return ss.str();
 }
