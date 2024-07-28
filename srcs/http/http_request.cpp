@@ -106,17 +106,21 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     }
 }
 
-void HTTPRequest::valid_date(const std::string &value) {
+void HTTPRequest::valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string &store) {
     size_t front = get_front(value);
     try {
         if (!is_http_date(value.substr(front))) {
-            throw InvalidHeader(DATE);
+            throw InvalidHeader(exception_type);
         }
     } catch (std::out_of_range const &) {
-        throw InvalidHeader(DATE);
+        throw InvalidHeader(exception_type);
     }
     // ここそれっぽい構造体かクラスかなんか作ってそれに詰めた(フォーマットして保存する)方がいい？ //
-    this->date = value;
+    store = value;
+}
+
+void HTTPRequest::valid_date(const std::string &value) {
+    this->valid_date_related_header(value, DATE, this->date);
 }
 
 void HTTPRequest::valid_expires(const std::string &value) {
@@ -140,15 +144,11 @@ void HTTPRequest::valid_form(const std::string &value) {
 }
 
 void HTTPRequest::valid_if_modified_since(const std::string &value) {
-    size_t front = get_front(value);
-    try {
-        if (!is_http_date(value.substr(front))) {
-            throw InvalidHeader(IF_MODIFIED_SINCE);
-        }
-    } catch (std::out_of_range const &) {
-        throw InvalidHeader(IF_MODIFIED_SINCE);
-    }
-    this->date = value;
+    this->valid_date_related_header(value, IF_MODIFIED_SINCE, this->if_modified_since);
+}
+
+void HTTPRequest::valid_last_modified(const std::string &value) {
+    this->valid_date_related_header(value, LAST_MODIFIED, this->last_modified);
 }
 
 HTTPRequest::HTTPRequest(const int fd) {
@@ -295,6 +295,7 @@ void HTTPRequest::print_info(std::ostream &stream) {
     stream << std::left << std::setw(width) << "    Expries" << " : " << '"' << this->expires << '"' << std::endl;
     stream << std::left << std::setw(width) << "    Form" << " : " << '"' << this->form << '"' << std::endl;
     stream << std::left << std::setw(width) << "    If-Modified-Since" << " : " << '"' << this->if_modified_since << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Last-Modified" << " : " << '"' << this->last_modified << '"' << std::endl;
 }
 
 // exception class
@@ -340,6 +341,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case IF_MODIFIED_SINCE:
         return "HTTPHeader: invalid 'If-Modified-Since' header";
+        break;
+    case LAST_MODIFIED:
+        return "HTTPHeader: invalid 'Last-Modified' header";
         break;
     case CONVERT_FAIL:
         return "HTTPHeader: convert failed";
