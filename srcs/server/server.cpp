@@ -176,8 +176,7 @@ HTTPResponse Server::getHandler(int sock, const HTTPRequest& req) {
     std::string content;
     try {
         content = GetContent(path);
-    } catch (std::invalid_argument& e)
-    {
+    } catch (std::invalid_argument& e) {
         return HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
     }
     return HTTPResponse(HTTPResponse::kOK, "text/html", content);
