@@ -151,6 +151,36 @@ void HTTPRequest::valid_last_modified(const std::string &value) {
     this->valid_date_related_header(value, LAST_MODIFIED, this->last_modified);
 }
 
+// Pragma           = "Pragma" ":" 1#pragma-directive
+
+// pragma-directive = "no-cache" | extension-pragma
+// extension-pragma = token [ "=" word ]
+void HTTPRequest::valid_pragma(const std::string &value) {
+    size_t front = get_front(value);
+    std::vector<std::string> splited_value = split(value.substr(front), ",");
+    for (size_t i = 0; i < splited_value.size(); i++) {
+        std::string &processing = splited_value.at(i);
+        if (processing.length() == 0) {
+            continue;
+        } else if (processing.at(processing.length() - 1) == ',') {
+            processing.erase(processing.end() - 1, processing.end());
+        }
+        std::cerr << processing << std::endl;
+        if (is_crlf(processing.substr(0, 2))) {
+            size_t front = 2;
+            while (is_sp(processing.at(front)) || is_ht(processing.at(front))) {
+                front++;
+            }
+            processing.erase(processing.begin(), processing.begin() + front);
+        }
+        if (!is_pragma_directive(processing)) {
+            throw InvalidHeader(PRAGMA);
+        }
+        this->pragma.push_back(processing);
+    }
+    
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -165,6 +195,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
     validation_func_pair.push_back(std::make_pair("Date", &HTTPRequest::valid_date));
     validation_func_pair.push_back(std::make_pair("Expires", &HTTPRequest::valid_expires));
     validation_func_pair.push_back(std::make_pair("Form", &HTTPRequest::valid_form));
+    validation_func_pair.push_back(std::make_pair("Pragma", &HTTPRequest::valid_pragma));
 
     std::string crlf;
     crlf += CR;
@@ -296,6 +327,12 @@ void HTTPRequest::print_info(std::ostream &stream) {
     stream << std::left << std::setw(width) << "    Form" << " : " << '"' << this->form << '"' << std::endl;
     stream << std::left << std::setw(width) << "    If-Modified-Since" << " : " << '"' << this->if_modified_since << '"' << std::endl;
     stream << std::left << std::setw(width) << "    Last-Modified" << " : " << '"' << this->last_modified << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Pragma" << " : [";
+    for (size_t i = 0; i < this->pragma.size(); i++) {
+        stream << "'" << this->pragma.at(i) << "', ";
+    }
+    stream << "]" << std::endl;
+
 }
 
 // exception class
@@ -344,6 +381,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case LAST_MODIFIED:
         return "HTTPHeader: invalid 'Last-Modified' header";
+        break;
+    case PRAGMA:
+        return "HTTPHeader: invalid 'Pragma' header";
         break;
     case CONVERT_FAIL:
         return "HTTPHeader: convert failed";

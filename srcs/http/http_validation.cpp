@@ -541,6 +541,23 @@ bool is_2digit(const std::string &s) {
     return true;
 }
 
+bool is_pragma_directive(const std::string &s) {
+    if (s == "no-cache") {
+        return true;
+    }
+    return is_extension_pragma(s);
+}
+
+// extension-pragma = token [ "=" word ]
+bool is_extension_pragma(const std::string &s) {
+    std::string::size_type equal_index = s.find('=');
+    if (equal_index == std::string::npos) {
+        return is_token(s);
+    } else {
+        return (is_token(s.substr(0, equal_index)) && is_word(s.substr(equal_index + 1)));
+    }
+}
+
 // int main () {
 //     std::string d = "Mon Jun 22 08:12:31 2222";
 //     // std::vector<std::string> sp = split(d, " ");
