@@ -139,6 +139,18 @@ void HTTPRequest::valid_form(const std::string &value) {
     this->form = value;
 }
 
+void HTTPRequest::valid_if_modified_since(const std::string &value) {
+    size_t front = get_front(value);
+    try {
+        if (!is_http_date(value.substr(front))) {
+            throw InvalidHeader(IF_MODIFIED_SINCE);
+        }
+    } catch (std::out_of_range const &) {
+        throw InvalidHeader(IF_MODIFIED_SINCE);
+    }
+    this->date = value;
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -256,6 +268,8 @@ void HTTPRequest::print_info() {
 }
 
 void HTTPRequest::print_info(std::ostream &stream) {
+    const size_t width = 25;
+
     stream << '[' << get_formated_date() << "] " << this->get_method() << ' ' << this->get_request_uri() << ' ' << this->get_protocol() << std::endl;
     stream << "    header : {" << std::endl;
     for (std::map<std::string, std::string>::iterator i = this->header.begin(); i != this->header.end(); i++) {
@@ -265,21 +279,22 @@ void HTTPRequest::print_info(std::ostream &stream) {
     stream << "    body : {" << std::endl;
     stream << "        " << this->entity_body << std::endl;
     stream << "    }" << std::endl;
-    stream << std::left << std::setw(20) << "    Allow" << " : [";
+    stream << std::left << std::setw(width) << "    Allow" << " : [";
     for (size_t i = 0; i < this->allow.size(); i++) {
         stream << '"' << this->allow.at(i) << '"' << ", ";
     }
     stream << "]" << std::endl;
-    stream << std::left << std::setw(20) << "    Content-Encoding" << " : " << '"' << this->content_encoding << '"' << std::endl;
-    stream << std::left << std::setw(20) << "    Content-length" << " : " << '"' << this->content_length << '"' << std::endl;
-    stream << std::left << std::setw(20) << "    Content-Type" << " : " << '"' << this->content_type.type << '/' << this->content_type.subtype << '"' << " parameter : ";
+    stream << std::left << std::setw(width) << "    Content-Encoding" << " : " << '"' << this->content_encoding << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Content-length" << " : " << '"' << this->content_length << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Content-Type" << " : " << '"' << this->content_type.type << '/' << this->content_type.subtype << '"' << " parameter : ";
     for (std::multimap<std::string, std::string>::iterator i = this->content_type.parameter.begin(); i != this->content_type.parameter.end(); i++) {
         stream << "{" << i->first << ":" << i->second << "}, ";
     }
     stream << std::endl;
-    stream << std::left << std::setw(20) << "    Date" << " : " << '"' << this->date << '"' << std::endl;
-    stream << std::left << std::setw(20) << "    Expries" << " : " << '"' << this->expires << '"' << std::endl;
-    stream << std::left << std::setw(20) << "    Form" << " : " << '"' << this->form << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Date" << " : " << '"' << this->date << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Expries" << " : " << '"' << this->expires << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Form" << " : " << '"' << this->form << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    If-Modified-Since" << " : " << '"' << this->if_modified_since << '"' << std::endl;
 }
 
 // exception class
@@ -322,6 +337,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case FORM:
         return "HTTPHeader: invalid 'Form' header";
+        break;
+    case IF_MODIFIED_SINCE:
+        return "HTTPHeader: invalid 'If-Modified-Since' header";
         break;
     case CONVERT_FAIL:
         return "HTTPHeader: convert failed";

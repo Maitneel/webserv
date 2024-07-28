@@ -22,6 +22,7 @@ typedef enum e_HTTPHeader_except_type {
     DATE,
     EXPIRES,
     FORM,
+    IF_MODIFIED_SINCE,
     CONVERT_FAIL,
 } t_http_header_except_type;
 
@@ -53,6 +54,7 @@ class HTTPRequest {
     void valid_date(const std::string &value);
     void valid_expires(const std::string &value);
     void valid_form(const std::string &value);
+    void valid_if_modified_since(const std::string &value);
 
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
@@ -67,6 +69,7 @@ class HTTPRequest {
     std::string date;
     std::string expires;
     std::string form;
+    std::string if_modified_since;
 
     explicit HTTPRequest(const int fd);
     explicit HTTPRequest(std::string buffer);
