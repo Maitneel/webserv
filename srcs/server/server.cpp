@@ -24,6 +24,24 @@ std::string int_to_str(int n) {
     return ss.str();
 }
 
+std::string GetContent(const std::string& path) {
+    std::ifstream ifs(path);
+    if (ifs.fail()) {
+        ifs.close();
+        throw std::invalid_argument("can not open file " + path);
+    }
+    std::string content;
+
+    while (ifs) {
+        std::string line;
+        getline(ifs, line);
+        content += line;
+        if (!ifs.eof())
+            content += "\n";
+    }
+    return content;
+}
+
 std::string get_formated_date() {
     struct tm newtime;
     time_t ltime;
@@ -155,13 +173,13 @@ HTTPResponse Server::getHandler(int sock, const HTTPRequest& req) {
         return HTTPResponse(HTTPResponse::kNotFound, "text/html", "Not Found");
     }
 
-    std::ifstream ifs(path);
-    if (ifs.fail()) {
-        ifs.close();
+    std::string content;
+    try {
+        content = GetContent(path);
+    } catch (std::invalid_argument& e)
+    {
         return HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
     }
-
-    std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     return HTTPResponse(HTTPResponse::kOK, "text/html", content);
 }
 
