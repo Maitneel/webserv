@@ -56,7 +56,7 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         std::cerr << atoi(value.substr(front).c_str()) << std::endl;;
         std::cerr << safe_atoi(value.substr(front)) << std::endl;
         this->content_length = safe_atoi(value.substr(front));
-    } catch (std::runtime_error) {
+    } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
         throw InvalidHeader(CONVERT_FAIL);
     }
@@ -72,7 +72,7 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     try {
         this->content_type.type = value.substr(front, slash_index - 1);
         this->content_type.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
-    } catch (std::out_of_range) {
+    } catch (std::out_of_range const &) {
         throw InvalidHeader(CONTENT_TYPE);
     }
     if (!is_token(this->content_type.type) || !is_token(this->content_type.subtype)) {
@@ -99,7 +99,7 @@ void HTTPRequest::valid_content_type(const std::string &value) {
             }
             this->content_type.parameter.insert(make_pair(attribute, parameter_value));
         }
-    } catch (std::out_of_range) {
+    } catch (std::out_of_range const &) {
         throw InvalidHeader(CONTENT_TYPE);
     }
 }
@@ -172,7 +172,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
                 throw InvalidRequest(REQUEST_LINE);
             }
         }
-    } catch (const std::out_of_range e) {
+    } catch (std::out_of_range const &) {
         throw InvalidRequest(REQUEST_LINE);
     }
     crlf_count++;
@@ -240,6 +240,7 @@ const char *HTTPRequest::InvalidRequest::what() const throw() {
         return "HTTPRequest: invalid HTTP-Header";
         break;
     default:
+        return "HTTPRequest: unknow error";
         break;
     }
 }
@@ -260,6 +261,12 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case DATE:
         return "HTTPHeader: invalid 'Date' header";
+        break;
+    case CONVERT_FAIL:
+        return "HTTPHeader: convert failed";
+        break;
+    default:
+        return "HTTPHeader: unkonw error";
         break;
     }
 }

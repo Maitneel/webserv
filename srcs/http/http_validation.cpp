@@ -446,7 +446,6 @@ try {
     } catch (std::out_of_range const &) {
         return false;
     }
-
 }
 
 bool is_date3(const std::string &s) {             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)
