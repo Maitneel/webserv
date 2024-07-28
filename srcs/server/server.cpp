@@ -285,6 +285,7 @@ void Server::EventLoop() {
             std::cout << "{" << i->first << ":" << i->second << "}, ";
         }
         std::cout << std::endl;
+        std::cout << std::left << std::setw(20) << "    Date" << " : " << '"' << request.date << '"' << std::endl;
         response_to_client(sock, request_content);
         close(sock);
 >>>>>>> 3577ff1 (feat: implement validation 'Content-encoding' header)

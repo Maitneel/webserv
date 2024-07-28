@@ -65,8 +65,23 @@ bool is_national(const char &c);       // = <any OCTET excluding ALPHA, DIGIT,  
 
 bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
+bool is_http_date(const std::string &s);         // HTTP-date      = rfc1123-date | rfc850-date | asctime-date
+bool is_rfc1123_data(const std::string &s);      // rfc1123-date   = wkday "," SP date1 SP time SP "GMT"
+bool is_rfc850_data(const std::string &s);       // rfc850-date    = weekday "," SP date2 SP time SP "GMT"
+bool is_asctime_date(const std::string &s);      // asctime-date   = wkday SP date3 SP time SP 4DIGIT
+bool is_date1(const std::string &s);             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)
+bool is_date2(const std::string &s);             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)
+bool is_date3(const std::string &s);             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)
+bool is_time(const std::string &s);              // time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; 00:00:00 - 23:59:59
+bool is_wkday(const std::string &s);             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+bool is_weekday(const std::string &s);           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
+bool is_month(const std::string &s);             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"
+
 // 補助的な関数 //
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))
+bool is_target_included_list(std::string target, std::string list[], size_t size);
+bool is_4digit(const std::string &s);
+bool is_2digit(const std::string &s);
 
 #endif  // INCLUDE_HTTP_VALIDATION_HPP_

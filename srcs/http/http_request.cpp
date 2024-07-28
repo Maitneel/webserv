@@ -104,6 +104,19 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     }
 }
 
+void HTTPRequest::valid_date(const std::string &value) {
+    size_t front = get_front(value);
+    try {
+        if (!is_http_date(value.substr(front))) {
+            throw InvalidHeader(DATE);
+        }
+    } catch (std::out_of_range const &) {
+        throw InvalidHeader(DATE);
+    }
+    // ここそれっぽい構造体かクラスかなんか作ってそれに詰めた(フォーマットして保存する)方がいい？ //
+    this->date = value;
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -115,6 +128,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
     validation_func_pair.push_back(std::make_pair("Content-Encoding", &HTTPRequest::valid_content_encoding));
     validation_func_pair.push_back(std::make_pair("Content-Length", &HTTPRequest::valid_content_length));
     validation_func_pair.push_back(std::make_pair("Content-Type", &HTTPRequest::valid_content_type));
+    validation_func_pair.push_back(std::make_pair("Date", &HTTPRequest::valid_date));
 
     std::string crlf;
     crlf += CR;
@@ -243,6 +257,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case CONTENT_LENGTH:
         return "HTTPHeader: invalid 'Content-Length' header";
+        break;
+    case DATE:
+        return "HTTPHeader: invalid 'Date' header";
         break;
     }
 }
