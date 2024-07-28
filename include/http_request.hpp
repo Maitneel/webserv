@@ -64,7 +64,7 @@ class HTTPRequest {
     void valid_referer(const std::string &value);
     void valid_user_agent(const std::string &value);
 
-    void valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string &store);
+    void valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string *store);
 
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;

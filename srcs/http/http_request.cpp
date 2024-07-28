@@ -106,7 +106,7 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     }
 }
 
-void HTTPRequest::valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string &store) {
+void HTTPRequest::valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string *store) {
     size_t front = get_front(value);
     try {
         if (!is_http_date(value.substr(front))) {
@@ -116,11 +116,11 @@ void HTTPRequest::valid_date_related_header(const std::string &value, t_http_hea
         throw InvalidHeader(exception_type);
     }
     // ここそれっぽい構造体かクラスかなんか作ってそれに詰めた(フォーマットして保存する)方がいい？ //
-    store = value;
+    *store = value;
 }
 
 void HTTPRequest::valid_date(const std::string &value) {
-    this->valid_date_related_header(value, DATE, this->date);
+    this->valid_date_related_header(value, DATE, &this->date);
 }
 
 void HTTPRequest::valid_expires(const std::string &value) {
@@ -144,11 +144,11 @@ void HTTPRequest::valid_form(const std::string &value) {
 }
 
 void HTTPRequest::valid_if_modified_since(const std::string &value) {
-    this->valid_date_related_header(value, IF_MODIFIED_SINCE, this->if_modified_since);
+    this->valid_date_related_header(value, IF_MODIFIED_SINCE, &this->if_modified_since);
 }
 
 void HTTPRequest::valid_last_modified(const std::string &value) {
-    this->valid_date_related_header(value, LAST_MODIFIED, this->last_modified);
+    this->valid_date_related_header(value, LAST_MODIFIED, &this->last_modified);
 }
 
 // Pragma           = "Pragma" ":" 1#pragma-directive
