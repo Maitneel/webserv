@@ -129,6 +129,14 @@ void HTTPRequest::valid_expires(const std::string &value) {
     this->expires = value;
 }
 
+void HTTPRequest::valid_form(const std::string &value) {
+    // TODO(maitneel)  : 必要があればやります //
+    // if (!valid_mailbox(value)) {
+    //     throw InvalidHeader(FORM);
+    // }
+    this->form = value;
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -142,6 +150,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
     validation_func_pair.push_back(std::make_pair("Content-Type", &HTTPRequest::valid_content_type));
     validation_func_pair.push_back(std::make_pair("Date", &HTTPRequest::valid_date));
     validation_func_pair.push_back(std::make_pair("Expires", &HTTPRequest::valid_expires));
+    validation_func_pair.push_back(std::make_pair("Form", &HTTPRequest::valid_form));
 
     std::string crlf;
     crlf += CR;
@@ -277,6 +286,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case EXPIRES:
         return "HTTPHeader: invalid 'Expires' header";
+        break;
+    case FORM:
+        return "HTTPHeader: invalid 'Form' header";
         break;
     case CONVERT_FAIL:
         return "HTTPHeader: convert failed";

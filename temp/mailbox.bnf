@@ -1,0 +1,41 @@
+
+ From           = "From" ":" mailbox
+
+ mailbox =  addr-spec            ; simple address
+                     / [phrase] route-addr   ; name & addr-spec
+
+    mailbox     =  addr-spec                    ; simple address
+                  /  phrase route-addr            ; name & addr-spec
+
+ addr-spec   =  local-part "@" domain
+  local-part  =  word *("." word)
+ word        =  atom / quoted-string
+   atom        =  1*<any CHAR except specials, SPACE and CTLs>
+
+
+   specials    =  "(" / ")" / "<" / ">" / "@"  ; Must be in quoted-
+                  /  "," / ";" / ":" / "\" / <">  ;  string, to use
+                  /  "." / "[" / "]"              ;  within a word.
+
+ 
+  domain      =  sub-domain *("." sub-domain)
+    
+  sub-domain  =  domain-ref / domain-literal
+    
+  domain-ref  =  atom     
+     
+  domain-literal =  "[" *(dtext / quoted-pair) "]"
+
+    dtext       =  <any CHAR excluding "[",     ; => may be folded
+                      "]", "\" & CR, & including
+                      linear-white-space>
+ linear-white-space =  1*([CRLF] LWSP-char)  ; semantics = SPACE
+  LWSP-char   =  SPACE / HTAB        
+ HTAB        =  <ASCII HT, horizontal-tab>
+  quoted-pair =  "\" CHAR 
+
+
+  phrase      =  1*word 
+
+  route       =  1#("@" domain) ":"           ; path-relative
+      route-addr  =  "<" [route] addr-spec ">"
