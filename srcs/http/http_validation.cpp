@@ -129,8 +129,19 @@ bool is_absolute_uri(const std::string &s) {   // = scheme ":" *( uchar | reserv
     }
     return true;
 }
-// bool is_relativeURI(const std::string &s);    // = net_path | abs_path | rel_path
-// bool is_net_path(const std::string &s);       // = "//" net_loc [ abs_path ]
+
+bool is_relative_uri(const std::string &s) {    // = net_path | abs_path | rel_path
+    return (is_net_path(s) || is_abs_path(s) || is_rel_path(s));
+}
+
+bool is_net_path(const std::string &s) {       // = "//" net_loc [ abs_path ]
+    std::string::size_type slash_index = s.find('/');
+    if (slash_index == std::string::npos) {
+        return (is_net_loc(s));
+    } else {
+        return (is_net_loc(s.substr(0, slash_index - 1)) && is_abs_path(s.substr(slash_index)));
+    }
+}
 
 bool is_abs_path(const std::string &s) {       // = "/" rel_path
     if (s.at(0) != '/') {
@@ -171,7 +182,7 @@ bool is_path(const std::string &s) {           // = fsegment *( "/" segment )
         return false;
     }
     while (slash_index != std::string::npos) {
-        const std::string::size_type before_slash_index = slash_index;
+        const std::string::size_type before_slash_index = slash_index + 1;
         slash_index = s.find('/', before_slash_index);
         if (!is_segment(s.substr(before_slash_index, slash_index - before_slash_index))) {
             return false;
@@ -229,7 +240,15 @@ bool is_scheme(const std::string &s) {         // = 1*( ALPHA | DIGIT | "+" | "-
     return true;
 }
 
-// bool is_net_loc(const std::string &s);        // = *( pchar | ";" | "?" )
+bool is_net_loc(const std::string &s) {        // = *( pchar | ";" | "?" )
+    for (size_t i = 0; i < s.length(); i++) {
+        if (!is_pchar(s.substr(i, 3)) && s.at(i) != ';' && s.at(i) != '?') {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool is_query(const std::string &s) {          // = *( uchar | reserved )
     for (size_t i = 0; i < s.length(); i++) {
         if (!(is_uchar(s.substr(i, 3)) || is_reserved(s.at(i)))) {
@@ -259,7 +278,7 @@ bool is_uchar(const std::string &s) {          // = unreserved | escape
 }
 
 bool is_unreserved(const char &c) {     // = ALPHA | DIGIT | safe | extra | national
-    return (is_alpha(c) || is_digit(c) || is_safe(c));
+    return (is_alpha(c) || is_digit(c) || is_safe(c) || is_extra(c) || is_national(c));
 }
 
 bool is_escape(const std::string &s) {         // = "%" HEX HEX

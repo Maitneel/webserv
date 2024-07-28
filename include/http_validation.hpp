@@ -39,8 +39,8 @@ bool is_valid_http_header(const std::string &str);
 
 // bool is_uri(const std::string &s);            // = ( absoluteURI | relativeURI ) [ "#" fragment ]
 bool is_absolute_uri(const std::string &s);   // = scheme ":" *( uchar | reserved )
-// bool is_relativeURI(const std::string &s);    // = net_path | abs_path | rel_path
-// bool is_net_path(const std::string &s);       // = "//" net_loc [ abs_path ]
+bool is_relative_uri(const std::string &s);    // = net_path | abs_path | rel_path
+bool is_net_path(const std::string &s);       // = "//" net_loc [ abs_path ]
 bool is_abs_path(const std::string &s);       // = "/" rel_path
 bool is_rel_path(const std::string &s);       // = [ path ] [ ";" params ] [ "?" query ]
 bool is_path(const std::string &s);           // = fsegment *( "/" segment )
@@ -49,7 +49,7 @@ bool is_segment(const std::string &s);        // = *pchar
 bool is_params(const std::string &s);         // = param *( ";" param )
 bool is_param(const std::string &s);          // = *( pchar | "/" )
 bool is_scheme(const std::string &s);         // = 1*( ALPHA | DIGIT | "+" | "-" | "." )
-// bool is_net_loc(const std::string &s);        // = *( pchar | ";" | "?" )
+bool is_net_loc(const std::string &s);        // = *( pchar | ";" | "?" )
 bool is_query(const std::string &s);          // = *( uchar | reserved )
 // bool is_fragment(const std::string &s);       // = *( uchar | reserved )
 bool is_pchar(const std::string &s);          // = uchar | ":" | "@" | "&" | "=" | "+"

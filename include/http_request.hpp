@@ -25,6 +25,7 @@ typedef enum e_HTTPHeader_except_type {
     IF_MODIFIED_SINCE,
     LAST_MODIFIED,
     PRAGMA,
+    REFERER,
     CONVERT_FAIL,
 } t_http_header_except_type;
 
@@ -59,6 +60,7 @@ class HTTPRequest {
     void valid_if_modified_since(const std::string &value);
     void valid_last_modified(const std::string &value);
     void valid_pragma(const std::string &value);
+    void valid_referer(const std::string &value);
 
     void valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string &store);
 
@@ -79,6 +81,7 @@ class HTTPRequest {
     std::string last_modified;
     // std::string location; // こいつ response 用っぽいから request にはいらないよね ? //
     std::vector<std::string> pragma;
+    std::string referer;
 
     explicit HTTPRequest(const int fd);
     explicit HTTPRequest(std::string buffer);
