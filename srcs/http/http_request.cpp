@@ -117,6 +117,18 @@ void HTTPRequest::valid_date(const std::string &value) {
     this->date = value;
 }
 
+void HTTPRequest::valid_expires(const std::string &value) {
+    size_t front = get_front(value);
+    try {
+        if (!is_http_date(value.substr(front))) {
+            throw InvalidHeader(EXPIRES);
+        }
+    } catch (std::out_of_range const &) {
+        throw InvalidHeader(EXPIRES);
+    }
+    this->expires = value;
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -129,6 +141,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
     validation_func_pair.push_back(std::make_pair("Content-Length", &HTTPRequest::valid_content_length));
     validation_func_pair.push_back(std::make_pair("Content-Type", &HTTPRequest::valid_content_type));
     validation_func_pair.push_back(std::make_pair("Date", &HTTPRequest::valid_date));
+    validation_func_pair.push_back(std::make_pair("Expires", &HTTPRequest::valid_expires));
 
     std::string crlf;
     crlf += CR;
@@ -261,6 +274,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case DATE:
         return "HTTPHeader: invalid 'Date' header";
+        break;
+    case EXPIRES:
+        return "HTTPHeader: invalid 'Expires' header";
         break;
     case CONVERT_FAIL:
         return "HTTPHeader: convert failed";
