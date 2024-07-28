@@ -25,7 +25,7 @@ std::string int_to_str(int n) {
 }
 
 std::string GetContent(const std::string& path) {
-    std::ifstream ifs(path);
+    std::ifstream ifs(path.c_str());
     if (ifs.fail()) {
         ifs.close();
         throw std::invalid_argument("can not open file " + path);
