@@ -37,7 +37,7 @@ void HTTPRequest::valid_content_encoding(const std::string &value) {
     size_t front = get_front(value);
     this->content_encoding = value.substr(front);
     if (!is_token(this->content_encoding)) {
-        throw InvalidHeader(CONTENT_ENCODING);
+        throw InvalidHeader(kContentEncoding);
     }
 }
 
@@ -47,11 +47,11 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         front++;
     }
     if (value.length() == front) {
-        throw InvalidHeader(CONTENT_LENGTH);
+        throw InvalidHeader(kContentLength);
     }
     for (size_t i = front; i < value.length(); i++) {
         if (!is_digit(value.at(i))) {
-            throw InvalidHeader(CONTENT_LENGTH);
+            throw InvalidHeader(kContentLength);
         }
     }
     try {
@@ -60,7 +60,7 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         this->content_length = safe_atoi(value.substr(front));
     } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
-        throw InvalidHeader(CONVERT_FAIL);
+        throw InvalidHeader(kCONVERT_FAIL);
     }
 }
 
@@ -69,16 +69,16 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     std::string::size_type slash_index = value.find('/');
     std::string::size_type semi_colon_index = value.find(';');
     if (slash_index == std::string::npos) {
-        throw InvalidHeader(CONTENT_TYPE);
+        throw InvalidHeader(kContentType);
     }
     try {
         this->content_type.type = value.substr(front, slash_index - 1);
         this->content_type.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
     } catch (std::out_of_range const &) {
-        throw InvalidHeader(CONTENT_TYPE);
+        throw InvalidHeader(kContentType);
     }
     if (!is_token(this->content_type.type) || !is_token(this->content_type.subtype)) {
-        throw InvalidHeader(CONTENT_TYPE);
+        throw InvalidHeader(kContentType);
     }
     if (semi_colon_index == std::string::npos) {
         return;
@@ -97,16 +97,16 @@ void HTTPRequest::valid_content_type(const std::string &value) {
                 parameter_value.erase(parameter_value.end() - 1, parameter_value.end());
             }
             if (!is_token(attribute) || (!is_token(parameter_value) && !is_quoted_string(parameter_value))) {
-                throw InvalidHeader(CONTENT_TYPE);
+                throw InvalidHeader(kContentType);
             }
             this->content_type.parameter.insert(make_pair(attribute, parameter_value));
         }
     } catch (std::out_of_range const &) {
-        throw InvalidHeader(CONTENT_TYPE);
+        throw InvalidHeader(kContentType);
     }
 }
 
-void HTTPRequest::valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string *store) {
+void HTTPRequest::valid_date_related_header(const std::string &value, HTTPHeaderExceptType exception_type, std::string *store) {
     size_t front = get_front(value);
     try {
         if (!is_http_date(value.substr(front))) {
@@ -120,17 +120,17 @@ void HTTPRequest::valid_date_related_header(const std::string &value, t_http_hea
 }
 
 void HTTPRequest::valid_date(const std::string &value) {
-    this->valid_date_related_header(value, DATE, &this->date);
+    this->valid_date_related_header(value, kDate, &this->date);
 }
 
 void HTTPRequest::valid_expires(const std::string &value) {
     size_t front = get_front(value);
     try {
         if (!is_http_date(value.substr(front))) {
-            throw InvalidHeader(EXPIRES);
+            throw InvalidHeader(kExpries);
         }
     } catch (std::out_of_range const &) {
-        throw InvalidHeader(EXPIRES);
+        throw InvalidHeader(kExpries);
     }
     this->expires = value;
 }
@@ -138,17 +138,17 @@ void HTTPRequest::valid_expires(const std::string &value) {
 void HTTPRequest::valid_form(const std::string &value) {
     // TODO(maitneel)  : 必要があればやります //
     // if (!valid_mailbox(value)) {
-    //     throw InvalidHeader(FORM);
+    //     throw InvalidHeader(kForm);
     // }
     this->form = value;
 }
 
 void HTTPRequest::valid_if_modified_since(const std::string &value) {
-    this->valid_date_related_header(value, IF_MODIFIED_SINCE, &this->if_modified_since);
+    this->valid_date_related_header(value, kIfModifiedSince, &this->if_modified_since);
 }
 
 void HTTPRequest::valid_last_modified(const std::string &value) {
-    this->valid_date_related_header(value, LAST_MODIFIED, &this->last_modified);
+    this->valid_date_related_header(value, kLastModified, &this->last_modified);
 }
 
 // Pragma           = "Pragma" ":" 1#pragma-directive
@@ -174,7 +174,7 @@ void HTTPRequest::valid_pragma(const std::string &value) {
             processing.erase(processing.begin(), processing.begin() + front);
         }
         if (!is_pragma_directive(processing)) {
-            throw InvalidHeader(PRAGMA);
+            throw InvalidHeader(kPragma);
         }
         this->pragma.push_back(processing);
     }
@@ -186,7 +186,7 @@ void HTTPRequest::valid_referer(const std::string &value) {
     is_absolute_uri(trimed_value);
     is_relative_uri(trimed_value);
     if (!is_absolute_uri(trimed_value) && !is_relative_uri(trimed_value)) {
-        throw InvalidHeader(REFERER);
+        throw InvalidHeader(kReferer);
     }
     this->referer = trimed_value;
 }
@@ -217,7 +217,7 @@ void HTTPRequest::valid_user_agent(const std::string &value) {
             processing.erase(processing.end() - 1, processing.end());
         }
         if (!is_product(processing) && !is_comment(processing)) {
-            throw InvalidHeader(USER_AGENT);
+            throw InvalidHeader(kUserAgent);
         }
         this->user_agent.push_back(processing);
     }
@@ -254,7 +254,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
         this->method = get_first_token(buffer);
         front += this->method.length();
         if (!is_sp(buffer[front])) {
-            throw InvalidRequest(REQUEST_LINE);
+            throw InvalidRequest(kRequestLine);
         }
         front++;
         std::string::size_type request_uri_end = buffer.find(' ', front);
@@ -262,11 +262,11 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
             request_uri_end = buffer.find(crlf, front);
         }
         if (request_uri_end == std::string::npos) {
-            throw InvalidRequest(REQUEST_LINE);
+            throw InvalidRequest(kRequestLine);
         }
         this->request_uri = buffer.substr(front, request_uri_end - front);
         if (!(is_absolute_uri(this->request_uri) || is_abs_path(this->request_uri))) {
-            throw InvalidRequest(REQUEST_LINE);
+            throw InvalidRequest(kRequestLine);
         }
         front = request_uri_end;
         const std::string::size_type crlf_index = buffer.find(crlf, 0);
@@ -275,17 +275,17 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
             is_simple_request = true;
         } else {
             if (!is_sp(buffer.at(front))) {
-                throw InvalidRequest(REQUEST_LINE);
+                throw InvalidRequest(kRequestLine);
             }
             front++;
             this->protocol = buffer.substr(front, crlf_index - front);
             if (!is_http_version(this->protocol)) {
                 std::cerr << this->protocol << std::endl;
-                throw InvalidRequest(REQUEST_LINE);
+                throw InvalidRequest(kRequestLine);
             }
         }
     } catch (std::out_of_range const &) {
-        throw InvalidRequest(REQUEST_LINE);
+        throw InvalidRequest(kRequestLine);
     }
     crlf_count++;
 
@@ -295,7 +295,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
             break;
         }
         if (!is_valid_http_header(splited_buffer[i])) {
-            throw InvalidRequest(HTTP_HEADER);
+            throw InvalidRequest(kHTTPHeader);
         }
         this->header.insert(make_header_pair(splited_buffer[i]));
     }
@@ -310,7 +310,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
 
     if (crlf_count < splited_buffer.size()) {
         if (this->header.find("Content-Length") == this->header.end()) {
-            throw InvalidRequest(HTTP_HEADER);
+            throw InvalidRequest(kHTTPHeader);
         }
         try {
             this->entity_body = splited_buffer[crlf_count].substr(0, this->content_length);
@@ -386,15 +386,15 @@ void HTTPRequest::print_info(std::ostream &stream) {
 }
 
 // exception class
-HTTPRequest::InvalidRequest::InvalidRequest(t_http_request_except_type except_type_src) : except_type(except_type_src) {
+HTTPRequest::InvalidRequest::InvalidRequest(HTTPRequestExceptType except_type_src) : except_type(except_type_src) {
 }
 
 const char *HTTPRequest::InvalidRequest::what() const throw() {
     switch (this->except_type) {
-    case REQUEST_LINE:
+    case kRequestLine:
         return "HTTPRequest: invalid request-line";
         break;
-    case HTTP_HEADER:
+    case kHTTPHeader:
         return "HTTPRequest: invalid HTTP-Header";
         break;
     default:
@@ -403,42 +403,42 @@ const char *HTTPRequest::InvalidRequest::what() const throw() {
     }
 }
 
-HTTPRequest::InvalidHeader::InvalidHeader(t_http_header_except_type except_type_src) : except_type(except_type_src) {
+HTTPRequest::InvalidHeader::InvalidHeader(HTTPHeaderExceptType except_type_src) : except_type(except_type_src) {
 }
 
 const char *HTTPRequest::InvalidHeader::what() const throw() {
     switch (this->except_type) {
-    case ALLOW:
+    case kAllow:
         return "HTTPHeader: invalid 'Allow' header";
         break;
-    case CONTENT_ENCODING:
+    case kContentEncoding:
         return "HTTPHeader: invalid 'Content-Encoding' header";
         break;
-    case CONTENT_LENGTH:
+    case kContentLength:
         return "HTTPHeader: invalid 'Content-Length' header";
         break;
-    case DATE:
+    case kDate:
         return "HTTPHeader: invalid 'Date' header";
         break;
-    case EXPIRES:
+    case kExpries:
         return "HTTPHeader: invalid 'Expires' header";
         break;
-    case FORM:
+    case kForm:
         return "HTTPHeader: invalid 'Form' header";
         break;
-    case IF_MODIFIED_SINCE:
+    case kIfModifiedSince:
         return "HTTPHeader: invalid 'If-Modified-Since' header";
         break;
-    case LAST_MODIFIED:
+    case kLastModified:
         return "HTTPHeader: invalid 'Last-Modified' header";
         break;
-    case PRAGMA:
+    case kPragma:
         return "HTTPHeader: invalid 'Pragma' header";
         break;
-    case REFERER:
+    case kReferer:
         return "HTTPHeader: invalid 'Referer' header";
         break;
-    case CONVERT_FAIL:
+    case kCONVERT_FAIL:
         return "HTTPHeader: convert failed";
         break;
     default:

@@ -30,7 +30,7 @@ std::vector<std::string> convert_allow_to_vector(std::string src) {
         }
         for (size_t j = 0; j < allow.at(i).length(); j++) {
             if (!is_token_element(allow.at(i).at(j))) {
-                throw HTTPRequest::InvalidHeader(ALLOW);
+                throw HTTPRequest::InvalidHeader(kAllow);
             }
         }
     }

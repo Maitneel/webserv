@@ -9,26 +9,26 @@
 #include <utility>
 #include <ostream>
 
-typedef enum e_HTTPRequest_except_type {
-    REQUEST_LINE,
-    HTTP_HEADER
-} t_http_request_except_type;
+typedef enum HTTPRequestExceptTypeEnum {
+    kRequestLine,
+    kHTTPHeader
+} HTTPRequestExceptType;
 
-typedef enum e_HTTPHeader_except_type {
-    ALLOW,
-    CONTENT_ENCODING,
-    CONTENT_LENGTH,
-    CONTENT_TYPE,
-    DATE,
-    EXPIRES,
-    FORM,
-    IF_MODIFIED_SINCE,
-    LAST_MODIFIED,
-    PRAGMA,
-    REFERER,
-    USER_AGENT,
-    CONVERT_FAIL,
-} t_http_header_except_type;
+typedef enum HTTPHeaderExceptTypeEnum {
+    kAllow,
+    kContentEncoding,
+    kContentLength,
+    kContentType,
+    kDate,
+    kExpries,
+    kForm,
+    kIfModifiedSince,
+    kLastModified,
+    kPragma,
+    kReferer,
+    kUserAgent,
+    kCONVERT_FAIL,
+} HTTPHeaderExceptType;
 
 class MIMEType {
  public:
@@ -64,7 +64,7 @@ class HTTPRequest {
     void valid_referer(const std::string &value);
     void valid_user_agent(const std::string &value);
 
-    void valid_date_related_header(const std::string &value, t_http_header_except_type exception_type, std::string *store);
+    void valid_date_related_header(const std::string &value, HTTPHeaderExceptType exception_type, std::string *store);
 
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
@@ -102,18 +102,18 @@ class HTTPRequest {
     // exception class
     class InvalidRequest :  public  std::exception {
      private:
-        const t_http_request_except_type except_type;
+        const HTTPRequestExceptType except_type;
      public :
-        explicit InvalidRequest(t_http_request_except_type except_type_src);
+        explicit InvalidRequest(HTTPRequestExceptType except_type_src);
         // const char *what() const noexcept;
         const char* what() const throw();
     };
 
     class InvalidHeader : public std::exception {
      private:
-            const t_http_header_except_type except_type;
+            const HTTPHeaderExceptType except_type;
      public:
-            explicit InvalidHeader(t_http_header_except_type except_type_src);
+            explicit InvalidHeader(HTTPHeaderExceptType except_type_src);
             const char *what() const throw();
     };
 };
