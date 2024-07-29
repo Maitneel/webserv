@@ -82,6 +82,11 @@ int create_inet_socket(int port) {
             close(sock);
             continue;
         }
+        // 本番環境として動かすならやらない方がいいと思うので、プリプロセッサで条件分岐した方がいいかもです //
+        int sockopt_arg = 1;
+        if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt_arg, sizeof(int))) {
+            std::cerr << "setsockopt: failed set SO_REUSEADDR option" << std::endl;
+        }
         if (bind(sock, res->ai_addr, res->ai_addrlen) < 0) {
             close(sock);
             continue;
