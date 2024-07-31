@@ -17,9 +17,13 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
             return "Method Not Allowed";
         case HTTPResponse::kInternalServerErrror:
             return "Internal Server Error";
+        case HTTPResponse::kNotImplemented:
+            return "Not Implemented";
     }
     throw std::runtime_error("unreachable code");
 }
+
+HTTPResponse::HTTPResponse(): status_code_(kOK), content_type_("text/html"), body_("") {}
 
 HTTPResponse::HTTPResponse(
     HTTPResponse::StatusCode status_code,
@@ -30,6 +34,18 @@ status_code_(status_code),
 content_type_(content_type),
 body_(body) {
     this->description_ = GenerateDescription(status_code);
+}
+
+HTTPResponse::HTTPResponse(const HTTPResponse& other) {
+    *this = other;
+}
+
+HTTPResponse& HTTPResponse::operator=(const HTTPResponse& other) {
+    this->status_code_  = other.status_code_;
+    this->description_  = other.description_;
+    this->content_type_ = other.content_type_;
+    this->body_         = other.body_;
+    return *this;
 }
 
 HTTPResponse::~HTTPResponse() {}

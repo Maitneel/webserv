@@ -134,11 +134,11 @@ Socket::Socket(int socket_fd, ServerConfig config): socket_fd(socket_fd), config
 
 Socket::~Socket() {}
 
-int Socket::getSocketFd() {
+int Socket::GetSocketFd() {
     return this->socket_fd;
 }
 
-const ServerConfig& Socket::getConfig() {
+const ServerConfig& Socket::GetConfig() {
     return this->config;
 }
 
@@ -155,17 +155,35 @@ void http_log(const HTTPRequest& request) {
     return;
 }
 
-ServerConfig Server::getConfigByFd(int fd) {
+ServerConfig Server::GetConfigByFd(int fd) {
     std::vector<Socket>::iterator it;
     for (it = this->sockets.begin(); it != this->sockets.end(); it++) {
-        if (it->getSocketFd() == fd)
-            return it->getConfig();
+        if (it->GetSocketFd() == fd)
+            return it->GetConfig();
     }
     throw std::invalid_argument("invalid fd");
 }
 
-HTTPResponse Server::getHandler(int sock, const HTTPRequest& req) {
-    ServerConfig conf = this->getConfigByFd(sock);
+std::string GetContentType(const std::string path) {
+    std::string::size_type dot_pos = path.rfind(".");
+    if (dot_pos == std::string::npos) {
+        return "application/octet-stream";
+    }
+    std::string ext = path.substr(dot_pos + 1);
+
+    if (ext == "html") {
+        return "text/html";
+    } else if (ext == "txt") {
+        return "text/plain";
+} else if (ext == "png") {
+        return "image/png";
+    }
+    // TODO(taksaito): 他の MIME タイプの対応
+    return "application/octet-stream";
+}
+
+HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
+    ServerConfig conf = this->GetConfigByFd(sock);
     std::string path = conf.document_root + req.get_request_uri();
 
     std::cout << path << std::endl;
@@ -179,12 +197,12 @@ HTTPResponse Server::getHandler(int sock, const HTTPRequest& req) {
     } catch (std::invalid_argument& e) {
         return HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
     }
-    return HTTPResponse(HTTPResponse::kOK, "text/html", content);
+    return HTTPResponse(HTTPResponse::kOK, GetContentType(path), content);
 }
 
-void Server::eventLoop() {
+void Server::EventLoop() {
     // 一旦、最初のFDのみ
-    int socket_fd = this->sockets[0].getSocketFd();
+    int socket_fd = this->sockets[0].GetSocketFd();
     while(true) {
         struct sockaddr_storage addr;
         socklen_t addrlen = sizeof addr;
@@ -200,12 +218,17 @@ void Server::eventLoop() {
         HTTPRequest request(request_content);
         http_log(request);
 
-        HTTPResponse res = this->getHandler(socket_fd, request);
+        std::string method = request.get_method();
+        HTTPResponse res;
+        if (method == "GET") {
+            res = this->GetHandler(socket_fd, request);
+        } else {
+            res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+        }
         response_to_client(sock, res);
         close(sock);
 
         // break させるようの処理 //
-        std::string method = request.get_method();
         if (method == "kill" || method == "KILL" || method == "Kill") {
             break;
         }
