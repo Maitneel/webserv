@@ -1,0 +1,67 @@
+#include <sstream>
+#include "http_response.hpp"
+
+const char HTTPResponse::kHTTPVersion[] = "HTTP/1.1";
+
+std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
+    switch (status_code) {
+        case HTTPResponse::kOK:
+            return "OK";
+        case HTTPResponse::kBadRequest:
+            return "Bad Request";
+        case HTTPResponse::kForbidden:
+            return "Forbidden";
+        case HTTPResponse::kNotFound:
+            return "Not Found";
+        case HTTPResponse::kMethodNotAllowed:
+            return "Method Not Allowed";
+        case HTTPResponse::kInternalServerErrror:
+            return "Internal Server Error";
+        case HTTPResponse::kNotImplemented:
+            return "Not Implemented";
+    }
+    throw std::runtime_error("unreachable code");
+}
+
+HTTPResponse::HTTPResponse(): status_code_(kOK), content_type_("text/html"), body_("") {}
+
+HTTPResponse::HTTPResponse(
+    HTTPResponse::StatusCode status_code,
+    std::string    content_type,
+    std::string    body
+):
+status_code_(status_code),
+content_type_(content_type),
+body_(body) {
+    this->description_ = GenerateDescription(status_code);
+}
+
+HTTPResponse::HTTPResponse(const HTTPResponse& other) {
+    *this = other;
+}
+
+HTTPResponse& HTTPResponse::operator=(const HTTPResponse& other) {
+    if (this == &other)
+        return *this;
+    this->status_code_  = other.status_code_;
+    this->description_  = other.description_;
+    this->content_type_ = other.content_type_;
+    this->body_         = other.body_;
+    return *this;
+}
+
+HTTPResponse::~HTTPResponse() {}
+
+std::string HTTPResponse::toString() const {
+    std::stringstream ss;
+
+    // TODO(taksaito): Content-Type の判定や、description の文字の処理を実装。
+    ss <<  HTTPResponse::kHTTPVersion << " " << this->status_code_ << " " << this->description_ << "\r\n";
+    ss << "Content-Type: " << this->content_type_ << "\r\n";
+    ss << "Content-Length: ";
+    ss << this->body_.length() << "\r\n";
+    ss << "\r\n";
+    ss << this->body_;
+    ss << "\r\n";
+    return ss.str();
+}

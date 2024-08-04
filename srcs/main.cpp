@@ -16,7 +16,7 @@ int main() {
 
     Server server(server_confs);
 
-    server.eventLoop();
+    server.EventLoop();
 
     test_HTTPRequest_class();
     return 0;
