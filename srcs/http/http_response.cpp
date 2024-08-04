@@ -41,6 +41,8 @@ HTTPResponse::HTTPResponse(const HTTPResponse& other) {
 }
 
 HTTPResponse& HTTPResponse::operator=(const HTTPResponse& other) {
+    if (this == &other)
+        return *this;
     this->status_code_  = other.status_code_;
     this->description_  = other.description_;
     this->content_type_ = other.content_type_;
