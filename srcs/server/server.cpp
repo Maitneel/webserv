@@ -30,16 +30,10 @@ std::string GetContent(const std::string& path) {
         ifs.close();
         throw std::invalid_argument("can not open file " + path);
     }
-    std::string content;
 
-    while (ifs) {
-        std::string line;
-        getline(ifs, line);
-        content += line;
-        if (!ifs.eof())
-            content += "\n";
-    }
-    return content;
+    std::stringstream ss;
+    ss << ifs.rdbuf();
+    return ss.str();
 }
 
 std::string get_formated_date() {
