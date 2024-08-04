@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
@@ -176,9 +177,22 @@ std::string GetContentType(const std::string path) {
     return "application/octet-stream";
 }
 
+bool IsDir(const std::string& path) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0)
+        return false;
+    return (st.st_mode & S_IFMT) == S_IFDIR;
+}
+
 HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
     ServerConfig conf = this->GetConfigByFd(sock);
     std::string path = conf.document_root + req.get_request_uri();
+
+    if (IsDir(path.c_str())) {
+        // TODO(taksaito): autoindex か、 index をみるようにする
+        // 現在は一旦、index.html をみるように処理
+        path += "/index.html";
+    }
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
