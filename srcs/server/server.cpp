@@ -109,6 +109,9 @@ int create_inet_socket(int port) {
             continue;
         }
         freeaddrinfo(res);
+        if (fcntl(sock, F_SETFL, O_NONBLOCK)) {
+            std::runtime_error("fcntl: failed");
+        }
         return sock;
     }
     return -1;
@@ -215,6 +218,9 @@ int ft_accept(int fd) {
     int sock = accept(fd, (struct sockaddr*)&addr, &addrlen);
     if (sock < 0) {
         throw std::runtime_error("accept: failed");
+    }
+    if (fcntl(sock, F_SETFL, O_NONBLOCK)) {
+        std::runtime_error("fcntl: failed");
     }
     return sock;
 }
