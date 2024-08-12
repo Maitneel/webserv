@@ -3,11 +3,10 @@
 #include <poll.h>
 
 #include <vector>
-#include <tuple>
 
 struct PollEvent {
     int fd;
-    short event;
+    int event;
 };
 
 class PollWraper {

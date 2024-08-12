@@ -224,7 +224,7 @@ void Server::EventLoop() {
     int socket_fd = this->sockets[0].GetSocketFd();
 
     PollWraper poll;
-    poll.Register(socket_fd, POLL_IN);
+    poll.Register(socket_fd, POLLIN);
 
     while(true) {
         std::vector<PollEvent> poll_events;
@@ -234,8 +234,8 @@ void Server::EventLoop() {
         for (it = poll_events.begin(); it != poll_events.end(); it++) {
             if (it->fd == socket_fd && it->event & POLLIN) {
                 int accepted_fd = ft_accept(it->fd);
-                poll.Register(accepted_fd, POLL_IN);
-            } else if (it->event & POLL_IN) {
+                poll.Register(accepted_fd, POLLIN);
+            } else if (it->event & POLLIN) {
                 // TODO(taksaito): non blocking...
                 std::string request_content = read_request(it->fd);
                 std::cerr << "resived " << std::endl;

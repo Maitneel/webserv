@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "poll_wraper.hpp"
 
 PollWraper::PollWraper() {}
@@ -7,7 +9,7 @@ PollWraper::~PollWraper() {}
 void PollWraper::Register(int fd, short event_mask) {
     std::vector<pollfd>::iterator it;
     for (it = this->fds_.begin(); it != this->fds_.end(); it++) {
-        if (it->fd) {
+        if (it->fd == fd) {
             it->events = event_mask;
             it->revents = 0;
             return;
@@ -18,7 +20,7 @@ void PollWraper::Register(int fd, short event_mask) {
 }
 
 void PollWraper::Unregister(int fd) {
-    std::vector<pollfd>::const_iterator it;
+    std::vector<pollfd>::iterator it;
     for (it = this->fds_.begin(); it != this->fds_.end(); it++) {
         if (it->fd == fd) {
             this->fds_.erase(it);
