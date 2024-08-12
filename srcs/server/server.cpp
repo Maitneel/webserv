@@ -55,20 +55,12 @@ std::string get_formated_date() {
 std::string read_request(int fd) {
     char buf[BUFFER_SIZE];
     std::string content;
-    while (true) {
-        int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
-        if (n_read == 0) {
-            break;
-        } else if (n_read == -1) {
-            close(0);
-            return "";
-        }
-        buf[n_read] = '\0';
-        content += std::string(buf);
-        if (content.rfind("\r\n\r\n"))  // keep alive リクエストの場合
-            break;
+    int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
+    if (n_read < 0) {
+        return "";
     }
-    return content;
+    buf[n_read] = '\0';
+    return std::string(buf);
 }
 
 void response_to_client(int fd, const HTTPResponse& response) {
@@ -231,6 +223,7 @@ void Server::EventLoop() {
 
     PollWraper poll;
     poll.Register(socket_fd, POLLIN);
+    std::map<int, std::string> buffer;
 
     while(true) {
         std::vector<PollEvent> poll_events;
@@ -242,9 +235,15 @@ void Server::EventLoop() {
                 int accepted_fd = ft_accept(it->fd);
                 poll.Register(accepted_fd, POLLIN);
             } else if (it->event & POLLIN) {
-                // TODO(taksaito): non blocking...
-                std::string request_content = read_request(it->fd);
+                buffer[it->fd] += read_request(it->fd);
+                std::cout << buffer[it->fd] << std::endl;
+                if (buffer[it->fd].rfind("\r\n\r\n") != std::string::npos) {
+                    poll.Register(it->fd, POLLOUT);
+                }
+            } else if (it->event & POLLOUT) {
                 std::cerr << "resived " << std::endl;
+                std::string request_content = buffer[it->fd];
+                buffer.erase(it->fd);
                 HTTPRequest request(request_content);
                 http_log(request);
 
@@ -256,6 +255,7 @@ void Server::EventLoop() {
                     res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
                 }
                 response_to_client(it->fd, res);
+                poll.Unregister(it->fd);
                 close(it->fd);
             }
         }
