@@ -16,6 +16,7 @@
 #include <stdexcept>
 
 #include "server.hpp"
+#include "poll_wraper.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
 
@@ -208,37 +209,49 @@ HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
     return HTTPResponse(HTTPResponse::kOK, GetContentType(path), content);
 }
 
+int ft_accept(int fd) {
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof addr;
+    int sock = accept(fd, (struct sockaddr*)&addr, &addrlen);
+    if (sock < 0) {
+        throw std::runtime_error("accept: failed");
+    }
+    return sock;
+}
+
 void Server::EventLoop() {
     // 一旦、最初のFDのみ
     int socket_fd = this->sockets[0].GetSocketFd();
+
+    PollWraper poll;
+    poll.Register(socket_fd, POLL_IN);
+
     while(true) {
-        struct sockaddr_storage addr;
-        socklen_t addrlen = sizeof addr;
+        std::vector<PollEvent> poll_events;
+        poll_events = poll.Poll(100);
 
-        int sock = accept(socket_fd, (struct sockaddr*)&addr, &addrlen);
-        if (sock < 0) {
-            // TODO(taksaito): error handling
-            std::exit(1);
-        }
-        // TODO(taksaito): non blocking...
-        std::string request_content = read_request(sock);
-        std::cerr << "resived " << std::endl;
-        HTTPRequest request(request_content);
-        http_log(request);
+        std::vector<PollEvent>::const_iterator it;
+        for (it = poll_events.begin(); it != poll_events.end(); it++) {
+            if (it->fd == socket_fd && it->event & POLLIN) {
+                int accepted_fd = ft_accept(it->fd);
+                poll.Register(accepted_fd, POLL_IN);
+            } else if (it->event & POLL_IN) {
+                // TODO(taksaito): non blocking...
+                std::string request_content = read_request(it->fd);
+                std::cerr << "resived " << std::endl;
+                HTTPRequest request(request_content);
+                http_log(request);
 
-        std::string method = request.get_method();
-        HTTPResponse res;
-        if (method == "GET") {
-            res = this->GetHandler(socket_fd, request);
-        } else {
-            res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
-        }
-        response_to_client(sock, res);
-        close(sock);
-
-        // break させるようの処理 //
-        if (method == "kill" || method == "KILL" || method == "Kill") {
-            break;
+                std::string method = request.get_method();
+                HTTPResponse res;
+                if (method == "GET") {
+                    res = this->GetHandler(socket_fd, request);
+                } else {
+                    res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+                }
+                response_to_client(it->fd, res);
+                close(it->fd);
+            }
         }
     }
 }

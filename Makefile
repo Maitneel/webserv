@@ -20,6 +20,7 @@ SRCS		=	main.cpp \
 				${HTTP_DIR}http_header.cpp \
 				${UTILS_DIR}split.cpp \
 				${SERVER_DIR}server.cpp \
+				${SERVER_DIR}poll_wraper.cpp \
 				${CONFIG_DIR}config.cpp \
 
 KERNEL	  := ${shell uname -s}
