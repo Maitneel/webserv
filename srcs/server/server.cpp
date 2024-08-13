@@ -16,7 +16,7 @@
 #include <stdexcept>
 
 #include "server.hpp"
-#include "poll_wraper.hpp"
+#include "poll_selector.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
 
@@ -221,26 +221,27 @@ void Server::EventLoop() {
     // 一旦、最初のFDのみ
     int socket_fd = this->sockets[0].GetSocketFd();
 
-    PollWraper poll;
-    poll.Register(socket_fd, POLLIN);
+    PollSelector selector;
+
+    selector.Register(socket_fd, kEventRead);
     std::map<int, std::string> buffer;
 
     while(true) {
-        std::vector<PollEvent> poll_events;
-        poll_events = poll.Poll(100);
+        std::vector<FDEvent> events;
+        events = selector.Select(100);
 
-        std::vector<PollEvent>::const_iterator it;
-        for (it = poll_events.begin(); it != poll_events.end(); it++) {
-            if (it->fd == socket_fd && it->event & POLLIN) {
+        std::vector<FDEvent>::const_iterator it;
+        for (it = events.begin(); it != events.end(); it++) {
+            if (it->fd == socket_fd && it->event == kEventRead) {
                 int accepted_fd = ft_accept(it->fd);
-                poll.Register(accepted_fd, POLLIN);
-            } else if (it->event & POLLIN) {
+                selector.Register(accepted_fd, kEventRead);
+            } else if (it->event == kEventRead) {
                 buffer[it->fd] += read_request(it->fd);
                 std::cout << buffer[it->fd] << std::endl;
                 if (buffer[it->fd].rfind("\r\n\r\n") != std::string::npos) {
-                    poll.Register(it->fd, POLLOUT);
+                    selector.Register(it->fd, kEventWrite);
                 }
-            } else if (it->event & POLLOUT) {
+            } else if (it->event == kEventWrite) {
                 std::cerr << "resived " << std::endl;
                 std::string request_content = buffer[it->fd];
                 buffer.erase(it->fd);
@@ -255,7 +256,7 @@ void Server::EventLoop() {
                     res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
                 }
                 response_to_client(it->fd, res);
-                poll.Unregister(it->fd);
+                selector.Unregister(it->fd);
                 close(it->fd);
             }
         }
