@@ -258,6 +258,9 @@ void Server::EventLoop() {
                 response_to_client(it->fd, res);
                 selector.Unregister(it->fd);
                 close(it->fd);
+            } else if (it->event == kEvnetError) {
+                buffer.erase(it->fd);
+                close(it->fd);
             }
         }
     }
