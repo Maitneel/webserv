@@ -13,6 +13,6 @@ class PollSelector: public Selector {
     std::vector<FDEvent> Select(int timeout);
  private:
     std::vector<pollfd> fds_;
-    PollSelector(const PollSelector&);
-    PollSelector operator=(const PollSelector&);
+    PollSelector(const PollSelector&);  // 明示的にコピーさせない
+    PollSelector operator=(const PollSelector&);  // 明示的にコピーさせない
 };
