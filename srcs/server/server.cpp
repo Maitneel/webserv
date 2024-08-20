@@ -233,8 +233,13 @@ void Server::EventLoop() {
         std::vector<FDEvent>::const_iterator it;
         for (it = events.begin(); it != events.end(); it++) {
             if (it->fd == socket_fd && it->event == kEventRead) {
-                int accepted_fd = ft_accept(it->fd);
-                selector.Register(accepted_fd, kEventRead);
+                try {
+                    int accepted_fd = ft_accept(it->fd);
+                    selector.Register(accepted_fd, kEventRead);
+                } catch (std::exception& e) {
+                    std::cerr << e.what() << std::endl;
+                    continue;
+                }
             } else if (it->event == kEventRead) {
                 buffer[it->fd] += read_request(it->fd);
                 std::cout << buffer[it->fd] << std::endl;
