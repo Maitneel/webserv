@@ -23,7 +23,7 @@ size_t get_front(const std::string &str) {
 
 void HTTPRequest::valid_allow(const std::string &value) {
     try {
-        this->allow = convert_allow_to_vector(value);
+        this->allow_ = convert_allow_to_vector(value);
     } catch (InvalidHeader &e) {
         // TODO(maitneel)  : 後で考える
     }
@@ -35,8 +35,8 @@ void HTTPRequest::valid_authorization(const std::string &value) {
 
 void HTTPRequest::valid_content_encoding(const std::string &value) {
     size_t front = get_front(value);
-    this->content_encoding = value.substr(front);
-    if (!is_token(this->content_encoding)) {
+    this->content_encoding_ = value.substr(front);
+    if (!is_token(this->content_encoding_)) {
         throw InvalidHeader(kContentEncoding);
     }
 }
@@ -57,7 +57,7 @@ void HTTPRequest::valid_content_length(const std::string &value) {
     try {
         std::cerr << atoi(value.substr(front).c_str()) << std::endl;;
         std::cerr << safe_atoi(value.substr(front)) << std::endl;
-        this->content_length = safe_atoi(value.substr(front));
+        this->content_length_ = safe_atoi(value.substr(front));
     } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
         throw InvalidHeader(kCONVERT_FAIL);
@@ -72,12 +72,12 @@ void HTTPRequest::valid_content_type(const std::string &value) {
         throw InvalidHeader(kContentType);
     }
     try {
-        this->content_type.type = value.substr(front, slash_index - 1);
-        this->content_type.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
+        this->content_type_.type = value.substr(front, slash_index - 1);
+        this->content_type_.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
     } catch (std::out_of_range const &) {
         throw InvalidHeader(kContentType);
     }
-    if (!is_token(this->content_type.type) || !is_token(this->content_type.subtype)) {
+    if (!is_token(this->content_type_.type) || !is_token(this->content_type_.subtype)) {
         throw InvalidHeader(kContentType);
     }
     if (semi_colon_index == std::string::npos) {
@@ -99,7 +99,7 @@ void HTTPRequest::valid_content_type(const std::string &value) {
             if (!is_token(attribute) || (!is_token(parameter_value) && !is_quoted_string(parameter_value))) {
                 throw InvalidHeader(kContentType);
             }
-            this->content_type.parameter.insert(make_pair(attribute, parameter_value));
+            this->content_type_.parameter.insert(make_pair(attribute, parameter_value));
         }
     } catch (std::out_of_range const &) {
         throw InvalidHeader(kContentType);
@@ -120,7 +120,7 @@ void HTTPRequest::valid_date_related_header(const std::string &value, HTTPHeader
 }
 
 void HTTPRequest::valid_date(const std::string &value) {
-    this->valid_date_related_header(value, kDate, &this->date);
+    this->valid_date_related_header(value, kDate, &this->date_);
 }
 
 void HTTPRequest::valid_expires(const std::string &value) {
@@ -132,7 +132,7 @@ void HTTPRequest::valid_expires(const std::string &value) {
     } catch (std::out_of_range const &) {
         throw InvalidHeader(kExpries);
     }
-    this->expires = value;
+    this->expires_ = value;
 }
 
 void HTTPRequest::valid_form(const std::string &value) {
@@ -140,15 +140,15 @@ void HTTPRequest::valid_form(const std::string &value) {
     // if (!valid_mailbox(value)) {
     //     throw InvalidHeader(kForm);
     // }
-    this->form = value;
+    this->form_ = value;
 }
 
 void HTTPRequest::valid_if_modified_since(const std::string &value) {
-    this->valid_date_related_header(value, kIfModifiedSince, &this->if_modified_since);
+    this->valid_date_related_header(value, kIfModifiedSince, &this->if_modified_since_);
 }
 
 void HTTPRequest::valid_last_modified(const std::string &value) {
-    this->valid_date_related_header(value, kLastModified, &this->last_modified);
+    this->valid_date_related_header(value, kLastModified, &this->last_modified_);
 }
 
 // Pragma           = "Pragma" ":" 1#pragma-directive
@@ -176,7 +176,7 @@ void HTTPRequest::valid_pragma(const std::string &value) {
         if (!is_pragma_directive(processing)) {
             throw InvalidHeader(kPragma);
         }
-        this->pragma.push_back(processing);
+        this->pragma_.push_back(processing);
     }
 }
 
@@ -188,7 +188,7 @@ void HTTPRequest::valid_referer(const std::string &value) {
     if (!is_absolute_uri(trimed_value) && !is_relative_uri(trimed_value)) {
         throw InvalidHeader(kReferer);
     }
-    this->referer = trimed_value;
+    this->referer_ = trimed_value;
 }
 
 static size_t is_opening_parentheses(const std::string &s) {
@@ -219,7 +219,7 @@ void HTTPRequest::valid_user_agent(const std::string &value) {
         if (!is_product(processing) && !is_comment(processing)) {
             throw InvalidHeader(kUserAgent);
         }
-        this->user_agent.push_back(processing);
+        this->user_agent_.push_back(processing);
     }
 }
 
@@ -227,7 +227,7 @@ HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(), entity_body(), allow(), content_encoding(), content_length() {
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
     validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
@@ -297,23 +297,23 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header(
         if (!is_valid_http_header(splited_buffer[i])) {
             throw InvalidRequest(kHTTPHeader);
         }
-        this->header.insert(make_header_pair(splited_buffer[i]));
+        this->header_.insert(make_header_pair(splited_buffer[i]));
     }
 
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     for (size_t i = 0; i < HTTPRequest::validation_func_pair.size(); i++) {
         std::pair<std::string, void(HTTPRequest::*)(const std::string &)> target = this->validation_func_pair.at(i);
-        if (this->header.find(target.first) != this->header.end()) {
-            (this->*(target.second))(this->header.at(target.first));
+        if (this->header_.find(target.first) != this->header_.end()) {
+            (this->*(target.second))(this->header_.at(target.first));
         }
     }
 
     if (crlf_count < splited_buffer.size()) {
-        if (this->header.find("Content-Length") == this->header.end()) {
+        if (this->header_.find("Content-Length") == this->header_.end()) {
             throw InvalidRequest(kHTTPHeader);
         }
         try {
-            this->entity_body = splited_buffer[crlf_count].substr(0, this->content_length);
+            this->entity_body_ = splited_buffer[crlf_count].substr(0, this->content_length_);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
             // throw いんたーなるさーばーえらー的なやつ //
@@ -348,39 +348,39 @@ void HTTPRequest::print_info(std::ostream &stream) {
 
     stream << '[' << get_formated_date() << "] " << this->get_method() << ' ' << this->get_request_uri() << ' ' << this->get_protocol() << std::endl;
     stream << "    header : {" << std::endl;
-    for (std::map<std::string, std::string>::iterator i = this->header.begin(); i != this->header.end(); i++) {
+    for (std::map<std::string, std::string>::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
         stream << "        " << i->first << ": '" << i->second << "'" << std::endl;
     }
     stream << "    }" << std::endl;
     stream << "    body : {" << std::endl;
-    stream << "        " << this->entity_body << std::endl;
+    stream << "        " << this->entity_body_ << std::endl;
     stream << "    }" << std::endl;
     stream << std::left << std::setw(width) << "    Allow" << " : [";
-    for (size_t i = 0; i < this->allow.size(); i++) {
-        stream << '"' << this->allow.at(i) << '"' << ", ";
+    for (size_t i = 0; i < this->allow_.size(); i++) {
+        stream << '"' << this->allow_.at(i) << '"' << ", ";
     }
     stream << "]" << std::endl;
-    stream << std::left << std::setw(width) << "    Content-Encoding" << " : " << '"' << this->content_encoding << '"' << std::endl;
-    stream << std::left << std::setw(width) << "    Content-length" << " : " << '"' << this->content_length << '"' << std::endl;
-    stream << std::left << std::setw(width) << "    Content-Type" << " : " << '"' << this->content_type.type << '/' << this->content_type.subtype << '"' << " parameter : ";
-    for (std::multimap<std::string, std::string>::iterator i = this->content_type.parameter.begin(); i != this->content_type.parameter.end(); i++) {
+    stream << std::left << std::setw(width) << "    Content-Encoding" << " : " << '"' << this->content_encoding_ << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Content-length" << " : " << '"' << this->content_length_ << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Content-Type" << " : " << '"' << this->content_type_.type << '/' << this->content_type_.subtype << '"' << " parameter : ";
+    for (std::multimap<std::string, std::string>::iterator i = this->content_type_.parameter.begin(); i != this->content_type_.parameter.end(); i++) {
         stream << "{" << i->first << ":" << i->second << "}, ";
     }
     stream << std::endl;
-    stream << std::left << std::setw(width) << "    Date" << " : " << '"' << this->date << '"' << std::endl;
-    stream << std::left << std::setw(width) << "    Expries" << " : " << '"' << this->expires << '"' << std::endl;
-    stream << std::left << std::setw(width) << "    Form" << " : " << '"' << this->form << '"' << std::endl;
-    stream << std::left << std::setw(width) << "    If-Modified-Since" << " : " << '"' << this->if_modified_since << '"' << std::endl;
-    stream << std::left << std::setw(width) << "    Last-Modified" << " : " << '"' << this->last_modified << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Date" << " : " << '"' << this->date_ << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Expries" << " : " << '"' << this->expires_ << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Form" << " : " << '"' << this->form_ << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    If-Modified-Since" << " : " << '"' << this->if_modified_since_ << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Last-Modified" << " : " << '"' << this->last_modified_ << '"' << std::endl;
     stream << std::left << std::setw(width) << "    Pragma" << " : [";
-    for (size_t i = 0; i < this->pragma.size(); i++) {
-        stream << "'" << this->pragma.at(i) << "', ";
+    for (size_t i = 0; i < this->pragma_.size(); i++) {
+        stream << "'" << this->pragma_.at(i) << "', ";
     }
     stream << "]" << std::endl;
-    stream << std::left << std::setw(width) << "    Referer" << " : " << '"' << this->referer << '"' << std::endl;
+    stream << std::left << std::setw(width) << "    Referer" << " : " << '"' << this->referer_ << '"' << std::endl;
     stream << std::left << std::setw(width) << "    User-Agent" << " : " << "[";
-    for (size_t i = 0; i < this->user_agent.size(); i++) {
-        stream << "'" << this->user_agent.at(i) << "', ";
+    for (size_t i = 0; i < this->user_agent_.size(); i++) {
+        stream << "'" << this->user_agent_.at(i) << "', ";
     }
     stream << "]" << std::endl;
 }

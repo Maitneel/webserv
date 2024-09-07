@@ -70,21 +70,21 @@ class HTTPRequest {
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
 
  public:
-    std::map<std::string, std::string> header;  // 一時的に public  //
-    std::string entity_body;  // これstringでいいのか要検討 //
-    std::vector<std::string> allow;
-    std::string content_encoding;
-    int content_length;
-    MIMEType content_type;
-    std::string date;
-    std::string expires;
-    std::string form;
-    std::string if_modified_since;
-    std::string last_modified;
+    std::map<std::string, std::string> header_;  // 一時的に public  //
+    std::string entity_body_;  // これstringでいいのか要検討 //
+    std::vector<std::string> allow_;
+    std::string content_encoding_;
+    int content_length_;
+    MIMEType content_type_;
+    std::string date_;
+    std::string expires_;
+    std::string form_;
+    std::string if_modified_since_;
+    std::string last_modified_;
     // std::string location; // こいつ response 用っぽいから request にはいらないよね ? //
-    std::vector<std::string> pragma;
-    std::string referer;
-    std::vector<std::string> user_agent;
+    std::vector<std::string> pragma_;
+    std::string referer_;
+    std::vector<std::string> user_agent_;
 
     explicit HTTPRequest(const int fd);
     explicit HTTPRequest(std::string buffer);
