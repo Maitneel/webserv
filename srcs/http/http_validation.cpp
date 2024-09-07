@@ -135,7 +135,7 @@ bool is_relative_uri(const std::string &s) {    // = net_path | abs_path | rel_p
 }
 
 bool is_net_path(const std::string &s) {       // = "//" net_loc [ abs_path ]
-    std::string::size_type slash_index = s.find('/');
+    const std::string::size_type slash_index = s.find('/');
     if (slash_index == std::string::npos) {
         return (is_net_loc(s));
     } else {
@@ -345,9 +345,8 @@ bool is_http_version(const std::string &s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIG
 
 bool is_valid_http_header(const std::string &str) {
     try {
-        std::string removed_crlf = str.substr(0, str.length() - 2);
-        std::string field_name = get_first_token(removed_crlf);
-        std::string filed_value = removed_crlf.substr(field_name.length() + 1);
+        const std::string removed_crlf = str.substr(0, str.length() - 2);
+        const std::string field_name = get_first_token(removed_crlf);
         if (removed_crlf.at(field_name.length()) != ':' && !is_crlf(str.substr(str.length() - 2))) {
             return false;
         }
@@ -370,7 +369,7 @@ bool is_http_date(const std::string &s) {         // HTTP-date      = rfc1123-da
 
 bool is_rfc1123_data(const std::string &s) {      // rfc1123-date   = wkday "," SP date1 SP time SP "GMT"
     try {
-        std::vector<std::string> splited_s = split(s, " ");
+        const std::vector<std::string> splited_s = split(s, " ");
         std::string wkday = splited_s.at(0);
         wkday.erase(wkday.end() - 2, wkday.end());
         std::string date = splited_s.at(1) + splited_s.at(2) + splited_s.at(3);
@@ -392,10 +391,10 @@ bool is_rfc1123_data(const std::string &s) {      // rfc1123-date   = wkday "," 
 
 bool is_rfc850_data(const std::string &s) {       // rfc850-date    = weekday "," SP date2 SP time SP "GMT"
     try {
-        std::string::size_type coron_index = s.find(',');
-        std::string::size_type first_sp_index = s.find(' ');
-        std::string::size_type second_sp_index = s.find(' ', first_sp_index + 1);
-        std::string::size_type therd_sp_index = s.find(' ', second_sp_index + 1);
+        const std::string::size_type coron_index = s.find(',');
+        const std::string::size_type first_sp_index = s.find(' ');
+        const std::string::size_type second_sp_index = s.find(' ', first_sp_index + 1);
+        const std::string::size_type therd_sp_index = s.find(' ', second_sp_index + 1);
         return (
             is_weekday(s.substr(0, coron_index)) &&
             coron_index + 1 == first_sp_index &&
@@ -411,7 +410,7 @@ bool is_rfc850_data(const std::string &s) {       // rfc850-date    = weekday ",
 // "Mon Jun  2 08:12:31 2222";
 bool is_asctime_date(const std::string &s) {      // asctime-date   = wkday SP date3 SP time SP 4DIGIT
     try {
-        std::vector<std::string> splited_s = split(s, " ");
+        const std::vector<std::string> splited_s = split(s, " ");
         std::string wkday = splited_s.at(0);
         wkday.erase(wkday.end() - 1, wkday.end());
         std::string date = splited_s.at(1) + splited_s.at(2);
@@ -441,8 +440,8 @@ bool is_asctime_date(const std::string &s) {      // asctime-date   = wkday SP d
 
 bool is_date1(const std::string &s) {             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)
     try {
-        std::string::size_type first_sp_index = s.find(' ');
-        std::string::size_type second_sp_index = s.find(' ', first_sp_index + 1);
+        const std::string::size_type first_sp_index = s.find(' ');
+        const std::string::size_type second_sp_index = s.find(' ', first_sp_index + 1);
         return (
             is_2digit(s.substr(0, first_sp_index)) &&
             is_month(s.substr(first_sp_index + 1, second_sp_index - first_sp_index - 1)) &&
@@ -455,8 +454,8 @@ bool is_date1(const std::string &s) {             // date1          = 2DIGIT SP 
 
 bool is_date2(const std::string &s) {             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)
 try {
-        std::string::size_type first_dash_index = s.find('-');
-        std::string::size_type second_dash_index = s.find('-', first_dash_index + 1);
+        const std::string::size_type first_dash_index = s.find('-');
+        const std::string::size_type second_dash_index = s.find('-', first_dash_index + 1);
         return (
             is_2digit(s.substr(0, first_dash_index)) &&
             is_month(s.substr(first_dash_index + 1, second_dash_index - first_dash_index - 1)) &&
@@ -469,8 +468,8 @@ try {
 
 bool is_date3(const std::string &s) {             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)
     try {
-        std::string::size_type first_sp_index = s.find(' ');
-        std::string day = s.substr(first_sp_index + 1);
+        const std::string::size_type first_sp_index = s.find(' ');
+        const std::string day = s.substr(first_sp_index + 1);
         if (day.length() != 2) {
             return false;
         }
@@ -500,16 +499,16 @@ bool is_time(const std::string &s) {              // time           = 2DIGIT ":"
 }
 
 bool is_wkday(const std::string &s) {             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
-    size_t size = 7;
-    std::string wkday[size] = {
+    const size_t size = 7;
+    const std::string wkday[size] = {
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
     };
     return is_target_included_list(s, wkday, size);
 }
 
 bool is_weekday(const std::string &s) {           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
-    size_t size = 7;
-    std::string weekday[size] = {
+    const size_t size = 7;
+    const std::string weekday[size] = {
         "Monday", "Tuesday", "Wednesday", "Thursday",
         "Friday", "Saturday", "Sunday"
     };
@@ -517,8 +516,8 @@ bool is_weekday(const std::string &s) {           // weekday        = "Monday" |
 }
 
 bool is_month(const std::string &s) {             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"
-    size_t size = 12;
-    std::string month[size] = {
+    const size_t size = 12;
+    const std::string month[size] = {
         "Jan", "Feb", "Mar", "Apr",
         "May", "Jun", "Jul", "Aug",
         "Sep", "Oct", "Nov", "Dec"
@@ -526,7 +525,7 @@ bool is_month(const std::string &s) {             // month          = "Jan" | "F
     return is_target_included_list(s, month, size);
 }
 
-bool is_target_included_list(std::string target, std::string list[], size_t size) {
+bool is_target_included_list(const std::string target, const std::string list[], size_t size) {
     // std::cout << "target : '" << target << "'" << std::endl;
     for (size_t i = 0; i < size; i++) {
         if (target == list[i]) {
@@ -569,7 +568,7 @@ bool is_pragma_directive(const std::string &s) {
 
 // extension-pragma = token [ "=" word ]
 bool is_extension_pragma(const std::string &s) {
-    std::string::size_type equal_index = s.find('=');
+    const std::string::size_type equal_index = s.find('=');
     if (equal_index == std::string::npos) {
         return is_token(s);
     } else {
@@ -578,7 +577,7 @@ bool is_extension_pragma(const std::string &s) {
 }
 
 bool is_product(const std::string &s) {
-    std::string::size_type slash_index = s.find('/');
+    const std::string::size_type slash_index = s.find('/');
     if (slash_index == std::string::npos) {
         return (is_token(s));
     } else {

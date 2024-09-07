@@ -85,7 +85,7 @@ bool is_product(const std::string &s);
 // 補助的な関数 //
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))
-bool is_target_included_list(std::string target, std::string list[], size_t size);
+bool is_target_included_list(const std::string target, const std::string list[], size_t size);
 bool is_4digit(const std::string &s);
 bool is_2digit(const std::string &s);
 
