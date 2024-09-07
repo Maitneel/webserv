@@ -22,7 +22,7 @@ int safe_atoi(std::string str) {
                 result *= 10;
                 result -= str.at(str_index) - '0';
             } else {
-                throw std::runtime_error("safe_atoi: minus overflow");
+                throw std::overflow_error("safe_atoi: minus overflow");
             }
         } else {
             if (result < INT_MAX / 10 || (result == INT_MAX / 10 && str.at(str_index) - '0' <= INT_MAX % 10)) {
