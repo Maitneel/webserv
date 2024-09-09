@@ -228,17 +228,17 @@ HTTPRequest::HTTPRequest(const int fd) {
 }
 
 void HTTPRequest::add_valid_funcs() {
-    validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
-    validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
-    validation_func_pair.push_back(std::make_pair("Content-Encoding", &HTTPRequest::valid_content_encoding));
-    validation_func_pair.push_back(std::make_pair("Content-Length", &HTTPRequest::valid_content_length));
-    validation_func_pair.push_back(std::make_pair("Content-Type", &HTTPRequest::valid_content_type));
-    validation_func_pair.push_back(std::make_pair("Date", &HTTPRequest::valid_date));
-    validation_func_pair.push_back(std::make_pair("Expires", &HTTPRequest::valid_expires));
-    validation_func_pair.push_back(std::make_pair("Form", &HTTPRequest::valid_form));
-    validation_func_pair.push_back(std::make_pair("Pragma", &HTTPRequest::valid_pragma));
-    validation_func_pair.push_back(std::make_pair("Referer", &HTTPRequest::valid_referer));
-    validation_func_pair.push_back(std::make_pair("User-Agent", &HTTPRequest::valid_user_agent));
+    validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
+    validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
+    validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
+    validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
+    validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
+    validation_func_pair.push_back(std::make_pair("date", &HTTPRequest::valid_date));
+    validation_func_pair.push_back(std::make_pair("expires", &HTTPRequest::valid_expires));
+    validation_func_pair.push_back(std::make_pair("form", &HTTPRequest::valid_form));
+    validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
+    validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
+    validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
 }
 
 std::string HTTPRequest::parse_method(const std::string &request_line) {
@@ -328,7 +328,7 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_
     }
 
     if (CRLF_count < splited_buffer.size()) {
-        if (this->header_.find("Content-Length") == this->header_.end()) {
+        if (this->header_.find("content-length") == this->header_.end()) {
             throw InvalidRequest(kHTTPHeader);
         }
         try {

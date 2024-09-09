@@ -83,6 +83,11 @@ debug: ${NAME}
 test: debug
 	./test/minimum_run_test.sh ./webserv
 
+run: debug
+	./${NAME}
+
+r: run
+
 -include ${DEPS}
 
 echo:
