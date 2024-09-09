@@ -81,7 +81,7 @@ lint:
 debug: ${NAME}
 
 test: debug
-	./${NAME}
+	./test/minimum_run_test.sh ./webserv
 
 -include ${DEPS}
 
