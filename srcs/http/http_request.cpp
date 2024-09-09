@@ -55,8 +55,6 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         }
     }
     try {
-        std::cerr << atoi(value.substr(front).c_str()) << std::endl;;
-        std::cerr << safe_atoi(value.substr(front)) << std::endl;
         this->content_length_ = safe_atoi(value.substr(front));
     } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
@@ -228,6 +226,7 @@ HTTPRequest::HTTPRequest(const int fd) {
 }
 
 void HTTPRequest::add_valid_funcs() {
+    // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
     validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
     validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
@@ -294,50 +293,55 @@ void HTTPRequest::parse_request_line(const std::string &request_line) {
     }
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
-    // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
-    this->add_valid_funcs();
-
-    std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
-    size_t CRLF_count = 0;
-    // ここあとでかきなおす //
-    try {
-        this->parse_request_line(splited_buffer[0]);
-    } catch (std::out_of_range const &) {
-        throw InvalidRequest(kRequestLine);
-    }
-    CRLF_count++;
-
+size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffer) {
+    size_t registor_count = 0;
     for (size_t i = 1; i < splited_buffer.size(); i++) {
-        CRLF_count++;
         if (is_crlf(splited_buffer[i])) {
+            registor_count++;
             break;
         }
         if (!is_valid_http_header(splited_buffer[i])) {
             throw InvalidRequest(kHTTPHeader);
         }
         this->header_.insert(make_header_pair(splited_buffer[i]));
+        registor_count++;
     }
+    return registor_count;
+}
 
-    // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
+void HTTPRequest::valid_headers() {
+    this->add_valid_funcs();
+
     for (size_t i = 0; i < HTTPRequest::validation_func_pair.size(); i++) {
         std::pair<std::string, void(HTTPRequest::*)(const std::string &)> target = this->validation_func_pair.at(i);
         if (this->header_.find(target.first) != this->header_.end()) {
             (this->*(target.second))(this->header_.at(target.first));
         }
     }
+}
 
-    if (CRLF_count < splited_buffer.size()) {
+void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
+    // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
+    if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
             throw InvalidRequest(kHTTPHeader);
         }
         try {
-            this->entity_body_ = splited_buffer[CRLF_count].substr(0, this->content_length_);
+            this->entity_body_ = splited_buffer[front].substr(0, this->content_length_);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
             // throw いんたーなるさーばーえらー的なやつ //
         }
     }
+}
+
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+    std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
+    this->parse_request_line(splited_buffer[0]);
+
+    const size_t header_count = this->registor_field(splited_buffer);
+    this->valid_headers();
+    this->registor_entity_body(splited_buffer, header_count + 1);
 }
 
 HTTPRequest::~HTTPRequest() {
