@@ -252,7 +252,8 @@ void Server::EventLoop() {
                 std::string request_content = buffer[it->fd];
                 buffer.erase(it->fd);
                 HTTPRequest request(request_content);
-                http_log(request);
+                // http_log(request);
+                request.print_info();
 
                 std::string method = request.get_method();
                 HTTPResponse res;

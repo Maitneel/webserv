@@ -66,6 +66,12 @@ class HTTPRequest {
 
     void valid_date_related_header(const std::string &value, HTTPHeaderExceptType exception_type, std::string *store);
 
+    void add_valid_funcs();
+    void parse_request_line(const std::string &request_line);
+    std::string parse_method(const std::string &request_line);
+    std::string parse_request_uri(const std::string &request_line);
+    std::string parse_protocol(const std::string &reqeust_line);
+
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
 
