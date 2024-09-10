@@ -3,7 +3,9 @@
 
 #include <utility>
 #include <string>
+#include <vector>
 
 std::pair<std::string, std::string> make_header_pair(std::string src);
+std::vector<std::string> convert_allow_to_vector(std::string src);
 
 #endif  // INCLUDE_HTTP_HEADER_HPP_

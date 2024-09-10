@@ -39,8 +39,8 @@ bool is_valid_http_header(const std::string &str);
 
 // bool is_uri(const std::string &s);            // = ( absoluteURI | relativeURI ) [ "#" fragment ]
 bool is_absolute_uri(const std::string &s);   // = scheme ":" *( uchar | reserved )
-// bool is_relativeURI(const std::string &s);    // = net_path | abs_path | rel_path
-// bool is_net_path(const std::string &s);       // = "//" net_loc [ abs_path ]
+bool is_relative_uri(const std::string &s);    // = net_path | abs_path | rel_path
+bool is_net_path(const std::string &s);       // = "//" net_loc [ abs_path ]
 bool is_abs_path(const std::string &s);       // = "/" rel_path
 bool is_rel_path(const std::string &s);       // = [ path ] [ ";" params ] [ "?" query ]
 bool is_path(const std::string &s);           // = fsegment *( "/" segment )
@@ -49,7 +49,7 @@ bool is_segment(const std::string &s);        // = *pchar
 bool is_params(const std::string &s);         // = param *( ";" param )
 bool is_param(const std::string &s);          // = *( pchar | "/" )
 bool is_scheme(const std::string &s);         // = 1*( ALPHA | DIGIT | "+" | "-" | "." )
-// bool is_net_loc(const std::string &s);        // = *( pchar | ";" | "?" )
+bool is_net_loc(const std::string &s);        // = *( pchar | ";" | "?" )
 bool is_query(const std::string &s);          // = *( uchar | reserved )
 // bool is_fragment(const std::string &s);       // = *( uchar | reserved )
 bool is_pchar(const std::string &s);          // = uchar | ":" | "@" | "&" | "=" | "+"
@@ -65,10 +65,28 @@ bool is_national(const char &c);       // = <any OCTET excluding ALPHA, DIGIT,  
 
 bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
 
-bool is_valid_content_length(const std::string &str);
+bool is_http_date(const std::string &s);         // HTTP-date      = rfc1123-date | rfc850-date | asctime-date
+bool is_rfc1123_data(const std::string &s);      // rfc1123-date   = wkday "," SP date1 SP time SP "GMT"
+bool is_rfc850_data(const std::string &s);       // rfc850-date    = weekday "," SP date2 SP time SP "GMT"
+bool is_asctime_date(const std::string &s);      // asctime-date   = wkday SP date3 SP time SP 4DIGIT
+bool is_date1(const std::string &s);             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)
+bool is_date2(const std::string &s);             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)
+bool is_date3(const std::string &s);             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)
+bool is_time(const std::string &s);              // time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; 00:00:00 - 23:59:59
+bool is_wkday(const std::string &s);             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+bool is_weekday(const std::string &s);           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
+bool is_month(const std::string &s);             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"
+
+bool is_pragma_directive(const std::string &s);
+bool is_extension_pragma(const std::string &s);
+
+bool is_product(const std::string &s);
 
 // 補助的な関数 //
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))
+bool is_target_included_list(const std::string target, const std::string list[], size_t size);
+bool is_4digit(const std::string &s);
+bool is_2digit(const std::string &s);
 
 #endif  // INCLUDE_HTTP_VALIDATION_HPP_

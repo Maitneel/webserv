@@ -20,6 +20,7 @@ SRCS		=	main.cpp \
 				${HTTP_DIR}http_header.cpp \
 				${UTILS_DIR}split.cpp \
 				${SERVER_DIR}poll_selector.cpp \
+				${UTILS_DIR}safe_to_integer.cpp \
 				${SERVER_DIR}server.cpp \
 				${CONFIG_DIR}config.cpp \
 
@@ -27,6 +28,10 @@ KERNEL	  := ${shell uname -s}
 GNU		 := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
 CPP_FILES   := ${shell find ${SRCS_DIR} -name "*.cpp"}
 HPP_FILES   := ${shell find ${INCLUDE_DIR} -name "*.hpp"}
+
+ifeq (${GNU},g++-13)
+	CXX = ${GNU}
+endif
 
 ifeq ($(MAKECMDGOALS),debug)
 	OBJS		= ${SRCS:%.cpp=${OBJS_DIR}/debug_%.o}
@@ -81,5 +86,8 @@ test: debug
 
 echo:
 	@echo ${OBJS}
+	@echo ${HOGE}
+	@echo ${CXX13}
+	@echo gun: ${GUN}
 
 .PHONY: all clean fclean re test lint
