@@ -10,5 +10,6 @@ int safe_atoi(std::string str);
 std::string get_formated_date();
 void to_lower(std::string *str);
 void to_upper(std::string *str);
+std::string trim_string(const std::string &origin, const std::string &char_of_remove);
 
 #endif  // INCLUDE_EXTEND_STDLIB_HPP_
