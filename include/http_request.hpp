@@ -9,7 +9,7 @@
 #include <utility>
 #include <ostream>
 
-const std::string http_1_1 = "HTTP/1.1";
+const char *http_1_1 = "HTTP/1.1";
 
 typedef enum HTTPRequestExceptTypeEnum {
     kRequestLine,

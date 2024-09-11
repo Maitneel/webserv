@@ -28,7 +28,7 @@ std::string trim_string(const std::string &origin, const std::string &char_of_re
     }
 
     size_t back = origin.length();
-    for (int i = origin.length() - 1; 0 <= i ; i--) {  
+    for (int i = origin.length() - 1; 0 <= i ; i--) {
         if (back - 1 != i) {
             break;
         }
@@ -43,7 +43,7 @@ std::string trim_string(const std::string &origin, const std::string &char_of_re
 }
 
 // #include <iostream>
-// #define debug(s) std::cout << #s << ' ' << s << std::endl; 
+// #define debug(s) std::cout << #s << ' ' << s << std::endl;
 // using std::string;
 // int main(int argc, char **argv) {
 //     string origin = "aaahogehogebb";
