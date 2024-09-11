@@ -9,7 +9,9 @@
 #include <utility>
 #include <ostream>
 
-const char *http_1_1 = "HTTP/1.1";
+#define http_0_9 "HTTP/0.9"
+#define HTTP_1_0 "HTTP/1.0"
+#define HTTP_1_1 "HTTP/1.1"
 
 typedef enum HTTPRequestExceptTypeEnum {
     kRequestLine,
@@ -29,7 +31,7 @@ typedef enum HTTPHeaderExceptTypeEnum {
     kPragma,
     kReferer,
     kUserAgent,
-    kCONVERT_FAIL,
+    kConvertFail,
 } HTTPHeaderExceptType;
 
 class MIMEType {

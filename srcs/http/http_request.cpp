@@ -58,7 +58,7 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         this->content_length_ = safe_atoi(value.substr(front));
     } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
-        throw InvalidHeader(kCONVERT_FAIL);
+        throw InvalidHeader(kConvertFail);
     }
 }
 
@@ -227,17 +227,19 @@ HTTPRequest::HTTPRequest(const int fd) {
 
 void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
-    validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
-    validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
-    validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
-    validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
-    validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
-    validation_func_pair.push_back(std::make_pair("date", &HTTPRequest::valid_date));
-    validation_func_pair.push_back(std::make_pair("expires", &HTTPRequest::valid_expires));
-    validation_func_pair.push_back(std::make_pair("form", &HTTPRequest::valid_form));
-    validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
-    validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
-    validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+    if (this->protocol == http_0_9 || this->protocol == HTTP_1_0) {
+        validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
+        validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
+        validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
+        validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
+        validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
+        validation_func_pair.push_back(std::make_pair("date", &HTTPRequest::valid_date));
+        validation_func_pair.push_back(std::make_pair("expires", &HTTPRequest::valid_expires));
+        validation_func_pair.push_back(std::make_pair("form", &HTTPRequest::valid_form));
+        validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
+        validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
+        validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+    }
 }
 
 std::string HTTPRequest::parse_method(const std::string &request_line) {
@@ -304,7 +306,10 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
             throw InvalidRequest(kHTTPHeader);
         }
         std::pair<std::string, std::string> header_pair = make_header_pair(splited_buffer[i]);
-        if (this->protocol == http_1_1) {
+        if (this->protocol == HTTP_1_1) {
+            // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
+            // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
+            // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
             header_pair.second = trim_string(header_pair.second, " ");
         }
         this->header_.insert(header_pair);
@@ -465,7 +470,7 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     case kReferer:
         return "HTTPHeader: invalid 'Referer' header";
         break;
-    case kCONVERT_FAIL:
+    case kConvertFail:
         return "HTTPHeader: convert failed";
         break;
     default:

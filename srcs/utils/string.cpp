@@ -27,8 +27,8 @@ std::string trim_string(const std::string &origin, const std::string &char_of_re
         }
     }
 
-    size_t back = origin.length();
-    for (int i = origin.length() - 1; 0 <= i ; i--) {
+    ssize_t back = origin.length();
+    for (ssize_t i = origin.length() - 1; 0 <= i ; i--) {
         if (back - 1 != i) {
             break;
         }
