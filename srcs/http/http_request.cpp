@@ -303,16 +303,11 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
         if (!is_valid_http_header(splited_buffer[i])) {
             throw InvalidRequest(kHTTPHeader);
         }
-<<<<<<< Updated upstream
-        // TODO(maitneel): 同じ名前の複数のヘッダーがいた時にうまいこと2つ目以降がinsertされない問題 //
-        this->header_.insert(make_header_pair(splited_buffer[i]));
-=======
         std::pair<std::string, std::string> header_pair = make_header_pair(splited_buffer[i]);
         if (this->protocol == http_1_1) {
             header_pair.second = trim_string(header_pair.second, " ");
         }
         this->header_.insert(header_pair);
->>>>>>> Stashed changes
         registor_count++;
     }
     return registor_count;
