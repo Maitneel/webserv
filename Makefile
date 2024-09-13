@@ -21,6 +21,7 @@ SRCS		=	main.cpp \
 				${UTILS_DIR}split.cpp \
 				${SERVER_DIR}poll_selector.cpp \
 				${UTILS_DIR}safe_to_integer.cpp \
+				${UTILS_DIR}string.cpp \
 				${SERVER_DIR}server.cpp \
 				${CONFIG_DIR}config.cpp \
 
@@ -80,7 +81,12 @@ lint:
 debug: ${NAME}
 
 test: debug
+	./test/minimum_run_test.sh ./webserv
+
+run: debug
 	./${NAME}
+
+r: run
 
 -include ${DEPS}
 

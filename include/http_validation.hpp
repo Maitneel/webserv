@@ -7,6 +7,8 @@
 #define CR 13
 #define LF 10
 
+#define CRLF "\x0d\x0a"
+
 // 関数にしてもいいけど、そこまで複雑じゃないし、こっちの方が処理的に良い気がするからとりあえずこうしてる
 #define is_char(c) (0 <= (c) && (c) <= 128)
 #define is_upper(c) isupper(c)

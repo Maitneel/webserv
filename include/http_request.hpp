@@ -63,8 +63,18 @@ class HTTPRequest {
     void valid_pragma(const std::string &value);
     void valid_referer(const std::string &value);
     void valid_user_agent(const std::string &value);
+    void valid_headers();
 
     void valid_date_related_header(const std::string &value, HTTPHeaderExceptType exception_type, std::string *store);
+
+    void add_valid_funcs();
+    void parse_request_line(const std::string &request_line);
+    std::string parse_method(const std::string &request_line);
+    std::string parse_request_uri(const std::string &request_line);
+    std::string parse_protocol(const std::string &reqeust_line);
+
+    size_t registor_field(const std::vector<std::string> &splited_buffer);
+    void registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
 
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;

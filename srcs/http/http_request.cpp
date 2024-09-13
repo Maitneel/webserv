@@ -55,8 +55,6 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         }
     }
     try {
-        std::cerr << atoi(value.substr(front).c_str()) << std::endl;;
-        std::cerr << safe_atoi(value.substr(front)) << std::endl;
         this->content_length_ = safe_atoi(value.substr(front));
     } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
@@ -227,98 +225,123 @@ HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
-    validation_func_pair.push_back(std::make_pair("Allow", &HTTPRequest::valid_allow));
-    validation_func_pair.push_back(std::make_pair("Authorization", &HTTPRequest::valid_authorization));
-    validation_func_pair.push_back(std::make_pair("Content-Encoding", &HTTPRequest::valid_content_encoding));
-    validation_func_pair.push_back(std::make_pair("Content-Length", &HTTPRequest::valid_content_length));
-    validation_func_pair.push_back(std::make_pair("Content-Type", &HTTPRequest::valid_content_type));
-    validation_func_pair.push_back(std::make_pair("Date", &HTTPRequest::valid_date));
-    validation_func_pair.push_back(std::make_pair("Expires", &HTTPRequest::valid_expires));
-    validation_func_pair.push_back(std::make_pair("Form", &HTTPRequest::valid_form));
-    validation_func_pair.push_back(std::make_pair("Pragma", &HTTPRequest::valid_pragma));
-    validation_func_pair.push_back(std::make_pair("Referer", &HTTPRequest::valid_referer));
-    validation_func_pair.push_back(std::make_pair("User-Agent", &HTTPRequest::valid_user_agent));
+    validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
+    validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
+    validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
+    validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
+    validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
+    validation_func_pair.push_back(std::make_pair("date", &HTTPRequest::valid_date));
+    validation_func_pair.push_back(std::make_pair("expires", &HTTPRequest::valid_expires));
+    validation_func_pair.push_back(std::make_pair("form", &HTTPRequest::valid_form));
+    validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
+    validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
+    validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+}
 
+std::string HTTPRequest::parse_method(const std::string &request_line) {
+    const std::string::size_type first_sp_index = request_line.find(' ');
 
-    std::string crlf;
-    crlf += CR;
-    crlf += LF;
-    std::vector<std::string> splited_buffer = escaped_quote_split(buffer, crlf);
-    size_t crlf_count = 0;
-    // ここあとでかきなおす //
-    try {
-        size_t front = 0;
-
-        this->method = get_first_token(buffer);
-        front += this->method.length();
-        if (!is_sp(buffer[front])) {
-            throw InvalidRequest(kRequestLine);
-        }
-        front++;
-        std::string::size_type request_uri_end = buffer.find(' ', front);
-        if (request_uri_end == std::string::npos) {
-            request_uri_end = buffer.find(crlf, front);
-        }
-        if (request_uri_end == std::string::npos) {
-            throw InvalidRequest(kRequestLine);
-        }
-        this->request_uri = buffer.substr(front, request_uri_end - front);
-        if (!(is_absolute_uri(this->request_uri) || is_abs_path(this->request_uri))) {
-            throw InvalidRequest(kRequestLine);
-        }
-        front = request_uri_end;
-        const std::string::size_type crlf_index = buffer.find(crlf, 0);
-        if (crlf_index == front) {
-            protocol = "HTTP/0.9";
-            is_simple_request = true;
-        } else {
-            if (!is_sp(buffer.at(front))) {
-                throw InvalidRequest(kRequestLine);
-            }
-            front++;
-            this->protocol = buffer.substr(front, crlf_index - front);
-            if (!is_http_version(this->protocol)) {
-                std::cerr << this->protocol << std::endl;
-                throw InvalidRequest(kRequestLine);
-            }
-        }
-    } catch (std::out_of_range const &) {
+    const std::string method = request_line.substr(0, first_sp_index);
+    if (!is_token(method)) {
         throw InvalidRequest(kRequestLine);
     }
-    crlf_count++;
+    return method;
+}
 
+std::string HTTPRequest::parse_request_uri(const std::string &request_line) {
+    const std::string::size_type first_sp_index = request_line.find(' ');
+    const std::string::size_type second_sp_index = request_line.find(' ', first_sp_index + 1);
+    const std::string::size_type crlf_index = request_line.find(CRLF);
+    std::string::size_type substr_length = 0;
+
+    if (second_sp_index != std::string::npos) {
+        substr_length = second_sp_index - first_sp_index;
+    } else {
+        substr_length = crlf_index - first_sp_index;
+    }
+    const std::string request_uri = request_line.substr(first_sp_index + 1, substr_length - 1);
+    if (!(is_absolute_uri(request_uri) || is_abs_path(request_uri))) {
+        throw InvalidRequest(kRequestLine);
+    }
+    return request_uri;
+}
+
+std::string HTTPRequest::parse_protocol(const std::string &request_line) {
+    const std::string::size_type first_sp_index = request_line.find(' ');
+    const std::string::size_type second_sp_index = request_line.find(' ', first_sp_index + 1);
+    const std::string::size_type crlf_index = request_line.find(CRLF);
+
+    if (second_sp_index == std::string::npos) {
+        return "HTTP/0.9";
+    }
+    std::string protocol = request_line.substr(second_sp_index + 1, crlf_index - second_sp_index - 1);
+    if (!is_http_version(protocol)) {
+        throw InvalidRequest(kRequestLine);
+    }
+    return protocol;
+}
+
+void HTTPRequest::parse_request_line(const std::string &request_line) {
+    try {
+        this->method = this->parse_method(request_line);
+        this->request_uri = this->parse_request_uri(request_line);
+        this->protocol = this->parse_protocol(request_line);
+    } catch (...) {
+        throw InvalidRequest(kRequestLine);
+    }
+}
+
+size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffer) {
+    size_t registor_count = 0;
     for (size_t i = 1; i < splited_buffer.size(); i++) {
-        crlf_count++;
         if (is_crlf(splited_buffer[i])) {
+            registor_count++;
             break;
         }
         if (!is_valid_http_header(splited_buffer[i])) {
             throw InvalidRequest(kHTTPHeader);
         }
         this->header_.insert(make_header_pair(splited_buffer[i]));
+        registor_count++;
     }
+    return registor_count;
+}
 
-    // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
+void HTTPRequest::valid_headers() {
+    this->add_valid_funcs();
+
     for (size_t i = 0; i < HTTPRequest::validation_func_pair.size(); i++) {
         std::pair<std::string, void(HTTPRequest::*)(const std::string &)> target = this->validation_func_pair.at(i);
         if (this->header_.find(target.first) != this->header_.end()) {
             (this->*(target.second))(this->header_.at(target.first));
         }
     }
+}
 
-    if (crlf_count < splited_buffer.size()) {
-        if (this->header_.find("Content-Length") == this->header_.end()) {
+void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
+    // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
+    if (front < splited_buffer.size()) {
+        if (this->header_.find("content-length") == this->header_.end()) {
             throw InvalidRequest(kHTTPHeader);
         }
         try {
-            this->entity_body_ = splited_buffer[crlf_count].substr(0, this->content_length_);
+            this->entity_body_ = splited_buffer[front].substr(0, this->content_length_);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
             // throw いんたーなるさーばーえらー的なやつ //
         }
     }
+}
+
+HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+    std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
+    this->parse_request_line(splited_buffer[0]);
+
+    const size_t header_count = this->registor_field(splited_buffer);
+    this->valid_headers();
+    this->registor_entity_body(splited_buffer, header_count + 1);
 }
 
 HTTPRequest::~HTTPRequest() {
@@ -346,7 +369,7 @@ void HTTPRequest::print_info() {
 void HTTPRequest::print_info(std::ostream &stream) {
     const size_t width = 25;
 
-    stream << '[' << get_formated_date() << "] " << this->get_method() << ' ' << this->get_request_uri() << ' ' << this->get_protocol() << std::endl;
+    stream << '[' << get_formated_date() << "] '" << this->get_method() << "' '" << this->get_request_uri() << "' '" << this->get_protocol() << "'" << std::endl;
     stream << "    header : {" << std::endl;
     for (std::map<std::string, std::string>::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
         stream << "        " << i->first << ": '" << i->second << "'" << std::endl;
