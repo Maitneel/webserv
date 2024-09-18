@@ -134,18 +134,6 @@ const ServerConfig& Socket::GetConfig() {
     return this->config;
 }
 
-void http_log(const HTTPRequest& request) {
-    std::cout << '[' << get_formated_date() << "] " << request.get_method() << ' ' << request.get_request_uri() << ' ' << request.get_protocol() << std::endl;
-    std::cout << "    header : {" << std::endl;
-    for (std::map<std::string, std::string>::const_iterator i = request.header_.begin(); i != request.header_.end(); i++) {
-        std::cout << "        " << i->first << ": " << i->second << std::endl;
-    }
-    std::cout << "    }" << std::endl;
-    std::cout << "    body : {" << std::endl;
-    std::cout << "        " << request.entity_body_ << std::endl;
-    std::cout << "    }" << std::endl;
-    return;
-}
 
 ServerConfig Server::GetConfigByFd(int fd) {
     std::vector<Socket>::iterator it;
@@ -252,7 +240,6 @@ void Server::EventLoop() {
                 std::string request_content = buffer[it->fd];
                 buffer.erase(it->fd);
                 HTTPRequest request(request_content);
-                // http_log(request);
                 request.print_info();
 
                 std::string method = request.get_method();

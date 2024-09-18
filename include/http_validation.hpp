@@ -42,7 +42,7 @@ bool is_lws(const std::string &s);  // unchecked http/1.1
 bool is_text(const std::string &s);  // unchecked http/1.1
 bool is_hex(const char &c);  // unchecked http/1.1
 bool is_word(const std::string &s);  // unchecked http/1.1
-bool is_token(const std::string &s);  // unchecked http/1.1
+bool is_token(const std::string &s);
 bool is_tspecials(const char &c);  // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある  // unchecked http/1.1
 bool is_comment(const std::string &s);  // unchecked http/1.1
 bool is_ctext(const std::string &s);  // unchecked http/1.1

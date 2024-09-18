@@ -312,7 +312,12 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
             // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
             header_pair.second = trim_string(header_pair.second, " ");
         }
-        this->header_.insert(header_pair);
+        std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(header_pair.first);
+        if (it == this->header_.end()) {
+            this->header_.insert(make_pair(header_pair.first, std::vector<std::string>(1, header_pair.second)));
+        } else {
+            it->second.push_back(header_pair.second);
+        }
         registor_count++;
     }
     return registor_count;
@@ -323,8 +328,11 @@ void HTTPRequest::valid_headers() {
 
     for (size_t i = 0; i < HTTPRequest::validation_func_pair.size(); i++) {
         std::pair<std::string, void(HTTPRequest::*)(const std::string &)> target = this->validation_func_pair.at(i);
-        if (this->header_.find(target.first) != this->header_.end()) {
-            (this->*(target.second))(this->header_.at(target.first));
+        std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(target.first);
+        if (it != this->header_.end()) {
+            for (size_t i = 0; i < it->second.size(); i++) {
+                (this->*(target.second))(it->second[i]);
+            }
         }
     }
 }
@@ -380,8 +388,12 @@ void HTTPRequest::print_info(std::ostream &stream) {
 
     stream << '[' << get_formated_date() << "] '" << this->get_method() << "' '" << this->get_request_uri() << "' '" << this->get_protocol() << "'" << std::endl;
     stream << "    header : {" << std::endl;
-    for (std::map<std::string, std::string>::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
-        stream << "        " << i->first << ": '" << i->second << "'" << std::endl;
+    for (std::map<std::string, std::vector<std::string> >::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
+        stream << "        " << std::setw(20) << std::left << i->first << ": ";
+        for (size_t j = 0; j < i->second.size(); j++) {
+            stream << "'"<< i->second[j] << "', ";
+        }
+        stream << std::endl;
     }
     stream << "    }" << std::endl;
     stream << "    body : {" << std::endl;

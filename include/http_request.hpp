@@ -84,7 +84,7 @@ class HTTPRequest {
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
 
  public:
-    std::map<std::string, std::string> header_;  // 一時的に public  //
+    std::map<std::string, std::vector<std::string> > header_;  // 一時的に public  //
     std::string entity_body_;  // これstringでいいのか要検討 //
     std::vector<std::string> allow_;
     std::string content_encoding_;
