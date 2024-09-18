@@ -23,7 +23,7 @@
 #define is_char(c) (0x01 <= (c) && (c) <= 0x7f)
 // UPCHAR, LOCHAR は RFC5234 では定義されていない
 #define is_upper(c) isupper(c)
-#define is_lower(c) islower(c) 
+#define is_lower(c) islower(c)
 #define is_alpha(c) (is_upper(c) || is_lower(c))
 #define is_digit(c)  isdigit(c)
 #define is_ctl(c) ((0x00 <= (c) && (c) <= 0x1f) || (c) == 0x7f)
@@ -97,7 +97,7 @@ bool is_month(const std::string &s);             // month          = "Jan" | "Fe
 bool is_pragma_directive(const std::string &s);  // unchecked http/1.1
 bool is_extension_pragma(const std::string &s);  // unchecked http/1.1
 
-bool is_product(const std::string &s); // unchecked http/1.1
+bool is_product(const std::string &s);  // unchecked http/1.1
 
 // 補助的な関数 //
 bool is_token_element(const char &c);
