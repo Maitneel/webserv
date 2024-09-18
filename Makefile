@@ -96,4 +96,8 @@ echo:
 	@echo ${CXX13}
 	@echo gun: ${GUN}
 
+show_stat:
+	uname -a
+	${CXX} --version
+
 .PHONY: all clean fclean re test lint
