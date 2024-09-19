@@ -86,7 +86,7 @@ bool is_comment(const std::string &s) {
 
 bool is_ctext(const std::string &s) {
     for (size_t i = 0; i < s.length(); i++) {
-        if (s.at(i) == '(' || s.at(i) == ')') {
+        if (s.at(i) == '(' || s.at(i) == ')' || (is_ctl(s.at(i)) && s.at(i) != HTAB)) {
             return false;
         }
     }
