@@ -39,17 +39,17 @@
 #define is_obs_text(c) (0x80 <= c && c <= 0xff)
 
 
-bool is_crlf(const std::string &s);  // unchecked http/1.1
+bool is_crlf(const std::string &s);
 bool is_lws(const std::string &s);  // unchecked http/1.1
 bool is_text(const std::string &s);  // unchecked http/1.1
 bool is_hex(const char &c);  // unchecked http/1.1
 bool is_word(const std::string &s);  // unchecked http/1.1
 bool is_token(const std::string &s);
 bool is_tspecials(const char &c);  // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある  // unchecked http/1.1
-bool is_comment(const std::string &s);  // unchecked http/1.1
-bool is_ctext(const std::string &s);  // unchecked http/1.1
-bool is_quoted_string(const std::string &s);  // unchecked http/1.1
-bool is_qdtext(const std::string &s);  // unchecked http/1.1
+bool is_comment(const std::string &s);  // 厳密にいうとちょっと違う(quoted-pairの処理をしてない) //
+bool is_ctext(const std::string &s);
+bool is_quoted_string(const std::string &s);  // 厳密にいうとちょっと違う(quoted-pairの処理をしてない) //
+bool is_qdtext(const std::string &s);
 
 bool is_valid_http_header(const std::string &str);  // unchecked http/1.1
 
@@ -84,17 +84,17 @@ bool is_national(const char &c);       // = <any OCTET excluding ALPHA, DIGIT,  
 
 bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT  // unchecked http/1.1
 
-bool is_http_date(const std::string &s);         // HTTP-date      = rfc1123-date | rfc850-date | asctime-date  // unchecked http/1.1
-bool is_rfc1123_data(const std::string &s);      // rfc1123-date   = wkday "," SP date1 SP time SP "GMT"  // unchecked http/1.1
-bool is_rfc850_data(const std::string &s);       // rfc850-date    = weekday "," SP date2 SP time SP "GMT"  // unchecked http/1.1
-bool is_asctime_date(const std::string &s);      // asctime-date   = wkday SP date3 SP time SP 4DIGIT  // unchecked http/1.1
-bool is_date1(const std::string &s);             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)  // unchecked http/1.1
-bool is_date2(const std::string &s);             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)  // unchecked http/1.1
-bool is_date3(const std::string &s);             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)  // unchecked http/1.1
-bool is_time(const std::string &s);              // time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; 00:00:00 - 23:59:59  // unchecked http/1.1
-bool is_wkday(const std::string &s);             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"  // unchecked http/1.1
-bool is_weekday(const std::string &s);           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"  // unchecked http/1.1
-bool is_month(const std::string &s);             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"  // unchecked http/1.1
+bool is_http_date(const std::string &s);         // HTTP-date      = rfc1123-date | rfc850-date | asctime-date
+bool is_rfc1123_data(const std::string &s);      // rfc1123-date aka IMT date   = wkday "," SP date1 SP time SP "GMT"
+bool is_rfc850_data(const std::string &s);       // rfc850-date    = weekday "," SP date2 SP time SP "GMT" 現在から過去50年と未来50年として扱う
+bool is_asctime_date(const std::string &s);      // asctime-date   = wkday SP date3 SP time SP 4DIGIT
+bool is_date1(const std::string &s);             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)
+bool is_date2(const std::string &s);             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)
+bool is_date3(const std::string &s);             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)
+bool is_time(const std::string &s);              // time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; 00:00:00 - 23:59:59
+bool is_wkday(const std::string &s);             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+bool is_weekday(const std::string &s);           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
+bool is_month(const std::string &s);             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"
 
 bool is_pragma_directive(const std::string &s);  // unchecked http/1.1
 bool is_extension_pragma(const std::string &s);  // unchecked http/1.1
