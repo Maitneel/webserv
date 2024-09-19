@@ -9,9 +9,11 @@
 
 #define CRLF "\x0d\x0a"
 
+#define SP 0x20
+#define HTAB 0x09
 
 
-// BIT
+// BIT2
 // HEXDIG
 // LWSP
 // WSP
@@ -33,7 +35,7 @@
 #define is_ht(c) ((c) == 0x09)
 #define is_dquote(c) ((c) == 0x22)
 
-#define is_vchar(c) (isprint(c) && c != 0x20)
+#define is_vchar(c) (0x21 <= c && c <= 0x7e)
 #define is_obs_text(c) (0x80 <= c && c <= 0xff)
 
 
@@ -105,5 +107,7 @@ bool is_token_element(const char &c);
 bool is_target_included_list(const std::string target, const std::string list[], size_t size);
 bool is_4digit(const std::string &s);
 bool is_2digit(const std::string &s);
+#define is_filed_vchar_element(c) (is_vchar(c) || is_obs_text(c))
+#define is_ows_elment(c) (c == SP || c == HTAB)
 
 #endif  // INCLUDE_HTTP_VALIDATION_HPP_

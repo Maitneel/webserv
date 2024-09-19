@@ -343,6 +343,36 @@ bool is_http_version(const std::string &s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIG
     return true;
 }
 
+bool is_valid_http_header_element(const std::string &str) {
+    size_t i = 0;
+    while (i < str.length() && is_filed_vchar_element(str.at(i))) {
+        i++;
+    }
+    if (i == 0) {
+        return false;
+    } else if (i == str.length()) {
+        return true;
+    }
+    while (i < str.length() && is_ows_elment(str.at(i))) {
+        i++;
+    }
+    if (str.length() < i && str.at(i) != ',') {
+        return false;
+    }
+    while (i < str.length() && is_ows_elment(str.at(i))) {
+        i++;
+    }
+    if (str.length() < i && !is_filed_vchar_element(str.at(i))) {
+        return false;
+    }
+    if (i == str.length()) {
+        return false;
+    }
+    return is_valid_http_header_element(str.substr(i));
+}
+
+// https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-3
+// これって HTABも含むの？？ //
 bool is_valid_http_header(const std::string &str) {
     try {
         const std::string removed_crlf = str.substr(0, str.length() - 2);
@@ -350,12 +380,9 @@ bool is_valid_http_header(const std::string &str) {
         if (removed_crlf.at(field_name.length()) != ':' && !is_crlf(str.substr(str.length() - 2))) {
             return false;
         }
-        for (size_t i = 0; i < removed_crlf.length(); i++) {
-            if (!is_text_element(removed_crlf.at(i))) {
-                if (!is_lws(removed_crlf.substr(i, 3))) {
-                    return false;
-                }
-            }
+        std::string filed_value = trim_string(removed_crlf.substr(field_name.length() + 1), " ");
+        if (!is_valid_http_header_element(filed_value)) {
+            return false;
         }
     } catch (std::out_of_range &e) {
         return false;
@@ -586,13 +613,29 @@ bool is_product(const std::string &s) {
 }
 
 // int main () {
-//     std::string d = "Mon Jun 22 08:12:31 2222";
-//     // std::vector<std::string> sp = split(d, " ");
-//     // for (size_t i = 0; i < sp.size(); i++) {
-//     //     std::cout << sp[i] <<std::endl;
-//     // }
-//     std::cout << is_http_date(d) << std::endl;;
-//     std::cout << is_rfc1123_data(d) << std::endl;;
-//     std::cout << is_rfc850_data(d) << std::endl;;
-//     std::cout << is_asctime_date(d) << std::endl;;
+    /*
+    std::string d = "Mon Jun 22 08:12:31 2222";
+    // std::vector<std::string> sp = split(d, " ");
+    // for (size_t i = 0; i < sp.size(); i++) {
+    //     std::cout << sp[i] <<std::endl;
+    // }
+    std::cout << is_http_date(d) << std::endl;;
+    std::cout << is_rfc1123_data(d) << std::endl;;
+    std::cout << is_rfc850_data(d) << std::endl;;
+    std::cout << is_asctime_date(d) << std::endl;;
+    // */
+
+    /*
+    std::string strs[6] = {
+        "foo,bar",
+        "foo ,bar,",
+        "foo , ,bar,charlie",
+        "",
+        ",",
+        ",   ,"
+    };
+    for (size_t i = 0; i < 6; i++) {
+        std::cout << strs[i] << ' ' << is_valid_http_header_element(strs[i]) << std::endl;
+    }
+    // */
 // }
