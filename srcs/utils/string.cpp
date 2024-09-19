@@ -1,6 +1,6 @@
+#include <sys/types.h>
 #include <string>
 #include <cctype>
-#include <sys/types.h>
 
 void to_lower(std::string *str) {
     for (size_t i = 0; i < str->length(); i++) {
