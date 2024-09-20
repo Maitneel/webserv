@@ -9,6 +9,10 @@
 #include <utility>
 #include <ostream>
 
+#define http_0_9 "HTTP/0.9"
+#define HTTP_1_0 "HTTP/1.0"
+#define HTTP_1_1 "HTTP/1.1"
+
 typedef enum HTTPRequestExceptTypeEnum {
     kRequestLine,
     kHTTPHeader
@@ -27,7 +31,7 @@ typedef enum HTTPHeaderExceptTypeEnum {
     kPragma,
     kReferer,
     kUserAgent,
-    kCONVERT_FAIL,
+    kConvertFail,
 } HTTPHeaderExceptType;
 
 class MIMEType {
@@ -80,7 +84,7 @@ class HTTPRequest {
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
 
  public:
-    std::map<std::string, std::string> header_;  // 一時的に public  //
+    std::map<std::string, std::vector<std::string> > header_;  // 一時的に public  //
     std::string entity_body_;  // これstringでいいのか要検討 //
     std::vector<std::string> allow_;
     std::string content_encoding_;

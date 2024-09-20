@@ -1,5 +1,5 @@
 CXX		 := c++
-CXXFLAGS	:= -Wall -Wextra  -std=c++98 -MMD -MP
+CXXFLAGS	:= -Wall -Wextra -pedantic -std=c++98 -MMD -MP
 
 NAME		= webserv
 
@@ -95,5 +95,9 @@ echo:
 	@echo ${HOGE}
 	@echo ${CXX13}
 	@echo gun: ${GUN}
+
+show_stat:
+	uname -a
+	${CXX} --version
 
 .PHONY: all clean fclean re test lint

@@ -58,7 +58,7 @@ void HTTPRequest::valid_content_length(const std::string &value) {
         this->content_length_ = safe_atoi(value.substr(front));
     } catch (std::runtime_error const &) {
         // InvalidHeader ではない気がする //
-        throw InvalidHeader(kCONVERT_FAIL);
+        throw InvalidHeader(kConvertFail);
     }
 }
 
@@ -227,17 +227,19 @@ HTTPRequest::HTTPRequest(const int fd) {
 
 void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
-    validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
-    validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
-    validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
-    validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
-    validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
-    validation_func_pair.push_back(std::make_pair("date", &HTTPRequest::valid_date));
-    validation_func_pair.push_back(std::make_pair("expires", &HTTPRequest::valid_expires));
-    validation_func_pair.push_back(std::make_pair("form", &HTTPRequest::valid_form));
-    validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
-    validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
-    validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+    if (this->protocol == http_0_9 || this->protocol == HTTP_1_0) {
+        validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
+        validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
+        validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
+        validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
+        validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
+        validation_func_pair.push_back(std::make_pair("date", &HTTPRequest::valid_date));
+        validation_func_pair.push_back(std::make_pair("expires", &HTTPRequest::valid_expires));
+        validation_func_pair.push_back(std::make_pair("form", &HTTPRequest::valid_form));
+        validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
+        validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
+        validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+    }
 }
 
 std::string HTTPRequest::parse_method(const std::string &request_line) {
@@ -303,7 +305,19 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
         if (!is_valid_http_header(splited_buffer[i])) {
             throw InvalidRequest(kHTTPHeader);
         }
-        this->header_.insert(make_header_pair(splited_buffer[i]));
+        std::pair<std::string, std::string> header_pair = make_header_pair(splited_buffer[i]);
+        if (this->protocol == HTTP_1_1) {
+            // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
+            // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
+            // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
+            header_pair.second = trim_string(header_pair.second, " ");
+        }
+        std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(header_pair.first);
+        if (it == this->header_.end()) {
+            this->header_.insert(make_pair(header_pair.first, std::vector<std::string>(1, header_pair.second)));
+        } else {
+            it->second.push_back(header_pair.second);
+        }
         registor_count++;
     }
     return registor_count;
@@ -314,8 +328,11 @@ void HTTPRequest::valid_headers() {
 
     for (size_t i = 0; i < HTTPRequest::validation_func_pair.size(); i++) {
         std::pair<std::string, void(HTTPRequest::*)(const std::string &)> target = this->validation_func_pair.at(i);
-        if (this->header_.find(target.first) != this->header_.end()) {
-            (this->*(target.second))(this->header_.at(target.first));
+        std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(target.first);
+        if (it != this->header_.end()) {
+            for (size_t i = 0; i < it->second.size(); i++) {
+                (this->*(target.second))(it->second[i]);
+            }
         }
     }
 }
@@ -371,8 +388,12 @@ void HTTPRequest::print_info(std::ostream &stream) {
 
     stream << '[' << get_formated_date() << "] '" << this->get_method() << "' '" << this->get_request_uri() << "' '" << this->get_protocol() << "'" << std::endl;
     stream << "    header : {" << std::endl;
-    for (std::map<std::string, std::string>::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
-        stream << "        " << i->first << ": '" << i->second << "'" << std::endl;
+    for (std::map<std::string, std::vector<std::string> >::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
+        stream << "        " << std::setw(20) << std::left << i->first << ": ";
+        for (size_t j = 0; j < i->second.size(); j++) {
+            stream << "'"<< i->second[j] << "', ";
+        }
+        stream << std::endl;
     }
     stream << "    }" << std::endl;
     stream << "    body : {" << std::endl;
@@ -461,7 +482,7 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     case kReferer:
         return "HTTPHeader: invalid 'Referer' header";
         break;
-    case kCONVERT_FAIL:
+    case kConvertFail:
         return "HTTPHeader: convert failed";
         break;
     default:
