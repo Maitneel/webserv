@@ -227,7 +227,7 @@ HTTPRequest::HTTPRequest(const int fd) {
 
 void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
-    if (this->protocol == http_0_9 || this->protocol == HTTP_1_0) {
+    if (this->protocol == http_0_9 || this->protocol == HTTP_1_0 || true) {
         validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
         validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
         validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
@@ -320,6 +320,7 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
         }
         registor_count++;
     }
+    this->transform_headers();
     return registor_count;
 }
 
@@ -337,6 +338,19 @@ void HTTPRequest::valid_headers() {
     }
 }
 
+void HTTPRequest::transform_content_type() {
+    std::map<std::string, std::vector<std::string> >::iterator content_type_local_val = this->header_.find("content-type");
+    for (size_t i = 0; i < content_type_local_val->second.size(); i++) {
+        to_lower(&content_type_local_val->second[i]);
+    }
+}
+
+void HTTPRequest::transform_headers() {
+    if (this->header_.find("content-type") != this->header_.end()) {
+        transform_content_type();
+    }
+}
+
 void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
@@ -350,6 +364,7 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
             // throw いんたーなるさーばーえらー的なやつ //
         }
     }
+    this->transform_headers();
 }
 
 HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {

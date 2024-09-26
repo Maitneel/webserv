@@ -80,6 +80,9 @@ class HTTPRequest {
     size_t registor_field(const std::vector<std::string> &splited_buffer);
     void registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
 
+    void transform_headers();
+    void transform_content_type();
+
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;
 
