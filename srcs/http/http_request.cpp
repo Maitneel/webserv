@@ -70,7 +70,7 @@ void HTTPRequest::valid_content_type(const std::string &value) {
         throw InvalidHeader(kContentType);
     }
     try {
-        this->content_type_.type = value.substr(front, slash_index - 1);
+        this->content_type_.type = value.substr(front, slash_index);
         this->content_type_.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
     } catch (std::out_of_range const &) {
         throw InvalidHeader(kContentType);
@@ -227,7 +227,7 @@ HTTPRequest::HTTPRequest(const int fd) {
 
 void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
-    if (this->protocol == http_0_9 || this->protocol == HTTP_1_0 || true) {
+    if (this->protocol == http_0_9 || this->protocol == HTTP_1_0) {
         validation_func_pair.push_back(std::make_pair("allow", &HTTPRequest::valid_allow));
         validation_func_pair.push_back(std::make_pair("authorization", &HTTPRequest::valid_authorization));
         validation_func_pair.push_back(std::make_pair("content-encoding", &HTTPRequest::valid_content_encoding));
@@ -239,6 +239,9 @@ void HTTPRequest::add_valid_funcs() {
         validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
         validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
         validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+    } else if (this->protocol == HTTP_1_1) {
+        validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
+        validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
     }
 }
 
