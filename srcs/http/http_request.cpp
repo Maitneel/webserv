@@ -417,6 +417,7 @@ void HTTPRequest::print_info(std::ostream &stream) {
     stream << "    body : {" << std::endl;
     stream << "        " << this->entity_body_ << std::endl;
     stream << "    }" << std::endl;
+    /*
     stream << std::left << std::setw(width) << "    Allow" << " : [";
     for (size_t i = 0; i < this->allow_.size(); i++) {
         stream << '"' << this->allow_.at(i) << '"' << ", ";
@@ -445,6 +446,7 @@ void HTTPRequest::print_info(std::ostream &stream) {
         stream << "'" << this->user_agent_.at(i) << "', ";
     }
     stream << "]" << std::endl;
+    // */
 }
 
 // exception class
