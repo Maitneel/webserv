@@ -21,6 +21,14 @@ size_t get_front(const std::string &str) {
     return result;
 }
 
+void remove_front_crlf(std::string *str) {
+    size_t front_crlf_length = 0;
+    while (front_crlf_length + 1 < str->length() && str->at(front_crlf_length) == CR && str->at(front_crlf_length + 1) == LF) {
+        front_crlf_length += 2;
+    }
+    str->erase(0, front_crlf_length);
+}
+
 void HTTPRequest::valid_allow(const std::string &value) {
     try {
         this->allow_ = convert_allow_to_vector(value);
@@ -371,6 +379,7 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
 }
 
 HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+    remove_front_crlf(&buffer);
     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
@@ -511,3 +520,20 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     }
 }
 
+
+/*
+int main() {
+    std::string req = CRLF;
+    req +=  CRLF;
+    req +=  CRLF;
+    req += "GET / HTTP/1.1";
+    req +=  CRLF;
+    req += "Host: localhost:8080";
+    req +=  CRLF;
+    req += "User-Agent: curl/7.79.1";
+    req +=  CRLF;
+
+    HTTPRequest reqeust(req);
+    return 0;
+}
+// */
