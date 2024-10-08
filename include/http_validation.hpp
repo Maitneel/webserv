@@ -101,6 +101,22 @@ bool is_extension_pragma(const std::string &s);  // unchecked http/1.1
 
 bool is_product(const std::string &s);  // unchecked http/1.1
 
+// RFC 3986
+bool is_ip_literal(const std::string &s);        // IP-literal    = "[" ( IPv6address / IPvFuture  ) "]"
+bool is_ipv4address(const std::string &s);       // IPv4address   = dec-octet "." dec-octet "." dec-octet "." dec-octet
+bool is_reg_name(const std::string &s);          // reg-name      = *( uri-unreserved / pct-encoded / sub-delims )
+
+bool is_ipv6_address(const std::string &s);       // IPv6address
+bool is_ipv_future(const std::string &s);         // IPvFuture     = "v" 1*HEXDIG "." 1*( uri-unreserved / sub-delims / ":" )
+bool is_dec_octed(const std::string &s);
+bool is_uri_unreserved(const char &c);           // uri-unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+bool is_pct_encoded(const std::string &s);       // pct-encoded   = "%" HEXDIG HEXDIG
+bool is_sub_delims(const char &c);               // sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+bool is_h16(const std::string &s);               // h16           = 1*4HEXDIG
+bool is_ls32(const std::string &s);              // ls32          = ( h16 ":" h16 ) / IPv4address
+bool is_dec_octed(const std::string &s);
+bool is_port(const std::string &s);
+
 // 補助的な関数 //
 bool is_token_element(const char &c);
 #define is_text_element(c) (!is_ctl(c) && !is_cr(c) && !is_lf(c))

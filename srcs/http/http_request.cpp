@@ -229,6 +229,19 @@ void HTTPRequest::valid_user_agent(const std::string &value) {
     }
 }
 
+void HTTPRequest::valid_host(const std::string &value) {
+    std::string::size_type last_colon_index = value.rfind(':', value.length());
+    std::string host_name = value.substr(0, last_colon_index);
+    if (last_colon_index != std::string::npos) {
+        if (!is_port(value.substr(last_colon_index + 1))) {
+            host_name = value;
+        }
+    }
+    if (!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) {
+        throw InvalidHeader(kHost);
+    }
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -250,6 +263,7 @@ void HTTPRequest::add_valid_funcs() {
     } else if (this->protocol == HTTP_1_1) {
         validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
         validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
+        validation_func_pair.push_back(std::make_pair("host", &HTTPRequest::valid_host));
     }
 }
 
@@ -511,6 +525,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     case kReferer:
         return "HTTPHeader: invalid 'Referer' header";
         break;
+    case kHost:
+        return "HTTPHeader: invalid 'Host' header";
+        break;
     case kConvertFail:
         return "HTTPHeader: convert failed";
         break;
@@ -528,12 +545,13 @@ int main() {
     req +=  CRLF;
     req += "GET / HTTP/1.1";
     req +=  CRLF;
-    req += "Host: localhost:8080";
+    req += "Host: [::3333:4444:5555:6666:1.2.3.4]:8080";
     req +=  CRLF;
     req += "User-Agent: curl/7.79.1";
     req +=  CRLF;
 
     HTTPRequest reqeust(req);
+    reqeust.print_info();
     return 0;
 }
 // */

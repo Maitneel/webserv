@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include "http_validation.hpp"
 #include "get_http_keyword.hpp"
@@ -612,6 +613,172 @@ bool is_product(const std::string &s) {
     }
 }
 
+// RFC 3986
+bool is_ip_literal(const std::string &s) {        // IP-literal    = "[" ( IPv6address / IPvFuture  ) "]"
+    try {
+        if (s.at(0) != '[' || s.at(s.length() - 1) != ']') {
+            return false;
+        }
+        std::string trimed = s.substr(1, s.length() - 2);
+        return (is_ipv6_address(trimed) || is_ipv_future(trimed));
+    } catch (...) {
+        return false;
+    }
+}
+
+bool is_ipv4address(const std::string &s) {       // IPv4address   = dec-octet "." dec-octet "." dec-octet "." dec-octet
+    try {
+        std::vector<std::string> splited = split(s, ".");
+        if (splited.size() != 4) {
+            return false;
+        }
+        for (size_t i = 0; i < 3; i++) {
+            splited.at(i).erase(splited.at(i).end() - 1);
+        }
+        for (size_t i = 0; i < 4; i++) {
+            if (!is_dec_octed(splited.at(i))) {
+                return false;
+            }
+        }
+    } catch (...) {
+        return false;
+    }
+    return true;
+}
+bool is_reg_name(const std::string &s) {          // reg-name      = *( uri-unreserved / pct-encoded / sub-delims )
+    for (size_t i = 0; i < s.length(); i++) {
+        const std::string three_char = s.substr(i, 3);
+        if (!is_uri_unreserved(s.at(i)) && !is_pct_encoded(three_char) && !is_sub_delims(s.at(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+//    IPv6address   =                            6( h16 ":" ) ls32
+//                  /                       "::" 5( h16 ":" ) ls32
+//                  / [               h16 ] "::" 4( h16 ":" ) ls32
+//                  / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+//                  / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+//                  / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
+//                  / [ *4( h16 ":" ) h16 ] "::"              ls32
+//                  / [ *5( h16 ":" ) h16 ] "::"              h16
+//                  / [ *6( h16 ":" ) h16 ] "::"
+// この関数正しく動くかわからない(検証項目が多すぎてどれが正しいのかがわからない) //
+bool is_ipv6_address(const std::string &s) {
+    int segment_count = 0;
+    bool is_dual = false;
+    std::string::size_type current_segment_front = 0;
+    std::string::size_type current_segment_end = 0 - 1;
+    std::string segment_str;
+
+    do {
+        current_segment_front = current_segment_end + 1;
+        current_segment_end = s.find(':', current_segment_front);
+        if (current_segment_front == current_segment_end) {
+            if (is_dual) {
+                return false;
+            }
+            is_dual = true;
+            if (current_segment_end == 0) {
+                current_segment_end++;
+            }
+            if (s.find(':', current_segment_end + 1) == std::string::npos) {
+                break;
+            }
+            continue;
+        }
+        segment_count++;
+        segment_str = s.substr(current_segment_front, current_segment_end - current_segment_front);
+        if (current_segment_end == std::string::npos && is_ipv4address(segment_str)) {
+            segment_count += 1;
+            break;
+        }
+        if (!is_h16(segment_str)) {
+            return false;
+        }
+    } while (current_segment_end != std::string::npos);
+
+    if (is_dual) {
+        return (segment_count < 8);
+    } else {
+        return (segment_count == 8);
+    }
+}
+
+// テストしてない //
+bool is_ipv_future(const std::string &s) {         // IPvFuture     = "v" 1*HEXDIG "." 1*( uri-unreserved / sub-delims / ":" )
+    size_t i;
+    if (s.at(0) != 'v') {
+        return false;
+    }
+    for (i = 1; i < s.length(); i++) {
+        if (s.at(i) == '.') {
+            break;
+        }
+        if (!is_hex(s.at(i))) {
+            return false;
+        }
+    }
+    i++;
+    for (; i < s.length(); i++) {
+        if (!is_uri_unreserved(s.at(i)) && !is_sub_delims(s.at(i)) && s.at(i) != ':') {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool is_uri_unreserved(const char &c) {           // uri-unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    return (is_alpha(c) || is_digit(c) || c == '-' || c == '.' || c == '_' || c == '~');
+}
+
+bool is_pct_encoded(const std::string &s) {       // pct-encoded   = "%" HEXDIG HEXDIG
+    return is_escape(s);
+}
+
+bool is_sub_delims(const char &c) {               // sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+    return (c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=');
+}
+
+bool is_h16(const std::string &s) {               // h16           = 1*4HEXDIG
+    if (!(1 <= s.length() && s.length() <= 4)) {
+        return false;
+    }
+    for (size_t i = 0; i < s.length(); i++) {
+        if (!is_hex(s.at(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 結果的に使ってない //
+bool is_ls32(const std::string &s) {              // ls32          = ( h16 ":" h16 ) / IPv4address
+    if (is_ipv4address(s)) {
+        return true;
+    }
+    if (s.length() != 4 + 1 + 4) {
+        return false;
+    }
+    return ((is_h16(s.substr(0, 4)) && s.at(4) == ':' && is_h16(s.substr(5, 4))));
+}
+
+bool is_dec_octed(const std::string &s) {
+    int n = safe_atoi(s);
+    return (0 <= n && n <= 255 && int_to_string(n) == s);
+}
+
+bool is_port(const std::string &s) {
+    for (size_t i = 0; i < s.length(); i++) {
+        if (!is_digit(s.at(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // int main () {
     /*
     std::string d = "Mon Jun 22 08:12:31 2222";
@@ -639,3 +806,109 @@ bool is_product(const std::string &s) {
     }
     // */
 // }
+
+/*
+int main() {
+    std::string ipv6_address[] = {
+        // "2001:db8:3333:4444:5555:6666:7777:8888",
+        // "2001:db8:3333:4444:CCCC:DDDD:EEEE:FFFF",
+        "2001:db8::",
+        "::1234:5678",
+        "2001:db8::1234:5678",
+        "2001:0db8:0001:0000:0000:0ab9:C0A8:0102",
+        "2001:db8:1::ab9:C0A8:102",
+        "2001:db8:3333:4444:5555:6666:1.2.3.4",
+        "::11.22.33.44",
+        "2001:db8::123.123.123.123",
+        "::1234:5678:91.123.4.56",
+        "::1234:5678:1.2.3.4",
+        "2001:db8::1234:5678:5.6.7.8",
+        "::",
+
+        "2001:db8:3333:4444:5555:6666:0.255.256.1",
+        "2001:db8:3333:4444:5555:6666:fFfF:ghi",
+        "2001:db8:3333:4444:5555:6666:1:",
+        "2001:db8:3333:4444:CCCC:DDDD:EEEE:FFFF:",
+        "1111::3333::4444",
+
+        "1111:2222:3333:4444:5555:6666:7777:8888",
+        "1111:2222:3333:4444:5555:6666:1.2.3.4",
+
+        "::2222:3333:4444:5555:6666:7777:8888",
+        "::2222:3333:4444:5555:6666:1.2.3.4",
+
+        "1111::3333:4444:5555:6666:7777:8888",
+        "1111::3333:4444:5555:6666:1.2.3.4",
+        "::3333:4444:5555:6666:7777:8888",
+        "::3333:4444:5555:6666:1.2.3.4",
+
+        "1111:2222::4444:5555:6666:7777:8888",
+        "1111:2222::4444:5555:6666:1.2.3.4",
+        "1111::4444:5555:6666:7777:8888",
+        "1111::4444:5555:6666:1.2.3.4",
+        "::3333:4444:5555:6666:7777:8888",
+        "::3333:4444:5555:6666:1.2.3.4",
+
+        "1111:2222:3333::5555:6666:7777:8888",
+        "1111:2222:3333::5555:6666:1.2.3.4",
+        "1111:2222::5555:6666:7777:8888",
+        "1111:2222::5555:6666:1.2.3.4",
+        "1111::5555:6666:7777:8888",
+        "1111::5555:6666:1.2.3.4",
+        "::5555:6666:7777:8888",
+        "::5555:6666:1.2.3.4",
+
+        "1111:2222:3333:4444::6666:7777:8888",
+        "1111:2222:3333:4444::6666:1.2.3.4",
+        "1111:2222:3333::6666:7777:8888",
+        "1111:2222:3333::6666:1.2.3.4",
+        "1111:2222::6666:7777:8888",
+        "1111:2222::6666:1.2.3.4",
+        "1111::6666:7777:8888",
+        "1111::6666:1.2.3.4",
+        "::6666:7777:8888",
+        "::6666:1.2.3.4",
+
+        "1111:2222:3333:4444:5555::7777:8888",
+        "1111:2222:3333:4444:5555::1.2.3.4",
+        "1111:2222:3333:4444::7777:8888",
+        "1111:2222:3333:4444::1.2.3.4",
+        "1111:2222:3333::7777:8888",
+        "1111:2222:3333::1.2.3.4",
+        "1111:2222::7777:8888",
+        "1111:2222::1.2.3.4",
+        "1111::7777:8888",
+        "1111::1.2.3.4",
+        "::7777:8888",
+        "::1.2.3.4",
+
+
+        "1111:2222:3333:4444:5555:6666::8888",
+        "1111:2222:3333:4444:5555:6666::1.2.3.4", // forbidden
+        "1111:2222:3333:4444:5555::8888",
+        "1111:2222:3333:4444::8888",
+        "1111:2222:3333::8888",
+        "1111:2222::8888",
+        "1111::8888",
+        "::8888",
+
+
+
+        "1111:2222:3333:4444:5555:6666:7777::",
+        "1111:2222:3333:4444:5555:6666::",
+        "1111:2222:3333:4444:5555::",
+        "1111:2222::",
+        "1111::",
+        "::",
+
+
+        "END_OF_ARRAY"
+    };
+    for (size_t i = 0; ; i++) {
+        if (ipv6_address[i] == "END_OF_ARRAY") {
+            break;
+        }
+        std::cout << i << " : " << is_ipv6_address(ipv6_address[i]) << ' ' << ipv6_address[i] << std::endl;
+    }
+}
+// */
