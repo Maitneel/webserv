@@ -335,7 +335,7 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
             // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
             // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
             // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
-            header_pair.second = trim_string(header_pair.second, " ");
+            header_pair.second = trim_string(header_pair.second, " \0x09");
         }
         std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(header_pair.first);
         if (it == this->header_.end()) {
