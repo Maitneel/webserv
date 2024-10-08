@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+
 #include "config.hpp"
 
 std::vector<ServerConfig> parse_config(std::string path) {

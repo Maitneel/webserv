@@ -15,6 +15,8 @@
 #include <iomanip>
 #include <algorithm>
 #include <stdexcept>
+#include <vector>
+#include <map>
 
 #include "server.hpp"
 #include "poll_selector.hpp"

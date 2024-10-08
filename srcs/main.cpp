@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include "server.hpp"
 #include "config.hpp"
 #include "http_request.hpp"
