@@ -380,6 +380,7 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
+            // TODO(status-code): response with 411 length require
             throw InvalidRequest(kHTTPHeader);
         }
         try {
