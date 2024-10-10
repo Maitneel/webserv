@@ -210,8 +210,8 @@ int ft_accept(int fd) {
 }
 
 
-//　雑of雑なので作り直さないといけないと思う //
-HTTPResponse create_cgi_responce(HTTPRequest &req, const std::string &cgi_path) {
+//  雑of雑なので作り直さないといけないと思う //
+HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_path) {
     std::string cgi_responce = call_cgi_script(req, cgi_path);
     std::string content_type;
     std::string body;

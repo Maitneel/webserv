@@ -1,12 +1,11 @@
+#include <unistd.h>
+
 #include <string>
 #include <stdexcept>
-#include <unistd.h>
 #include <cstdlib>
 #include <cstring>
 
 #include "http_request.hpp"
-
-#include <iostream>
 
 #define PIPE_READ_FD 0
 #define PIPE_WRITE_FD 1
@@ -19,7 +18,7 @@ void close_pipe_fds(const int fds[2]) {
 }
 
 char **create_argv(const std::string &cgi_script_path) {
-    char **argv = (char **)(malloc(sizeof(char *) * 2));
+    char **argv = reinterpret_cast<char **>(malloc(sizeof(char *) * 2));
     if (argv == NULL) {
         exit(127);
     }
@@ -55,7 +54,7 @@ std::string read_cgi_responce(const int &fd) {
     // TODO(maitneel): CGIの結果の読み込み //
     // RFC3875 では何種類かresponceが定義されているが、とりま、document responceしか考慮しない //
     std::string document_responce;
-    char buffer[BUFFER_SIZE]; 
+    char buffer[BUFFER_SIZE];
     bzero(buffer, BUFFER_SIZE);
     // ここのread, 0帰ってきたら終了でほんとにいいのかわからない //
     while (0 < read(fd, buffer, BUFFER_SIZE)) {
@@ -81,7 +80,7 @@ std::string call_cgi_script(const HTTPRequest &request, const std::string &cgi_s
     close_pipe_fds(to_script_pipe_fd);
     close(to_server_pipe_fd[PIPE_WRITE_FD]);
 
-    waitpid(child_pid, NULL, 0); // TODO(maitneel): ブロッキングしないようにする //
+    waitpid(child_pid, NULL, 0);  // TODO(maitneel): ブロッキングしないようにする //
     std::string cgi_responce = read_cgi_responce(from_script);
     close(from_script);
 
