@@ -22,6 +22,7 @@
 #include "poll_selector.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "cgi.hpp"
 
 std::string int_to_str(int n) {
     std::stringstream ss;
@@ -208,6 +209,27 @@ int ft_accept(int fd) {
     return sock;
 }
 
+
+//　雑of雑なので作り直さないといけないと思う //
+HTTPResponse create_cgi_responce(HTTPRequest &req, const std::string &cgi_path) {
+    std::string cgi_responce = call_cgi_script(req, cgi_path);
+    std::string content_type;
+    std::string body;
+
+    try {
+        std::string::size_type nl_index = cgi_responce.find('\n');
+        std::string::size_type colon_index = cgi_responce.find(':');
+        if (colon_index == std::string::npos) {
+            throw std::runtime_error("cgi error");
+        }
+        content_type = cgi_responce.substr(colon_index + 1, nl_index - colon_index - 1);
+        body = cgi_responce.substr(nl_index);
+    } catch (...) {
+        return HTTPResponse(HTTPResponse::kInternalServerErrror, "text/html", "Internal Server Error");
+    }
+    return HTTPResponse(HTTPResponse::kOK, content_type, body);
+}
+
 void Server::EventLoop() {
     // 一旦、最初のFDのみ
     int socket_fd = this->sockets[0].GetSocketFd();
@@ -246,7 +268,9 @@ void Server::EventLoop() {
 
                 std::string method = request.get_method();
                 HTTPResponse res;
-                if (method == "GET") {
+                if (request.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
+                    res = create_cgi_responce(request, "./cgi_script/date/date.cgi");
+                } else if (method == "GET") {
                     res = this->GetHandler(socket_fd, request);
                 } else {
                     res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
