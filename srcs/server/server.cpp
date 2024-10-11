@@ -227,7 +227,8 @@ HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_
         }
         content_type = cgi_responce.substr(colon_index + 1, nl_index - colon_index - 1);
         body = cgi_responce.substr(nl_index);
-    } catch (...) {
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
         return HTTPResponse(HTTPResponse::kInternalServerErrror, "text/html", "Internal Server Error");
     }
     return HTTPResponse(HTTPResponse::kOK, content_type, body);

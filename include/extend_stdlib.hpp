@@ -13,6 +13,7 @@ void to_lower(std::string *str);
 void to_upper(std::string *str);
 std::string trim_string(const std::string &origin, const std::string &char_of_remove);
 std::string int_to_string(int n);
+std::string size_t_to_string(size_t n);
 
 
 // 関数にしたくない(この処理でスタック積みたくない)のでマクロにしてる //

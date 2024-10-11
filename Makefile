@@ -28,6 +28,9 @@ SRCS		=	main.cpp \
 				${SERVER_DIR}http_context.cpp \
 				${CONFIG_DIR}config.cpp \
 				${CGI_SERVER_DIR}cgi_server.cpp \
+				${CGI_SERVER_DIR}set_meta_valiable.cpp \
+				${CGI_SERVER_DIR}valid_words.cpp \
+
 
 KERNEL	  := ${shell uname -s}
 GNU		 := ${shell ls ${shell echo ${PATH} | sed 's/:/ /g'} | grep -e '^g++-' | head -n 1}
