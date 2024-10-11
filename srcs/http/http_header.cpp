@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <cstring>
 
 #include <iostream>
 
@@ -23,7 +24,8 @@ std::pair<std::string, std::string> make_header_pair(std::string src) {
             // https://www.rfc-editor.org/rfc/rfc9112.html#section-5.1-2
             throw HTTPRequest::InvalidRequest(kHTTPHeader);
         }
-        filed_value = src.substr(filed_value_start, src.length() - filed_value_start - 2);
+        size_t filed_value_length = src.length() - filed_value_start - strlen(CRLF);
+        filed_value = src.substr(filed_value_start, filed_value_length);
     } catch (...) {
         // TODO(status-code): resopnse with 400 status code
         throw HTTPRequest::InvalidRequest(kHTTPHeader);
