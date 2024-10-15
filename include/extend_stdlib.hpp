@@ -14,4 +14,17 @@ void to_upper(std::string *str);
 std::string trim_string(const std::string &origin, const std::string &char_of_remove);
 std::string int_to_string(int n);
 
+
+// 関数にしたくない(この処理でスタック積みたくない)のでマクロにしてる //
+// srcs/utils/string.cpp　にコメントアウトした実装あるので処理わからなければ見てもらえるといいと思う //
+
+// std::string left_opend_half_open_substr(const std::string &s, const std::string::size_type &opend_left, const std::string::size_type &closed_right);
+#define right_opend_half_open_substr(s, closed_left, opend_right) (s).substr((closed_left), (opend_right) - (closed_left))
+// std::string right_opend_half_open_substr(const std::string &s, const std::string::size_type &closed_left, const std::string::size_type &opend_right);
+#define left_opend_half_open_substr(s, opend_left, closed_right) (s).substr(((opend_left) + 1), (closed_right) - (opend_left))
+// std::string opend_substr(const std::string &s, const std::string::size_type &opend_left, const std::string::size_type &opend_right);
+#define opend_substr(s, opend_left, opend_right) (s).substr(((opend_left) + 1), (opend_right) - (opend_left) - 1)
+// std::string closed_substr(const std::string &s, const std::string::size_type &closed_left, const std::string::size_type &closed_right);
+#define closed_substr(s, closed_left, closed_right) (s).substr((closed_left), (closed_right) - (closed_left) + 1)
+
 #endif  // INCLUDE_EXTEND_STDLIB_HPP_
