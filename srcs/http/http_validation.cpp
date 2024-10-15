@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cstring>
 
 #include "http_validation.hpp"
 #include "get_http_keyword.hpp"
@@ -376,9 +377,9 @@ bool is_valid_http_header_element(const std::string &str) {
 // これって HTABも含むの？？ //
 bool is_valid_http_header(const std::string &str) {
     try {
-        const std::string removed_crlf = str.substr(0, str.length() - 2);
+        const std::string removed_crlf = str.substr(0, str.length() - strlen(CRLF));
         const std::string field_name = get_first_token(removed_crlf);
-        if (removed_crlf.at(field_name.length()) != ':' && !is_crlf(str.substr(str.length() - 2))) {
+        if (removed_crlf.at(field_name.length()) != ':' && !is_crlf(str.substr(str.length() - strlen(CRLF)))) {
             return false;
         }
         std::string filed_value = trim_string(removed_crlf.substr(field_name.length() + 1), " ");
@@ -619,7 +620,7 @@ bool is_ip_literal(const std::string &s) {        // IP-literal    = "[" ( IPv6a
         if (s.at(0) != '[' || s.at(s.length() - 1) != ']') {
             return false;
         }
-        std::string trimed = s.substr(1, s.length() - 2);
+        std::string trimed = s.substr(1, s.length() - strlen(CRLF));
         return (is_ipv6_address(trimed) || is_ipv_future(trimed));
     } catch (...) {
         return false;
