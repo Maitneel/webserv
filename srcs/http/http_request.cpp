@@ -509,6 +509,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     case kContentLength:
         return "HTTPHeader: invalid 'Content-Length' header";
         break;
+    case kContentType:
+        return "HTTPHeader: invalid 'Content-Type' header";
+        break;
     case kDate:
         return "HTTPHeader: invalid 'Date' header";
         break;
