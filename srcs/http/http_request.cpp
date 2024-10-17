@@ -94,6 +94,10 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     try {
         std::vector<std::string> splited_parameter = escaped_quote_split(value.substr(semi_colon_index + 1), ";");
         for (size_t i = 0; i < splited_parameter.size(); i++) {
+            std::string ows;
+            ows.push_back(SP);
+            ows.push_back(HTAB);
+            splited_parameter.at(i) = trim_string(splited_parameter.at(i), ows);
             std::cerr << splited_parameter.at(i) << std::endl;
             if (splited_parameter.at(i) == ";" || splited_parameter.at(i) == "") {
                 continue;
