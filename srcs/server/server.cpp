@@ -119,7 +119,7 @@ Server::Server(std::vector<ServerConfig> confs) {
         int sock = create_inet_socket(it->port);
         if (sock < 0)
             throw std::runtime_error("can not create tcp socket.");
-        this->sockets.push_back(Socket(sock, *it));
+        sockets_.push_back(Socket(sock, *it));
     }
 }
 
@@ -140,7 +140,7 @@ const ServerConfig& Socket::GetConfig() {
 
 ServerConfig Server::GetConfigByFd(int fd) {
     std::vector<Socket>::iterator it;
-    for (it = this->sockets.begin(); it != this->sockets.end(); it++) {
+    for (it = sockets_.begin(); it != sockets_.end(); it++) {
         if (it->GetSocketFd() == fd)
             return it->GetConfig();
     }
@@ -231,13 +231,12 @@ HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_
 }
 
 void Server::EventLoop() {
-    // 一旦、最初のFDのみ
-    int socket_fd = this->sockets[0].GetSocketFd();
-
     PollSelector selector;
 
-    selector.Register(socket_fd, kEventRead);
-    std::map<int, std::string> buffer;
+    for (int i = 0; i < sockets_.size(); i++) {
+        selector.Register(sockets_[i].GetSocketFd(), kEventRead);
+    }
+    std::map<int, HTTPContext> ctxs;
 
     while(true) {
         std::vector<FDEvent> events;
@@ -245,24 +244,25 @@ void Server::EventLoop() {
 
         std::vector<FDEvent>::const_iterator it;
         for (it = events.begin(); it != events.end(); it++) {
-            if (it->fd == socket_fd && it->event == kEventRead) {
+            if (this->IsIncludeFd(it->fd) && it->event == kEventRead) {
                 try {
                     int accepted_fd = ft_accept(it->fd);
                     selector.Register(accepted_fd, kEventRead);
+                    ctxs.insert(std::make_pair(accepted_fd, HTTPContext()));
+                    ctxs[accepted_fd].socket_fd_ = it->fd;
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     continue;
                 }
             } else if (it->event == kEventRead) {
-                buffer[it->fd] += read_request(it->fd);
-                std::cout << buffer[it->fd] << std::endl;
-                if (buffer[it->fd].rfind("\r\n\r\n") != std::string::npos) {
+                ctxs[it->fd].buffer_ += read_request(it->fd);
+                std::cout << ctxs[it->fd].buffer_ << std::endl;
+                if (ctxs[it->fd].buffer_.rfind("\r\n\r\n") != std::string::npos) {
                     selector.Register(it->fd, kEventWrite);
                 }
             } else if (it->event == kEventWrite) {
                 std::cerr << "resived " << std::endl;
-                std::string request_content = buffer[it->fd];
-                buffer.erase(it->fd);
+                std::string request_content = ctxs[it->fd].buffer_;
                 HTTPRequest request(request_content);
                 request.print_info();
 
@@ -271,17 +271,26 @@ void Server::EventLoop() {
                 if (request.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
                     res = create_cgi_responce(request, "./cgi_script/date/date.cgi");
                 } else if (method == "GET") {
-                    res = this->GetHandler(socket_fd, request);
+                    res = this->GetHandler(ctxs[it->fd].socket_fd_, request);
                 } else {
                     res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
                 }
                 response_to_client(it->fd, res);
                 selector.Unregister(it->fd);
                 close(it->fd);
+                ctxs.erase(it->fd);
             } else if (it->event == kEvnetError) {
-                buffer.erase(it->fd);
+                ctxs.erase(it->fd);
                 close(it->fd);
             }
         }
     }
+}
+
+bool Server::IsIncludeFd(int fd) {
+    for (int i = 0; i < sockets_.size(); i++) {
+        if (sockets_[i].GetSocketFd() == fd)
+            return true;
+    }
+    return false;
 }
