@@ -31,6 +31,7 @@ typedef enum HTTPHeaderExceptTypeEnum {
     kPragma,
     kReferer,
     kUserAgent,
+    kHost,
     kConvertFail,
 } HTTPHeaderExceptType;
 
@@ -67,6 +68,7 @@ class HTTPRequest {
     void valid_pragma(const std::string &value);
     void valid_referer(const std::string &value);
     void valid_user_agent(const std::string &value);
+    void valid_host(const std::string &value);
     void valid_headers();
 
     void valid_date_related_header(const std::string &value, HTTPHeaderExceptType exception_type, std::string *store);
@@ -79,6 +81,9 @@ class HTTPRequest {
 
     size_t registor_field(const std::vector<std::string> &splited_buffer);
     void registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
+
+    void transform_headers();
+    void transform_content_type();
 
     // ヘッダー種別とvalid関数のpair //
     std::vector<std::pair<std::string, void (HTTPRequest::*)(const std::string &)> > validation_func_pair;

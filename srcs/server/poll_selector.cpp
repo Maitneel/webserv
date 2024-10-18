@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <vector>
 
 #include "poll_selector.hpp"
 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include "server.hpp"
 #include "config.hpp"
 #include "http_request.hpp"
@@ -11,6 +12,7 @@ void test_HTTPRequest_class() {
     std::cout << "protocol   : " << request.get_protocol() << std::endl;
 }
 
+// /*
 int main() {
     std::vector<ServerConfig> server_confs = parse_config("");
 
@@ -21,3 +23,4 @@ int main() {
     test_HTTPRequest_class();
     return 0;
 }
+// */

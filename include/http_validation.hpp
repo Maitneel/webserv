@@ -9,9 +9,11 @@
 
 #define CRLF "\x0d\x0a"
 
+#define SP 0x20
+#define HTAB 0x09
 
 
-// BIT
+// BIT2
 // HEXDIG
 // LWSP
 // WSP
@@ -33,21 +35,21 @@
 #define is_ht(c) ((c) == 0x09)
 #define is_dquote(c) ((c) == 0x22)
 
-#define is_vchar(c) (isprint(c) && c != 0x20)
+#define is_vchar(c) (0x21 <= c && c <= 0x7e)
 #define is_obs_text(c) (0x80 <= c && c <= 0xff)
 
 
-bool is_crlf(const std::string &s);  // unchecked http/1.1
+bool is_crlf(const std::string &s);
 bool is_lws(const std::string &s);  // unchecked http/1.1
 bool is_text(const std::string &s);  // unchecked http/1.1
 bool is_hex(const char &c);  // unchecked http/1.1
 bool is_word(const std::string &s);  // unchecked http/1.1
 bool is_token(const std::string &s);
 bool is_tspecials(const char &c);  // こいつをdefineで書くのヤバそうだからとりあえず関数 整合性ないからdefineにしたいという気持ちもある  // unchecked http/1.1
-bool is_comment(const std::string &s);  // unchecked http/1.1
-bool is_ctext(const std::string &s);  // unchecked http/1.1
-bool is_quoted_string(const std::string &s);  // unchecked http/1.1
-bool is_qdtext(const std::string &s);  // unchecked http/1.1
+bool is_comment(const std::string &s);  // 厳密にいうとちょっと違う(quoted-pairの処理をしてない) //
+bool is_ctext(const std::string &s);
+bool is_quoted_string(const std::string &s);  // 厳密にいうとちょっと違う(quoted-pairの処理をしてない) //
+bool is_qdtext(const std::string &s);
 
 bool is_valid_http_header(const std::string &str);  // unchecked http/1.1
 
@@ -82,22 +84,38 @@ bool is_national(const char &c);       // = <any OCTET excluding ALPHA, DIGIT,  
 
 bool is_http_version(const std::string &s);  // HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT  // unchecked http/1.1
 
-bool is_http_date(const std::string &s);         // HTTP-date      = rfc1123-date | rfc850-date | asctime-date  // unchecked http/1.1
-bool is_rfc1123_data(const std::string &s);      // rfc1123-date   = wkday "," SP date1 SP time SP "GMT"  // unchecked http/1.1
-bool is_rfc850_data(const std::string &s);       // rfc850-date    = weekday "," SP date2 SP time SP "GMT"  // unchecked http/1.1
-bool is_asctime_date(const std::string &s);      // asctime-date   = wkday SP date3 SP time SP 4DIGIT  // unchecked http/1.1
-bool is_date1(const std::string &s);             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)  // unchecked http/1.1
-bool is_date2(const std::string &s);             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)  // unchecked http/1.1
-bool is_date3(const std::string &s);             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)  // unchecked http/1.1
-bool is_time(const std::string &s);              // time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; 00:00:00 - 23:59:59  // unchecked http/1.1
-bool is_wkday(const std::string &s);             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"  // unchecked http/1.1
-bool is_weekday(const std::string &s);           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"  // unchecked http/1.1
-bool is_month(const std::string &s);             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"  // unchecked http/1.1
+bool is_http_date(const std::string &s);         // HTTP-date      = rfc1123-date | rfc850-date | asctime-date
+bool is_rfc1123_data(const std::string &s);      // rfc1123-date aka IMT date   = wkday "," SP date1 SP time SP "GMT"
+bool is_rfc850_data(const std::string &s);       // rfc850-date    = weekday "," SP date2 SP time SP "GMT" 現在から過去50年と未来50年として扱う
+bool is_asctime_date(const std::string &s);      // asctime-date   = wkday SP date3 SP time SP 4DIGIT
+bool is_date1(const std::string &s);             // date1          = 2DIGIT SP month SP 4DIGIT ; day month year (e.g., 02 Jun 1982)
+bool is_date2(const std::string &s);             // date2          = 2DIGIT "-" month "-" 2DIGIT ; day-month-year (e.g., 02-Jun-82)
+bool is_date3(const std::string &s);             // date3          = month SP ( 2DIGIT | ( SP 1DIGIT )) ; month day (e.g., Jun  2)
+bool is_time(const std::string &s);              // time           = 2DIGIT ":" 2DIGIT ":" 2DIGIT ; 00:00:00 - 23:59:59
+bool is_wkday(const std::string &s);             // wkday          = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+bool is_weekday(const std::string &s);           // weekday        = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday"
+bool is_month(const std::string &s);             // month          = "Jan" | "Feb" | "Mar" | "Apr" | "May" | "Jun" | "Jul" | "Aug" | "Sep" | "Oct" | "Nov" | "Dec"
 
 bool is_pragma_directive(const std::string &s);  // unchecked http/1.1
 bool is_extension_pragma(const std::string &s);  // unchecked http/1.1
 
 bool is_product(const std::string &s);  // unchecked http/1.1
+
+// RFC 3986
+bool is_ip_literal(const std::string &s);        // IP-literal    = "[" ( IPv6address / IPvFuture  ) "]"
+bool is_ipv4address(const std::string &s);       // IPv4address   = dec-octet "." dec-octet "." dec-octet "." dec-octet
+bool is_reg_name(const std::string &s);          // reg-name      = *( uri-unreserved / pct-encoded / sub-delims )
+
+bool is_ipv6_address(const std::string &s);       // IPv6address
+bool is_ipv_future(const std::string &s);         // IPvFuture     = "v" 1*HEXDIG "." 1*( uri-unreserved / sub-delims / ":" )
+bool is_dec_octed(const std::string &s);
+bool is_uri_unreserved(const char &c);           // uri-unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+bool is_pct_encoded(const std::string &s);       // pct-encoded   = "%" HEXDIG HEXDIG
+bool is_sub_delims(const char &c);               // sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+bool is_h16(const std::string &s);               // h16           = 1*4HEXDIG
+bool is_ls32(const std::string &s);              // ls32          = ( h16 ":" h16 ) / IPv4address
+bool is_dec_octed(const std::string &s);
+bool is_port(const std::string &s);
 
 // 補助的な関数 //
 bool is_token_element(const char &c);
@@ -105,5 +123,7 @@ bool is_token_element(const char &c);
 bool is_target_included_list(const std::string target, const std::string list[], size_t size);
 bool is_4digit(const std::string &s);
 bool is_2digit(const std::string &s);
+#define is_filed_vchar_element(c) (is_vchar(c) || is_obs_text(c))
+#define is_ows_elment(c) (c == SP || c == HTAB)
 
 #endif  // INCLUDE_HTTP_VALIDATION_HPP_

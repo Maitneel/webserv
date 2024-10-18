@@ -3,6 +3,8 @@
 #include <ostream>
 #include <iomanip>
 #include <vector>
+#include <map>
+#include <string>
 #include <cstdlib>
 #include <utility>
 
@@ -19,6 +21,14 @@ size_t get_front(const std::string &str) {
         result++;
     }
     return result;
+}
+
+void remove_front_crlf(std::string *str) {
+    size_t front_crlf_length = 0;
+    while (front_crlf_length + 1 < str->length() && str->at(front_crlf_length) == CR && str->at(front_crlf_length + 1) == LF) {
+        front_crlf_length += 2;
+    }
+    str->erase(0, front_crlf_length);
 }
 
 void HTTPRequest::valid_allow(const std::string &value) {
@@ -70,7 +80,7 @@ void HTTPRequest::valid_content_type(const std::string &value) {
         throw InvalidHeader(kContentType);
     }
     try {
-        this->content_type_.type = value.substr(front, slash_index - 1);
+        this->content_type_.type = value.substr(front, slash_index);
         this->content_type_.subtype = value.substr(slash_index + 1, semi_colon_index - slash_index - 1);
     } catch (std::out_of_range const &) {
         throw InvalidHeader(kContentType);
@@ -221,6 +231,19 @@ void HTTPRequest::valid_user_agent(const std::string &value) {
     }
 }
 
+void HTTPRequest::valid_host(const std::string &value) {
+    std::string::size_type last_colon_index = value.rfind(':', value.length());
+    std::string host_name = value.substr(0, last_colon_index);
+    if (last_colon_index != std::string::npos) {
+        if (!is_port(value.substr(last_colon_index + 1))) {
+            host_name = value;
+        }
+    }
+    if (!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) {
+        throw InvalidHeader(kHost);
+    }
+}
+
 HTTPRequest::HTTPRequest(const int fd) {
     // TODO(maitneel):
 }
@@ -239,6 +262,10 @@ void HTTPRequest::add_valid_funcs() {
         validation_func_pair.push_back(std::make_pair("pragma", &HTTPRequest::valid_pragma));
         validation_func_pair.push_back(std::make_pair("referer", &HTTPRequest::valid_referer));
         validation_func_pair.push_back(std::make_pair("user-agent", &HTTPRequest::valid_user_agent));
+    } else if (this->protocol == HTTP_1_1) {
+        validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
+        validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
+        validation_func_pair.push_back(std::make_pair("host", &HTTPRequest::valid_host));
     }
 }
 
@@ -310,7 +337,7 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
             // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
             // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
             // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
-            header_pair.second = trim_string(header_pair.second, " ");
+            header_pair.second = trim_string(header_pair.second, " \0x09");
         }
         std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(header_pair.first);
         if (it == this->header_.end()) {
@@ -320,6 +347,7 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
         }
         registor_count++;
     }
+    this->transform_headers();
     return registor_count;
 }
 
@@ -337,10 +365,24 @@ void HTTPRequest::valid_headers() {
     }
 }
 
+void HTTPRequest::transform_content_type() {
+    std::map<std::string, std::vector<std::string> >::iterator content_type_local_val = this->header_.find("content-type");
+    for (size_t i = 0; i < content_type_local_val->second.size(); i++) {
+        to_lower(&content_type_local_val->second[i]);
+    }
+}
+
+void HTTPRequest::transform_headers() {
+    if (this->header_.find("content-type") != this->header_.end()) {
+        transform_content_type();
+    }
+}
+
 void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
+            // TODO(status-code): response with 411 length require
             throw InvalidRequest(kHTTPHeader);
         }
         try {
@@ -350,9 +392,11 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
             // throw いんたーなるさーばーえらー的なやつ //
         }
     }
+    this->transform_headers();
 }
 
 HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+    remove_front_crlf(&buffer);
     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
@@ -399,6 +443,7 @@ void HTTPRequest::print_info(std::ostream &stream) {
     stream << "    body : {" << std::endl;
     stream << "        " << this->entity_body_ << std::endl;
     stream << "    }" << std::endl;
+    /*
     stream << std::left << std::setw(width) << "    Allow" << " : [";
     for (size_t i = 0; i < this->allow_.size(); i++) {
         stream << '"' << this->allow_.at(i) << '"' << ", ";
@@ -427,6 +472,7 @@ void HTTPRequest::print_info(std::ostream &stream) {
         stream << "'" << this->user_agent_.at(i) << "', ";
     }
     stream << "]" << std::endl;
+    // */
 }
 
 // exception class
@@ -482,6 +528,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     case kReferer:
         return "HTTPHeader: invalid 'Referer' header";
         break;
+    case kHost:
+        return "HTTPHeader: invalid 'Host' header";
+        break;
     case kConvertFail:
         return "HTTPHeader: convert failed";
         break;
@@ -491,3 +540,21 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     }
 }
 
+
+/*
+int main() {
+    std::string req = CRLF;
+    req +=  CRLF;
+    req +=  CRLF;
+    req += "GET / HTTP/1.1";
+    req +=  CRLF;
+    req += "Host: [::3333:4444:5555:6666:1.2.3.4]:8080";
+    req +=  CRLF;
+    req += "User-Agent: curl/7.79.1";
+    req +=  CRLF;
+
+    HTTPRequest reqeust(req);
+    reqeust.print_info();
+    return 0;
+}
+// */
