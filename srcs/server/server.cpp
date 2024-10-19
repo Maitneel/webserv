@@ -233,72 +233,67 @@ HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_
     return HTTPResponse(HTTPResponse::kOK, content_type, body);
 }
 
-void Server::EventLoop() {
-    PollSelector selector;
+void Server::AcceptRequest(int fd) {
+    int accepted_fd = ft_accept(fd);
+    selector_.Register(accepted_fd, kEventRead);
+    ctxs_.insert(std::make_pair(accepted_fd, HTTPContext(fd)));
+}
 
+void Server::EventLoop() {
     for (size_t i = 0; i < sockets_.size(); i++) {
-        selector.Register(sockets_[i].GetSocketFd(), kEventRead);
+        selector_.Register(sockets_[i].GetSocketFd(), kEventRead);
     }
-    std::map<int, HTTPContext> ctxs;
 
     while(true) {
         std::vector<FDEvent> events;
-        events = selector.Select(100);
+        events = selector_.Select(100);
 
         std::vector<FDEvent>::const_iterator it;
         for (it = events.begin(); it != events.end(); it++) {
             if (this->IsIncludeFd(it->fd) && it->event == kEventRead) {
                 try {
-                    int accepted_fd = ft_accept(it->fd);
-                    selector.Register(accepted_fd, kEventRead);
-                    ctxs.insert(std::make_pair(accepted_fd, HTTPContext()));
-                    ctxs[accepted_fd].socket_fd_ = it->fd;
-                    ctxs[accepted_fd].parsed_header_ = false;
+                    this->AcceptRequest(it->fd);
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     continue;
                 }
             } else if (it->event == kEventRead) {
-                ctxs[it->fd].buffer_ += read_request(it->fd);
-                std::cout << ctxs[it->fd].buffer_ << std::endl;
-                if (ctxs[it->fd].parsed_header_ == false && ctxs[it->fd].buffer_.rfind("\r\n\r\n") != std::string::npos) {
-                    selector.Register(it->fd, kEventWrite);
-                } else if (ctxs[it->fd].parsed_header_ == true && ctxs[it->fd].request.content_length_ <= ctxs[it->fd].buffer_.length()) {
-                    selector.Register(it->fd, kEventWrite);
+                HTTPContext& ctx = ctxs_.at(it->fd);
+                ctx.AppendBuffer(read_request(it->fd));
+                debug(ctx.GetBuffer());
+                if (ctx.IsParsedHeader() == false) {
+                    if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
+                        ctx.ParseRequestHeader();
+                        
+                    } 
+                }
+                if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
+                    ctx.ParseRequestBody();
+                    selector_.Register(it->fd, kEventWrite);
                 }
             } else if (it->event == kEventWrite) {
-                HTTPContext &processing_ctx = ctxs[it->fd];
-                if (processing_ctx.parsed_header_ == false) {
-                    std::cerr << "resived " << std::endl;
-                    std::string &buffer = processing_ctx.buffer_;
-                    std::string request_header = buffer.substr(0, buffer.find("\r\n\r\n"));
-                    processing_ctx.request = HTTPRequest(request_header);
-                    buffer = buffer.substr(buffer.find("\r\n\r\n") + strlen("\r\n\r\n"));
-                    if (buffer.length() < processing_ctx.request.content_length_) {
-                        selector.Register(it->fd, kEventRead);
-                    }
-                    processing_ctx.parsed_header_ = true;
-                }
-                if (processing_ctx.parsed_header_ && processing_ctx.request.content_length_ <= processing_ctx.buffer_.length()) {
-                    processing_ctx.request.entity_body_ = processing_ctx.buffer_.substr(0, processing_ctx.request.content_length_);
-                    processing_ctx.request.print_info();
-                    std::string method = processing_ctx.request.get_method();
+                HTTPContext& ctx = ctxs_.at(it->fd);
+                    HTTPRequest &req = ctx.GetHTTPRequest();
+                    req.print_info();
+                    
+                    std::string method = req.get_method();
+
                     HTTPResponse res;
-                    if (processing_ctx.request.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-                        res = create_cgi_responce(processing_ctx.request, "./cgi_script/date/date.cgi");
+                    if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
+                        res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
                     } else if (method == "GET") {
-                        res = this->GetHandler(ctxs[it->fd].socket_fd_, processing_ctx.request);
+                        res = this->GetHandler(ctx.GetSocketFD(), req);
                     } else {
                         res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
                     }
                     response_to_client(it->fd, res);
-                    selector.Unregister(it->fd);
+                    selector_.Unregister(it->fd);
                     close(it->fd);
                     // keep-alive のことを考えるならeraseするべきではないかもしれない //
-                    ctxs.erase(it->fd);
-                }
+                    ctxs_.erase(it->fd);
+                // }
             } else if (it->event == kEvnetError) {
-                ctxs.erase(it->fd);
+                ctxs_.erase(it->fd);
                 close(it->fd);
             }
         }

@@ -25,6 +25,7 @@ SRCS		=	main.cpp \
 				${UTILS_DIR}string.cpp \
 				${UTILS_DIR}int_to_string.cpp \
 				${SERVER_DIR}server.cpp \
+				${SERVER_DIR}http_context.cpp \
 				${CONFIG_DIR}config.cpp \
 				${CGI_SERVER_DIR}cgi_server.cpp \
 

@@ -4,9 +4,12 @@
 #include <unistd.h>
 #include <string>
 #include <vector>
+#include <map>
 #include "config.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "http_context.hpp"
+#include "poll_selector.hpp"
 
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
@@ -24,23 +27,18 @@ class Socket {
 
 class Server {
  private:
+    PollSelector selector_;
     std::vector<Socket> sockets_;
- public :
+    std::map<int, HTTPContext> ctxs_;
+    void AcceptRequest(int fd);
+ public:
     explicit Server(std::vector<ServerConfig> confs);
     ~Server();
     ServerConfig GetConfigByFd(int fd);
     HTTPResponse GetHandler(int fd, const HTTPRequest& req);
     void EventLoop();
     bool IsIncludeFd(int fd);
-};
-
-class HTTPContext {
- public:
-    int socket_fd_;
-    std::string buffer_;
-    pid_t cgi_pid_;
-    HTTPRequest request;
-    bool parsed_header_;
+    void AppendBuffer(std::string str);
 };
 
 #endif  // INCLUDE_SERVER_HPP_
