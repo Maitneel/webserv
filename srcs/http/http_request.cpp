@@ -395,6 +395,9 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
     this->transform_headers();
 }
 
+HTTPRequest::HTTPRequest() {
+}
+
 HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
     remove_front_crlf(&buffer);
     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
@@ -402,7 +405,6 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_
 
     const size_t header_count = this->registor_field(splited_buffer);
     this->valid_headers();
-    this->registor_entity_body(splited_buffer, header_count + 1);
 }
 
 HTTPRequest::~HTTPRequest() {

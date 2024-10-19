@@ -105,6 +105,7 @@ class HTTPRequest {
     std::string referer_;
     std::vector<std::string> user_agent_;
 
+    explicit HTTPRequest();
     explicit HTTPRequest(const int fd);
     explicit HTTPRequest(std::string buffer);
     ~HTTPRequest();
