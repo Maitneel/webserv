@@ -236,7 +236,7 @@ HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_
 void Server::EventLoop() {
     PollSelector selector;
 
-    for (int i = 0; i < sockets_.size(); i++) {
+    for (size_t i = 0; i < sockets_.size(); i++) {
         selector.Register(sockets_[i].GetSocketFd(), kEventRead);
     }
     std::map<int, HTTPContext> ctxs;
@@ -306,7 +306,7 @@ void Server::EventLoop() {
 }
 
 bool Server::IsIncludeFd(int fd) {
-    for (int i = 0; i < sockets_.size(); i++) {
+    for (size_t i = 0; i < sockets_.size(); i++) {
         if (sockets_[i].GetSocketFd() == fd)
             return true;
     }
