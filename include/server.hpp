@@ -2,6 +2,7 @@
 #define INCLUDE_SERVER_HPP_
 
 #include <unistd.h>
+#include <string>
 #include <vector>
 #include "config.hpp"
 #include "http_request.hpp"
@@ -34,12 +35,12 @@ class Server {
 };
 
 class HTTPContext {
-public:
-   int socket_fd_;
-   std::string buffer_;
-   pid_t cgi_pid_;
-   HTTPRequest request;
-   bool parsed_header_;
+ public:
+    int socket_fd_;
+    std::string buffer_;
+    pid_t cgi_pid_;
+    HTTPRequest request;
+    bool parsed_header_;
 };
 
 #endif  // INCLUDE_SERVER_HPP_
