@@ -17,12 +17,15 @@
 #include <stdexcept>
 #include <vector>
 #include <map>
+#include <utility>
 
 #include "server.hpp"
 #include "poll_selector.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
 #include "cgi.hpp"
+
+#define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
 
 std::string int_to_str(int n) {
     std::stringstream ss;
@@ -233,7 +236,7 @@ HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_
 void Server::EventLoop() {
     PollSelector selector;
 
-    for (int i = 0; i < sockets_.size(); i++) {
+    for (size_t i = 0; i < sockets_.size(); i++) {
         selector.Register(sockets_[i].GetSocketFd(), kEventRead);
     }
     std::map<int, HTTPContext> ctxs;
@@ -250,6 +253,7 @@ void Server::EventLoop() {
                     selector.Register(accepted_fd, kEventRead);
                     ctxs.insert(std::make_pair(accepted_fd, HTTPContext()));
                     ctxs[accepted_fd].socket_fd_ = it->fd;
+                    ctxs[accepted_fd].parsed_header_ = false;
                 } catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
                     continue;
@@ -257,28 +261,42 @@ void Server::EventLoop() {
             } else if (it->event == kEventRead) {
                 ctxs[it->fd].buffer_ += read_request(it->fd);
                 std::cout << ctxs[it->fd].buffer_ << std::endl;
-                if (ctxs[it->fd].buffer_.rfind("\r\n\r\n") != std::string::npos) {
+                if (ctxs[it->fd].parsed_header_ == false && ctxs[it->fd].buffer_.rfind("\r\n\r\n") != std::string::npos) {
+                    selector.Register(it->fd, kEventWrite);
+                } else if (ctxs[it->fd].parsed_header_ == true && ctxs[it->fd].request.content_length_ <= ctxs[it->fd].buffer_.length()) {
                     selector.Register(it->fd, kEventWrite);
                 }
             } else if (it->event == kEventWrite) {
-                std::cerr << "resived " << std::endl;
-                std::string request_content = ctxs[it->fd].buffer_;
-                HTTPRequest request(request_content);
-                request.print_info();
-
-                std::string method = request.get_method();
-                HTTPResponse res;
-                if (request.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-                    res = create_cgi_responce(request, "./cgi_script/date/date.cgi");
-                } else if (method == "GET") {
-                    res = this->GetHandler(ctxs[it->fd].socket_fd_, request);
-                } else {
-                    res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+                HTTPContext &processing_ctx = ctxs[it->fd];
+                if (processing_ctx.parsed_header_ == false) {
+                    std::cerr << "resived " << std::endl;
+                    std::string &buffer = processing_ctx.buffer_;
+                    std::string request_header = buffer.substr(0, buffer.find("\r\n\r\n"));
+                    processing_ctx.request = HTTPRequest(request_header);
+                    buffer = buffer.substr(buffer.find("\r\n\r\n") + strlen("\r\n\r\n"));
+                    if (buffer.length() < processing_ctx.request.content_length_) {
+                        selector.Register(it->fd, kEventRead);
+                    }
+                    processing_ctx.parsed_header_ = true;
                 }
-                response_to_client(it->fd, res);
-                selector.Unregister(it->fd);
-                close(it->fd);
-                ctxs.erase(it->fd);
+                if (processing_ctx.parsed_header_ && processing_ctx.request.content_length_ <= processing_ctx.buffer_.length()) {
+                    processing_ctx.request.entity_body_ = processing_ctx.buffer_.substr(0, processing_ctx.request.content_length_);
+                    processing_ctx.request.print_info();
+                    std::string method = processing_ctx.request.get_method();
+                    HTTPResponse res;
+                    if (processing_ctx.request.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
+                        res = create_cgi_responce(processing_ctx.request, "./cgi_script/date/date.cgi");
+                    } else if (method == "GET") {
+                        res = this->GetHandler(ctxs[it->fd].socket_fd_, processing_ctx.request);
+                    } else {
+                        res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+                    }
+                    response_to_client(it->fd, res);
+                    selector.Unregister(it->fd);
+                    close(it->fd);
+                    // keep-alive のことを考えるならeraseするべきではないかもしれない //
+                    ctxs.erase(it->fd);
+                }
             } else if (it->event == kEvnetError) {
                 ctxs.erase(it->fd);
                 close(it->fd);
@@ -288,7 +306,7 @@ void Server::EventLoop() {
 }
 
 bool Server::IsIncludeFd(int fd) {
-    for (int i = 0; i < sockets_.size(); i++) {
+    for (size_t i = 0; i < sockets_.size(); i++) {
         if (sockets_[i].GetSocketFd() == fd)
             return true;
     }
