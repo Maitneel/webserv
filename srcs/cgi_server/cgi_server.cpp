@@ -40,14 +40,21 @@ void child_process(const HTTPRequest &request, const std::string &cgi_script_pat
     close_pipe_fds(to_server_pipe_fd);
     char **argv = create_argv(cgi_script_path);
     char **env = make_env_array(request);
-    std::cerr << cgi_script_path << std::endl;
     execve(cgi_script_path.c_str(), argv, env);
     exit(127);
 }
 
 
 void write_body_to_script(const HTTPRequest &request, const int &fd) {
-    // TODO(maitneel): bodyの書き込み //
+    const std::string body = request.entity_body_;
+    int remining_date = request.entity_body_.length();
+    do {
+        int write_ret = write(fd, body.c_str(), remining_date);
+        if (write_ret < 0) {
+            throw std::runtime_error("write");
+        }
+        remining_date -= write_ret;
+    } while (remining_date);
 }
 
 std::string read_cgi_responce(const int &fd) {

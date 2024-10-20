@@ -274,25 +274,26 @@ void Server::EventLoop() {
                 }
             } else if (it->event == kEventWrite) {
                 HTTPContext& ctx = ctxs_.at(it->fd);
-                    HTTPRequest &req = ctx.GetHTTPRequest();
-                    req.print_info();
-                    
-                    std::string method = req.get_method();
+                HTTPRequest &req = ctx.GetHTTPRequest();
+                req.print_info();
+                
+                std::string method = req.get_method();
 
-                    HTTPResponse res;
-                    if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-                        res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
-                    } else if (method == "GET") {
-                        res = this->GetHandler(ctx.GetSocketFD(), req);
-                    } else {
-                        res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
-                    }
-                    response_to_client(it->fd, res);
-                    selector_.Unregister(it->fd);
-                    close(it->fd);
-                    // keep-alive のことを考えるならeraseするべきではないかもしれない //
-                    ctxs_.erase(it->fd);
-                // }
+                HTTPResponse res;
+                if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
+                    res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
+                } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
+                    res = create_cgi_responce(req, "./cgi_script/echo/echo.cgi");
+                } else if (method == "GET") {
+                    res = this->GetHandler(ctx.GetSocketFD(), req);
+                } else {
+                    res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+                }
+                response_to_client(it->fd, res);
+                selector_.Unregister(it->fd);
+                close(it->fd);
+                // keep-alive のことを考えるならeraseするべきではないかもしれない //
+                ctxs_.erase(it->fd);
             } else if (it->event == kEvnetError) {
                 ctxs_.erase(it->fd);
                 close(it->fd);
