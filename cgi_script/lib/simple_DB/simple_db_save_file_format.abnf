@@ -1,0 +1,15 @@
+NL                  = 0x0a ; i.e. '\n'
+printable           = 0x20 - 0x7e ; sp - ~
+
+escpaed             = "\" ('"' / '\') 
+quoted-string       = '"' *(escaped / printable ignore '"', '\') '"'
+
+key                 = quoted-string
+value               = quoted-string
+data-line           = key ':' value ; quoted-string と ':' の間にいずれかのスペースを入れることはできない
+
+simple-db-save-file = *(data-line NL)
+
+
+; もし正しくないフォーマットの行が存在する場合、その行を無視することができる(MAY)
+; key は重複してはいけない(MUST NOT). keyが重複している場合の挙動は不定である.
