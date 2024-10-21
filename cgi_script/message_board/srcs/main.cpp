@@ -1,13 +1,20 @@
+#include <unistd.h>
+
 #include <iostream>
 #include <stdexcept>
 
-#include <proccessing.hpp>
+#include "proccessing.hpp"
+#include "defines.hpp"
+#include "gen_html.hpp"
 using namespace std;
 
 int main() {
     
     std::string method = getenv("REQUEST_METHOD");
-    std::cerr << method << std::endl;
+
+    if (access(INDEX_HTML_PATH_CSTR, F_OK)) {
+        init_index_html();
+    }
     try {
         if (method == "GET") {
             get_method();

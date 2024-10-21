@@ -7,49 +7,39 @@
 #include "simple_db.hpp"
 #include "proccessing.hpp"
 #include "defines.hpp"
+#include "gen_html.hpp"
 
-std::string create_template_front() {
-    std::string html;
-    html += "<!DOCTYPE html>\n";
-    html += "<html lang=\"ja\">\n";
-    html += "<head>\n";
-    html += "    <meta charset=\"UTF-8\">\n";
-    html += "    <title>message board</title>\n";
-    html += "</head>\n";
-    html += "<body>\n";
+std::string get_formated_date() {
+    struct tm newtime;
+    time_t ltime;
+    char buf[50];
 
-    return html;
+    ltime = time(&ltime);
+    localtime_r(&ltime, &newtime);
+    std::string now_string(asctime_r(&newtime, buf));
+    now_string.erase(
+        remove(now_string.begin(), now_string.end(), '\n'),
+        now_string.end());
+    return now_string;
 }
 
-std::string create_template_end() {
+std::string create_message_div(const SimpleDB &message_db, const std::string &id) {
     std::string html;
+    std::string message = message_db.noexcept_get(DB_MESSAGE_ID_PREFIX + id);
+    std::string time_stamp = message_db.noexcept_get(DB_TIME_STAMP_ID_PREFIX + id);
 
-
-    html += "    <div class=\"post-form-section\" id=\"post-form-section\">\n";
-    html += "        <form action=\"\" method=\"post\">\n";
-    html += "            <label for=\"message-input\">message</label>\n";
-    html += "            <input type=\"text\" name=\"message\" id=\"message-input\">\n";
-    html += "            <input type=\"file\" name=\"attachment\" id=\"attachment-input\">\n";
-    html += "            <br>\n";
-    html += "            <input type=\"submit\" value=\"post\">\n";
-    html += "        </form>\n";
-    html += "    </div>\n";
-
-    html += "</body>\n";
-    html += "</html>\n";
-
-    return html;
-}
-
-std::string create_message_div(const std::string &message, const std::string &id) {
-    std::string html;
+    if (time_stamp == "") {
+        time_stamp = "unknown post time";
+    }
 
     html += "    <div class=\"message-div\" id=\"message-div-";
     html += id;
     html += "\">\n";
     html += "        <span class=\"time-stamp\" id=\"time-stamp-";
     html += id;
-    html += "\">1234</span>\n";
+    html += "\">";
+    html += time_stamp;
+    html += "</span>\n";
     html += "        <span class=\"poster-id\" id=\"poster-id-";
     html += id;
     html += "\">skdjh</span>\n";
@@ -92,6 +82,7 @@ void update_message_db(SimpleDB *message_db) {
     std::string id = get_formated_id(message_count - 1);
     std::string message = read_message();
     message_db->add((DB_MESSAGE_ID_PREFIX + id), message);
+    message_db->add((DB_TIME_STAMP_ID_PREFIX + id), get_formated_date());
 
 
 }
@@ -102,7 +93,7 @@ void create_index_html(SimpleDB &message_db) {
     int message_count = stoi(message_db.get(DB_MESSAGE_COUNT_ID));
     for (int i = 0; i < message_count; i++) {
         std::string id(get_formated_id(i));
-        html += create_message_div(message_db.get(DB_MESSAGE_ID_PREFIX + id), id);
+        html += create_message_div(message_db, id);
     }
     html += create_template_end();
 
@@ -111,7 +102,7 @@ void create_index_html(SimpleDB &message_db) {
 }
 
 void post_method() {
-    SimpleDB message_db(PRIVATE_RESOURCE_ROOT + "/message_db");
+    SimpleDB message_db(MESSAGE_DB_PATH);
     update_message_db(&message_db);
     create_index_html(message_db);
     get_method();

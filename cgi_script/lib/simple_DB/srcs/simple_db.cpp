@@ -7,6 +7,8 @@
 
 #include "simple_db.hpp"
 
+const std::string SimpleDB::empty_string = "";
+
 SimpleDB::SimpleDB(const std::string &file_path) : filename_(file_path) {
     std::ifstream ifs(file_path);
     if (ifs == NULL) {
@@ -57,7 +59,7 @@ void SimpleDB::update(const std::string &key, const std::string &value) {
     }
 }
 
-const std::string &SimpleDB::get(const std::string &key) {
+const std::string &SimpleDB::get(const std::string &key) const {
     if (this->data_.find(key) == this->data_.end()) {
         std::string error_message = "SimpleDB::get error: '";
         error_message += key;
@@ -67,8 +69,16 @@ const std::string &SimpleDB::get(const std::string &key) {
     return this->data_.at(key);
 }
 
-bool SimpleDB::is_include_key(const std::string &key) {
+bool SimpleDB::is_include_key(const std::string &key) const {
     return (this->data_.find(key) != this->data_.end());
+}
+
+const std::string &SimpleDB::noexcept_get(const std::string &key) const throw() {
+    try {
+        return this->get(key);
+    } catch (...) {
+        return (empty_string);
+    }
 }
 
 std::vector<std::string> SimpleDB::get_include_key() {

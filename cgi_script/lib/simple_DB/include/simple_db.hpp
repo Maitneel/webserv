@@ -10,6 +10,7 @@ class SimpleDB {
  private:
     std::map<std::string, std::string> data_;
     const std::string filename_;
+    const static std::string empty_string;
 
     std::pair<std::string, std::string> parse_data_line(const std::string &s);
     std::string make_data_line(const std::pair<std::string, std::string> &src);
@@ -21,8 +22,10 @@ class SimpleDB {
     void add(const std::string &key, const std::string &value);
     void remove(const std::string &key);
     void update(const std::string &key, const std::string &value);
-    const std::string &get(const std::string &key);
-    bool is_include_key(const std::string &key);
+    const std::string &get(const std::string &key) const;
+    bool is_include_key(const std::string &key) const;
+
+    const std::string &noexcept_get(const std::string &key) const throw();
 
     std::vector<std::string> get_include_key();
 };
