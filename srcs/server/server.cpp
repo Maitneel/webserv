@@ -261,7 +261,7 @@ void Server::EventLoop() {
             } else if (it->event == kEventRead) {
                 HTTPContext& ctx = ctxs_.at(it->fd);
                 ctx.AppendBuffer(read_request(it->fd));
-                debug(ctx.GetBuffer());
+                std::cerr << ctx.GetBuffer() << std::endl;
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         ctx.ParseRequestHeader();
@@ -284,6 +284,8 @@ void Server::EventLoop() {
                     res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
                 } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
                     res = create_cgi_responce(req, "./cgi_script/echo/echo.cgi");
+                } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
+                    res = create_cgi_responce(req, "./cgi_script/message_board/message_board.cgi");
                 } else if (method == "GET") {
                     res = this->GetHandler(ctx.GetSocketFD(), req);
                 } else {
