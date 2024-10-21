@@ -68,6 +68,10 @@ const std::string &SimpleDB::get(const std::string &key) {
     return this->data_.at(key);
 }
 
+bool SimpleDB::is_include_key(const std::string &key) {
+    return (this->data_.find(key) != this->data_.end());
+}
+
 std::vector<std::string> SimpleDB::get_include_key() {
     std::vector<std::string> key_list;
     for (std::map<std::string, std::string>::iterator it = this->data_.begin(); it != this->data_.end(); it++) {

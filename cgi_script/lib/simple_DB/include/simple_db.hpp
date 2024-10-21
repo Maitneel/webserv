@@ -22,6 +22,7 @@ class SimpleDB {
     void remove(const std::string &key);
     void update(const std::string &key, const std::string &value);
     const std::string &get(const std::string &key);
+    bool is_include_key(const std::string &key);
 
     std::vector<std::string> get_include_key();
 };
