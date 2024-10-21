@@ -14,7 +14,6 @@ SimpleDB::SimpleDB(const std::string &file_path) : filename_(file_path) {
     }
     std::string s;
     while (getline(ifs, s)) {
-        std::cerr << s << std::endl;
         try {
             this->data_.insert(this->parse_data_line(s));
         } catch (std::exception &e) {
