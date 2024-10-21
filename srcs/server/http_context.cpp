@@ -1,15 +1,15 @@
 #include <cstring>
+#include <string>
 #include "http_context.hpp"
 
 HTTPContext::HTTPContext(int fd) : socket_fd_(fd), parsed_header_(false) {
 }
 
 
-HTTPContext::~HTTPContext(){
-
+HTTPContext::~HTTPContext() {
 }
 
-int HTTPContext::GetSocketFD() const { 
+int HTTPContext::GetSocketFD() const {
     return socket_fd_;
 }
 

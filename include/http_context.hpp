@@ -13,7 +13,7 @@ class HTTPContext {
     HTTPRequest request_;
     bool parsed_header_;
  public:
-    HTTPContext(int fd);
+    explicit HTTPContext(int fd);
     ~HTTPContext();
     int GetSocketFD() const;
     const std::string& GetBuffer() const;

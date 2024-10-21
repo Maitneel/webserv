@@ -265,8 +265,7 @@ void Server::EventLoop() {
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         ctx.ParseRequestHeader();
-                        
-                    } 
+                    }
                 }
                 if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
                     ctx.ParseRequestBody();
@@ -276,7 +275,7 @@ void Server::EventLoop() {
                 HTTPContext& ctx = ctxs_.at(it->fd);
                 HTTPRequest &req = ctx.GetHTTPRequest();
                 req.print_info();
-                
+
                 std::string method = req.get_method();
 
                 HTTPResponse res;
