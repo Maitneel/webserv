@@ -11,7 +11,7 @@
 
 using std::cerr;
 using std::endl;
-// #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
+#define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
 
 // もう少しスマートなやり方にしたい気がする //
 static std::string get_cin_buf() {
@@ -41,7 +41,7 @@ static std::vector<std::string> split_with_erase_delimiter(const std::string &st
 
 std::string trim_str(std::string *str, const std::string &remove_char) {
     std::string::size_type front = str->find_first_not_of(remove_char);
-    std::string::size_type last = str->find(str->find_last_not_of(remove_char, front));
+    std::string::size_type last = str->find_last_not_of(remove_char) + 1;
     if (str->length() < front) {
         *str = "";
     } else {
@@ -61,7 +61,7 @@ static std::pair<std::string, std::string> parse_parameter(std::string line) {
             value = line.substr(name.length() + 1);
         }
         parameter.first = name;
-        parameter.second = value;
+        parameter.second = trim_str(&value, "\"'");
     } catch (std::exception &e) {
         // cerr << "except: splited: " << line << ' ' << e.what() << endl;
     }

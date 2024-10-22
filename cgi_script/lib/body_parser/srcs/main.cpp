@@ -14,6 +14,6 @@ int main() {
         debug(it->first);
         debug(it->second.body_);
     }
-
+    debug(body.get_body("input_text"));
 
 }
