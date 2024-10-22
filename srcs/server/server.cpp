@@ -261,12 +261,9 @@ void Server::EventLoop() {
                 }
             } else if (it->event == kEventRead) {
                 HTTPContext& ctx = ctxs_.at(it->fd);
-                std::cerr << "--------------------------------------";
-                debug(ctx.GetBuffer().length());
                 ctx.AppendBuffer(read_request(it->fd));
-                debug(ctx.GetBuffer().length());
-                std::cerr << "--------------------------------------" << std::endl;
                 std::cerr << ctx.GetBuffer() << std::endl;
+
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         ctx.ParseRequestHeader();

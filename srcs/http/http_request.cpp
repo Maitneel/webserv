@@ -378,7 +378,7 @@ void HTTPRequest::transform_content_type() {
 
 void HTTPRequest::transform_headers() {
     if (this->header_.find("content-type") != this->header_.end()) {
-        transform_content_type();
+    //     transform_content_type();
     }
 }
 
