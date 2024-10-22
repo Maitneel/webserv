@@ -48,6 +48,8 @@ void child_process(const HTTPRequest &request, const std::string &cgi_script_pat
 void write_body_to_script(const HTTPRequest &request, const int &fd) {
     const std::string body = request.entity_body_;
     int remining_date = request.entity_body_.length();
+    // TODO(maitneel): bug: 全て書き込めなかった場合に最初から書き込み直している　//
+    // あとノンブロッキングじゃない //
     do {
         int write_ret = write(fd, body.c_str(), remining_date);
         if (write_ret < 0) {

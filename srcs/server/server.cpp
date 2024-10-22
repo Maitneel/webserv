@@ -63,11 +63,12 @@ std::string read_request(int fd) {
     char buf[BUFFER_SIZE];
     std::string content;
     int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
+    debug(n_read);
     if (n_read < 0) {
         return "";
     }
     buf[n_read] = '\0';
-    return std::string(buf);
+    return std::string(buf, n_read);
 }
 
 void response_to_client(int fd, const HTTPResponse& response) {
@@ -260,7 +261,11 @@ void Server::EventLoop() {
                 }
             } else if (it->event == kEventRead) {
                 HTTPContext& ctx = ctxs_.at(it->fd);
+                std::cerr << "--------------------------------------";
+                debug(ctx.GetBuffer().length());
                 ctx.AppendBuffer(read_request(it->fd));
+                debug(ctx.GetBuffer().length());
+                std::cerr << "--------------------------------------" << std::endl;
                 std::cerr << ctx.GetBuffer() << std::endl;
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
