@@ -1,0 +1,10 @@
+------WebKitFormBoundaryzt8BctbKEjhBGCUB
+Content-Disposition: form-data; name="message"
+
+hogehoge
+------WebKitFormBoundaryzt8BctbKEjhBGCUB
+Content-Disposition: form-data; name="attachment"; filename=""
+Content-Type: application/octet-stream
+
+
+------WebKitFormBoundaryzt8BctbKEjhBGCUB--
