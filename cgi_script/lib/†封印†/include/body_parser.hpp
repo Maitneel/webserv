@@ -32,8 +32,8 @@ class BodyParser {
     BodyParser();
     ~BodyParser();
 
-    const std::string &get_body(const std::string &name);
-    const std::string &get_body();
+    const std::string &get_body(const std::string &name) const;
+    const std::string &get_body() const;
 };
 
 #endif // INCLUDE_BODY_PARSER_HPP_

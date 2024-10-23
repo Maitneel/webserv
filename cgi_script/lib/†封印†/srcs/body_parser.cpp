@@ -63,7 +63,7 @@ static std::pair<std::string, std::string> parse_parameter(std::string line) {
         parameter.first = name;
         parameter.second = trim_str(&value, "\"'");
     } catch (std::exception &e) {
-        // cerr << "except: splited: " << line << ' ' << e.what() << endl;
+        cerr << "except: splited: " << line << ' ' << e.what() << endl;
     }
     return parameter;
 }
@@ -71,7 +71,12 @@ static std::pair<std::string, std::string> parse_parameter(std::string line) {
 ContentParameters::ContentParameters(const std::string &str) {
     this->key_ = str.substr(0, str.find_first_of(PARAMETER_DALIMITER));
 
-    std::vector<std::string> splited = split_with_erase_delimiter(str.substr(str.find_first_not_of(this->key_ + PARAMETER_DALIMITER)), ";");
+    std::vector<std::string> splited;
+    try {
+        splited = split_with_erase_delimiter(str.substr(str.find_first_not_of(this->key_ + PARAMETER_DALIMITER)), ";");
+    } catch (...){
+    }
+
     for (size_t i = 0; i < splited.size(); i++) {
         this->parameter_.insert(parse_parameter(splited[i]));
     }
@@ -100,7 +105,7 @@ ContentElement::ContentElement(const std::string &str) {
         this->name_ = this->parameter_.at("Content-Disposition").parameter_.at("name");
         this->body_ = str.substr(body_front, str.length() - body_front - 1);
     } catch (std::exception &e) {
-        // std::cerr << "except " <<  body_front << ' ' << e.what() <<endl;
+        std::cerr << "except " <<  body_front << ' ' << e.what() <<endl;
     }
 }
 
@@ -126,7 +131,7 @@ BodyParser::BodyParser() : buffer_(get_cin_buf()) {
             ContentElement element(splited[i]);
             this->parsed_body_.insert(std::make_pair(element.parameter_.at("Content-Disposition").parameter_.at("name"), element));
         } catch (std::exception &e) {
-            // cerr << "bodyparser_constructor except : '" << splited[i] << "' " << e.what() << endl;
+            cerr << "bodyparser_constructor except : '" << splited[i] << "' " << e.what() << endl;
         }
     }
     
@@ -138,7 +143,7 @@ BodyParser::BodyParser() : buffer_(get_cin_buf()) {
 BodyParser::~BodyParser() {
 }
 
-const std::string &BodyParser::get_body(const std::string &name) {
+const std::string &BodyParser::get_body(const std::string &name) const {
     if (this->parsed_body_.find(name) == this->parsed_body_.end()) {
         std::string error_message;
         error_message += "BodyParser: ";
@@ -149,7 +154,7 @@ const std::string &BodyParser::get_body(const std::string &name) {
     return this->parsed_body_.at(name).body_;
 }
 
-const std::string &BodyParser::get_body() {
+const std::string &BodyParser::get_body() const {
     if (this->parsed_body_.size() != 1) {
         std::string error_message;
         error_message += "BodyParser: element is not just one";
