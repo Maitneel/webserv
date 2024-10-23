@@ -14,8 +14,21 @@ SimpleDB::SimpleDB(const std::string &file_path) : filename_(file_path) {
     if (ifs == NULL) {
         return;
     }
-    std::string s;
-    while (getline(ifs, s)) {
+    while (!ifs.fail()) {
+        std::string s, t;
+        size_t quote_count = 0;
+        do {
+            t = "";
+            if (!getline(ifs, t)) {
+                if (s == "") {
+                    break;
+                } else {
+                    return;
+                }
+            }
+            s += t;
+            quote_count += std::count(t.begin(), t.end(), '"');
+        } while (quote_count < 4);
         try {
             this->data_.insert(this->parse_data_line(s));
         } catch (std::exception &e) {

@@ -1,8 +1,9 @@
 NL                  = 0x0a ; i.e. '\n'
 printable           = 0x20 - 0x7e ; sp - ~
+all-char            = 0x00 - 0x7f
 
 escpaed             = "\" ('"' / '\') 
-quoted-string       = '"' *(escaped / printable ignore '"', '\') '"'
+quoted-string       = '"' *(escaped / all-ascii ignore '"', '\') '"'
 
 key                 = quoted-string
 value               = quoted-string
