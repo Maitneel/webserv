@@ -13,6 +13,8 @@ SRCS = 	main.cpp \
 		delete_method.cpp \
 		gen_html.cpp \
 
+RESOURCE_DIR = ./resource
+
 OBJS = ${SRCS:%.cpp=${OBJS_DIR}/%.o}
 
 DB_DIR = ../lib/simple_DB
@@ -23,7 +25,7 @@ BODY_PARSER = ${BODY_PARSER_DIR}/body_parser
 
 all : ${NAME}
 
-${NAME} : ${OBJS_DIR} ${OBJS} ${DATABASE} ${BODY_PARSER}
+${NAME} : ${OBJS_DIR} ${OBJS} ${DATABASE} ${BODY_PARSER} ${RESOURCE_DIR}
 	${CXX} ${CXXFLAGS} -o ${NAME} ${DATABASE} ${BODY_PARSER} ${OBJS}
 
 ${DATABASE} : ${DB_DIR}/srcs/*.cpp
@@ -37,6 +39,11 @@ ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 
 ${OBJS_DIR} :
 	mkdir ${OBJS_DIR}
+
+${RESOURCE_DIR} :
+	mkdir ./resource
+	mkdir ./resource/public
+	mkdir ./resource/private
 
 clean :
 	rm -rf ${OBJS_DIR}
