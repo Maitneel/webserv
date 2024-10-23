@@ -63,6 +63,17 @@ std::string get_formated_id(const int &n) {
     return (std::string(ss.str()));
 }
 
+void update_text_message (SimpleDB *message_db, const FormDataBody &body, const std::string &id) {
+    std::string message = body.get_body("message");
+    message_db->add((DB_MESSAGE_ID_PREFIX + id), message);
+    message_db->add((DB_TIME_STAMP_ID_PREFIX + id), get_formated_date());
+}
+
+void update_image_message (SimpleDB *message_db, const FormDataBody &body, const std::string &id) {
+    std::ofstream ofs(RESOURCE_IMAGE_PREFIX + id);
+    ofs << body.get_body("attachment");
+}
+
 void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
     int message_count;
     if (message_db->is_include_key(DB_MESSAGE_COUNT_ID)) {
@@ -73,11 +84,8 @@ void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
     message_count++;
     message_db->update(DB_MESSAGE_COUNT_ID, std::to_string(message_count));
     std::string id = get_formated_id(message_count - 1);
-    std::string message = body.get_body("message");
-    message_db->add((DB_MESSAGE_ID_PREFIX + id), message);
-    message_db->add((DB_TIME_STAMP_ID_PREFIX + id), get_formated_date());
-
-
+    update_text_message(message_db, body, id);
+    update_image_message(message_db, body, id);
 }
 
 void create_index_html(SimpleDB &message_db) {

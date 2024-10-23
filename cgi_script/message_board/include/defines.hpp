@@ -11,5 +11,7 @@
 #define DB_MESSAGE_COUNT_ID "MESSAGE_COUNT"
 #define DB_TIME_STAMP_ID_PREFIX (std::string)("time_stamp_id_")
 #define DB_MESSAGE_ID_PREFIX (std::string)("message_id_")
+#define DB_IMAGE_ID_PREFIX (std::string)("image_id_")
+#define RESOURCE_IMAGE_PREFIX (PUBLIC_RESOURCE_ROOT + "/image/image_")
 
 #endif // INCLUDE_DEFINES_HPP_
