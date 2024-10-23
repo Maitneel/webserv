@@ -8,6 +8,7 @@
 #include "proccessing.hpp"
 #include "defines.hpp"
 #include "gen_html.hpp"
+#include "form_data.hpp"
 
 std::string get_formated_date() {
     struct tm newtime;
@@ -62,15 +63,7 @@ std::string get_formated_id(const int &n) {
     return (std::string(ss.str()));
 }
 
-std::string read_message() {
-    std::string message, s;
-    while (std::getline(std::cin, s)) {
-        message += s;
-    }
-    return message;
-}
-
-void update_message_db(SimpleDB *message_db) {
+void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
     int message_count;
     if (message_db->is_include_key(DB_MESSAGE_COUNT_ID)) {
         message_count = std::stoi(message_db->get(DB_MESSAGE_COUNT_ID));
@@ -80,7 +73,7 @@ void update_message_db(SimpleDB *message_db) {
     message_count++;
     message_db->update(DB_MESSAGE_COUNT_ID, std::to_string(message_count));
     std::string id = get_formated_id(message_count - 1);
-    std::string message = read_message();
+    std::string message = body.get_body("message");
     message_db->add((DB_MESSAGE_ID_PREFIX + id), message);
     message_db->add((DB_TIME_STAMP_ID_PREFIX + id), get_formated_date());
 
@@ -101,9 +94,13 @@ void create_index_html(SimpleDB &message_db) {
     ofs << html << std::endl;
 }
 
+#include <fstream>
+
 void post_method() {
     SimpleDB message_db(MESSAGE_DB_PATH);
-    update_message_db(&message_db);
+    FormDataBody body;
+
+    update_message_db(&message_db, body);
     create_index_html(message_db);
     get_method();
 }
