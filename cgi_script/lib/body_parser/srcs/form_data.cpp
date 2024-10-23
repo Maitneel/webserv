@@ -7,7 +7,7 @@
 
 #include "form_data.hpp"
 
-#define CRLF "\0x0d\0x0a"
+#define CRLF "\r\n"
 
 using std::cerr;
 using std::endl;
@@ -78,8 +78,9 @@ std::pair<std::string, std::string> parse_parameter(const std::string &str) {
 } 
 
 FormDataParameters::FormDataParameters(const std::string &single_content) {
-    std::vector<std::string> splited_by_lf = split_with_erase_delimiter(single_content, "\n");
+    std::vector<std::string> splited_by_lf = split_with_erase_delimiter(single_content, CRLF);
     for (size_t i = 0; i < splited_by_lf.size(); i++) {
+        debug(i);
         std::string &line = splited_by_lf[i];
         if (line == "") {
             break;
@@ -97,6 +98,9 @@ FormDataParameters::FormDataParameters(const std::string &single_content) {
                 trim_str(&splited_by_semi_colon[i], PARAMETER_DALIMITER);
                 this->parameter_.at(name).insert(parse_parameter(splited_by_semi_colon[i]));
             }
+            for (auto it = this->parameter_.at(name).begin(); it != this->parameter_.at(name).end(); it++) {
+                cerr << "name: '" << it->first << "' '" << it->second << "'" <<  endl;
+            }
         } catch (std::exception &e) {
             std::cerr << "FormParameter: " << e.what() << " line: " << line << std::endl;
             continue;
@@ -112,13 +116,18 @@ FormDataParameters::~FormDataParameters() {
 
 std::string get_content_entity(const std::string &str, size_t lf_count) {
     size_t body_start = 0;
+    size_t cr_count = lf_count;
     while (body_start < str.length() && lf_count) {
         if (str[body_start] == '\n') {
             lf_count--;
         }
         body_start++;
     }
-    return str.substr(body_start, str.length() - body_start - 1);
+    // debug(body_start);
+    // debug(cr_count);
+    // debug(str.substr(body_start, str.length() - body_start - 1));
+    body_start += strlen(CRLF);
+    return str.substr(body_start, str.length() - body_start - strlen(CRLF));
 }
 
 std::string replace_crlf_to_lf(const std::string &str) {
@@ -132,15 +141,14 @@ std::string replace_crlf_to_lf(const std::string &str) {
     return replaced;
 }
 
-FormDataBody::FormDataBody() : buffer_(replace_crlf_to_lf(get_cin_buffer())) {
+FormDataBody::FormDataBody() : buffer_(get_cin_buffer()) {
     const std::string boundary = "--" + get_boundary();
-    // debug(boundary);
     std::vector<std::string> splited_by_boundary = split_with_erase_delimiter(this->buffer_, boundary);
 
     for (size_t i = 0; i < splited_by_boundary.size(); i++) {
         std::string name;
 
-        trim_front_str(&splited_by_boundary[i], "\n");
+        trim_front_str(&splited_by_boundary[i], CRLF);
         if (splited_by_boundary[i].substr(0, 2) == "--") {
             break;
         }

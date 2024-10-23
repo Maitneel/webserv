@@ -39,6 +39,3 @@ ${TEST_FILE} : ${NAME} ${SRCS_DIR}/main.cpp
 
 test : ${TEST_FILE} 
 	env -i CONTENT_TYPE="multipart/form-data; boundary=----WebKitFormBoundaryzt8BctbKEjhBGCUB ; hogehoge=fugafuga" ./${TEST_FILE}  < body.txt
-
-test2 : ${TEST_FILE} 
-	env -i CONTENT_TYPE="multipart/form-data; boundary=----WebKitFormBoundaryzt8BctbKEjhBGCUB ; hogehoge=fugafuga" ./${TEST_FILE}  < body.out
