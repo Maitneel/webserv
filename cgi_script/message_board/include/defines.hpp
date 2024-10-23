@@ -12,6 +12,16 @@
 #define DB_TIME_STAMP_ID_PREFIX (std::string)("time_stamp_id_")
 #define DB_MESSAGE_ID_PREFIX (std::string)("message_id_")
 #define DB_IMAGE_ID_PREFIX (std::string)("image_id_")
-#define RESOURCE_IMAGE_PREFIX (PUBLIC_RESOURCE_ROOT + "/image/image_")
+#define DB_IMAGE_CONTENT_TYPE_PREFIX (std::string)("content_type__image_")
+#define DB_IMAGE_PATH_PREFIX (std::string)("image_path_image_")
+
+#define RESOURCE_IMAGE_PREFIX (std::string)("./docs/image_")
+
+#define IMAGE_URL_PREFIX (std::string)("/image_")
+
+
+// #define RESOURCE_IMAGE_PREFIX (std::string)("./docs/image_")
+
+// #define IMAGE_URL_PREFIX (std::string)("./docs/image_")
 
 #endif // INCLUDE_DEFINES_HPP_

@@ -15,10 +15,10 @@ class FormDataParameters {
 // Content-type が multipart/fomr-data じゃない場合exceptionを投げる
 class FormDataBody {
  private:
-    std::map<std::string, FormDataParameters> parameters_; // name, parameters;
- public:
     const std::string buffer_;
     std::map<std::string, std::string> body_; // name, body;
+ public:
+    std::map<std::string, FormDataParameters> parameters_; // name, parameters;
     FormDataBody();
     ~FormDataBody();
 

@@ -28,6 +28,8 @@ std::string create_message_div(const SimpleDB &message_db, const std::string &id
     std::string html;
     std::string message = message_db.noexcept_get(DB_MESSAGE_ID_PREFIX + id);
     std::string time_stamp = message_db.noexcept_get(DB_TIME_STAMP_ID_PREFIX + id);
+    std::string image_content_type = message_db.noexcept_get(DB_IMAGE_CONTENT_TYPE_PREFIX + id);
+    std::string image_path = IMAGE_URL_PREFIX + id;
 
     if (time_stamp == "") {
         time_stamp = "unknown post time";
@@ -45,12 +47,15 @@ std::string create_message_div(const SimpleDB &message_db, const std::string &id
     html += id;
     html += "\">skdjh</span>\n";
     html += "        <br>\n";
+    if (image_content_type != "") {
+        html += "        <img src=\"" + image_path + "\">\n";
+        html += "        <br>";
+    }
     html += "        <span class=\"message\" id=\"message-";
     html += id;
     html += "\">";
     html += message;
     html += "</span>";
-    html += "        <img src=\"\">\n";
     html += "    </div>\n";
     html += "    <hr>\n";
 
@@ -70,8 +75,24 @@ void update_text_message (SimpleDB *message_db, const FormDataBody &body, const 
 }
 
 void update_image_message (SimpleDB *message_db, const FormDataBody &body, const std::string &id) {
-    std::ofstream ofs(RESOURCE_IMAGE_PREFIX + id);
-    ofs << body.get_body("attachment");
+    const std::string &attachment = body.get_body("attachment");
+    if (attachment.size() == 0)  {
+        return;
+    }
+    const std::string file_path = RESOURCE_IMAGE_PREFIX + id;
+    std::ofstream ofs(file_path);
+    if (!ofs) {
+        return;
+    } 
+    std::string content_type;
+    try {
+        content_type = body.parameters_.at("Content-Type").parameter_.begin()->first;
+    } catch (...) {
+        content_type = "application/octet-stream";
+    }
+    ofs << attachment;
+    message_db->add(DB_IMAGE_CONTENT_TYPE_PREFIX + id, content_type);
+    message_db->add(DB_IMAGE_PATH_PREFIX + id, file_path);
 }
 
 void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
