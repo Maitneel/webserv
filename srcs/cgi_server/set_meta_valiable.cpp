@@ -7,6 +7,13 @@
 #include "cgi_valid.hpp"
 #include "extend_stdlib.hpp"
 
+const std::string defined_meta_val_by_rfc_array[] = {
+    "auth-scheme",
+    "content-type",
+    "content-length",
+    "host"
+};
+
 std::string make_env_format(const std::string &s, const std::string & t)  {
     return (s + "=" + t);
 }
@@ -112,6 +119,27 @@ static void add_server_protocol_to_env(const HTTPRequest &req, std::vector<std::
 // SERVER_SOFTWARE よくわかんない //
 
 
+bool is_include(const std::string &target, const std::string list[]) {
+    size_t list_size = sizeof(list) / sizeof(const std::string);
+    for (size_t i = 0; i < list_size; i++) {
+        if (target == list[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void add_other_env(HTTPRequest request, std::vector<std::string> *env) {
+    for (std::map<std::string, std::vector<std::string> >::iterator it = request.header_.begin(); it != request.header_.end(); it++) {
+        if (!is_include(it->first, defined_meta_val_by_rfc_array)) {
+            std::string key = "HTTP_" + it->first;
+            to_upper(&key);
+            env->push_back(make_env_format(key, join_header(it->second)));
+        }
+    }
+}
+
+
 static void add_env_from_request(const HTTPRequest &request, std::vector<std::string> *env) {
     add_auth_type_to_env(request, env);
     add_content_length_to_env(request, env);
@@ -125,6 +153,8 @@ static void add_env_from_request(const HTTPRequest &request, std::vector<std::st
     add_server_name_to_env(request, env);
     add_server_port_to_env(request, env);
     add_server_protocol_to_env(request, env);
+
+    add_other_env(request, env);
 }
 
 char **make_env_array(const HTTPRequest &request) {
