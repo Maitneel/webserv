@@ -11,6 +11,8 @@ using namespace std;
 int main() {
     
     std::string method = getenv("REQUEST_METHOD");
+    // char *cookie_cstr = getenv("HTTP_COOKIE");
+    // std::map<std::string, std::string> cookie = make_cookie_map();
 
     if (access(INDEX_HTML_PATH_CSTR, F_OK)) {
         init_index_html();

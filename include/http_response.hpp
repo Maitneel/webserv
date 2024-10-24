@@ -31,6 +31,11 @@ class HTTPResponse {
         std::string content_type,
         std::string body
     );
+    HTTPResponse(
+        int         status_code,
+        std::string content_type,
+        std::string body
+    );
     HTTPResponse(const HTTPResponse&);
     HTTPResponse& operator=(const HTTPResponse&);
     ~HTTPResponse();

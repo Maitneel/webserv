@@ -24,6 +24,31 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
     throw std::runtime_error("unreachable code");
 }
 
+HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
+    if (code == 200) {
+        return HTTPResponse::kOK;
+    }
+    if (code == 400) {
+        return HTTPResponse::kBadRequest;
+    }
+    if (code == 403) {
+        return HTTPResponse::kForbidden;
+    }
+    if (code == 404) {
+        return HTTPResponse::kNotFound;
+    }
+    if (code == 405) {
+        return HTTPResponse::kMethodNotAllowed;
+    }
+    if (code == 500) {
+        return HTTPResponse::kInternalServerErrror;
+    }
+    if (code == 501) {
+        return HTTPResponse::kNotImplemented;
+    }
+    return HTTPResponse::kInternalServerErrror;
+}
+
 HTTPResponse::HTTPResponse(): status_code_(kOK), content_type_("text/html"), body_("") {}
 
 HTTPResponse::HTTPResponse(
@@ -35,6 +60,17 @@ status_code_(status_code),
 content_type_(content_type),
 body_(body) {
     this->description_ = GenerateDescription(status_code);
+}
+
+HTTPResponse::HTTPResponse(
+    int            status_code,
+    std::string    content_type,
+    std::string    body
+):
+status_code_(convert_status_code_to_enum(status_code)),
+content_type_(content_type),
+body_(body) {
+    this->description_ = GenerateDescription(convert_status_code_to_enum(status_code));
 }
 
 HTTPResponse::HTTPResponse(const HTTPResponse& other) {

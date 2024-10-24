@@ -30,6 +30,7 @@ SRCS		=	main.cpp \
 				${CGI_DIR}cgi_server.cpp \
 				${CGI_DIR}set_meta_valiable.cpp \
 				${CGI_DIR}valid_words.cpp \
+				${CGI_DIR}cgi_response.cpp \
 
 
 KERNEL	  := ${shell uname -s}
