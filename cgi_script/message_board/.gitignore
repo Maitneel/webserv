@@ -1,2 +1,2 @@
 resource/*/*
-!resource/public/delete_request.js
+!resource/public/request.js

@@ -35,14 +35,13 @@ std::string create_message_div(const SimpleDB &message_db, const std::string &id
     html += "    <div class=\"message-div\" id=\"message-div-" + id + "\">\n";
     html += "        <span class=\"time-stamp\" id=\"time-stamp-" + id + "\">" + time_stamp + "</span>\n";
     html += "        <span class=\"poster-id\" id=\"poster-id-" + id + "\">skdjh</span>\n";
-    html += "        <button class=\"delete-button\" id=\"delete-button-" + id + "\">delete</button>";
-        
+    html += "        <button class=\"delete-button\" id=\"delete-button-" + id + "\">delete</button>\n";
     html += "        <br>\n";
     if (image_content_type != "") {
         html += "        <img src=\"" + image_path + "\">\n";
         html += "        <br>";
     }
-    html += "        <span class=\"message\" id=\"message-" + id + "\">" + message + "</span>";
+    html += "        <span class=\"message\" id=\"message-" + id + "\">" + message + "</span>\n";
     html += "    </div>\n";
     html += "    <hr>\n";
 
@@ -53,24 +52,26 @@ std::string create_template_end() {
     std::string html;
 
     html += "    <div class=\"post-form-section\" id=\"post-form-section\">\n";
-    html += "        <form action=\"\" method=\"post\" enctype=\"multipart/form-data\">\n";
+    // html += "        <form action=\"\" method=\"post\" enctype=\"multipart/form-data\">\n";
+    html += "        <div class=\"post-section\" id=\"post-secition-id\">\n";
     html += "            <label for=\"message-input\">message</label>\n";
     html += "            <input type=\"text\" name=\"message\" id=\"message-input\">\n";
     html += "            <input type=\"file\" name=\"attachment\" id=\"attachment-input\">\n";
     html += "            <br>\n";
-    html += "            <input type=\"submit\" value=\"post\">\n";
-    html += "        </form>\n";
+    // html += "            <input type=\"submit\" value=\"post\">\n";
+    html += "            <button class=\"submit-button\" id=\"submit-button-id\">post</button>\n";
+    html += "        </div>\n";
+    // html += "        </form>\n";
     html += "    </div>\n";
 
-    std::ifstream js_file(JS_FILE_PATH);
     std::string s;
-    std::cerr << "jsfile " << js_file << std::endl;
-    html += "    <script>";
-    while (std::getline(js_file, s)) {
+    std::ifstream request_js_file(JS_FILE_PATH);
+    html += "    <script>\n";
+    while (std::getline(request_js_file, s)) {
         html += "    " + s + "\n";
     }
+    html += "    </script>\n";
 
-    html += "    </script>";
     html += "</body>\n";
     html += "</html>\n";
 

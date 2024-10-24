@@ -34,6 +34,7 @@ void update_image_message (SimpleDB *message_db, const FormDataBody &body, const
         content_type = "application/octet-stream";
     }
     ofs << attachment;
+    ofs.close();
     message_db->add(DB_IMAGE_CONTENT_TYPE_PREFIX + id, content_type);
     message_db->add(DB_IMAGE_PATH_PREFIX + id, file_path);
 }
