@@ -53,6 +53,10 @@ HTTPResponse& HTTPResponse::operator=(const HTTPResponse& other) {
 
 HTTPResponse::~HTTPResponse() {}
 
+void HTTPResponse::AddHeader(const std::string &name, const std::string &value) {
+    this->extend_header_.insert(std::make_pair(name, value));
+}
+
 std::string HTTPResponse::toString() const {
     std::stringstream ss;
 
@@ -61,6 +65,11 @@ std::string HTTPResponse::toString() const {
     ss << "Content-Type: " << this->content_type_ << "\r\n";
     ss << "Content-Length: ";
     ss << this->body_.length() << "\r\n";
+    std::map<std::string, std::vector<std::string> >hoge;
+    for (std::map<std::string, std::string>::const_iterator it = this->extend_header_.begin(); it != this->extend_header_.end(); it++) {
+        ss << it->first << ": " << it->second << "\r\n";
+    }
+
     ss << "\r\n";
     ss << this->body_;
     ss << "\r\n";

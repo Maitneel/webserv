@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <string>
 
 class HTTPResponse {
@@ -10,6 +11,9 @@ class HTTPResponse {
     std::string       content_type_;
     std::string       body_;
     static const char kHTTPVersion[];
+
+    // 同じ名前のヘッダーを生成したい時にこのほうが都合がいいのでmutlimap //
+    std::multimap<std::string, std::string> extend_header_;
 
  public:
     enum StatusCode {
@@ -30,5 +34,6 @@ class HTTPResponse {
     HTTPResponse(const HTTPResponse&);
     HTTPResponse& operator=(const HTTPResponse&);
     ~HTTPResponse();
+    void AddHeader(const std::string &name, const std::string &value);
     std::string toString() const;
 };
