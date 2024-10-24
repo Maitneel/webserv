@@ -1,1 +1,2 @@
-resource
+resource/*/*
+!resource/public/delete_request.js

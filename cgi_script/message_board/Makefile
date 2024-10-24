@@ -12,6 +12,7 @@ SRCS = 	main.cpp \
 		post_method.cpp \
 		delete_method.cpp \
 		gen_html.cpp \
+		formated_string.cpp \
 
 OBJS = ${SRCS:%.cpp=${OBJS_DIR}/%.o}
 

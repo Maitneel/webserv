@@ -2,6 +2,7 @@
 #define INCLUDE_DEFINES_HPP_
 
 #define INDEX_HTML_PATH_CSTR "./cgi_script/message_board/resource/public/index.html"
+#define JS_FILE_PATH "./cgi_script/message_board/resource/public/delete_request.js"
 #define INDEX_HTML_PATH (std::string)(INDEX_HTML_PATH_CSTR)
 #define PUBLIC_RESOURCE_ROOT (std::string)("./cgi_script/message_board/resource/public")
 #define PRIVATE_RESOURCE_ROOT (std::string)("./cgi_script/message_board/resource/private")

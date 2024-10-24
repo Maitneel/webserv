@@ -18,11 +18,13 @@ int main() {
         init_index_html();
     }
     try {
+        cerr << "cgi method " << method << "------------------------------------ " <<endl;
         if (method == "GET") {
             get_method();
         } else if (method == "POST") {
             post_method();
         } else if (method == "DELETE") {
+            std::cerr << "cgi delete --------------------------------------------------" << std::endl;
             delete_method();
         }
     } catch (std::exception &e) {
