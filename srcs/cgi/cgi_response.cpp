@@ -47,6 +47,9 @@ void CGIResponse::add_header(const std::string &header_line) {
     std::string value;
     try {
         value = header_line.substr(header_line.find_first_not_of(": ", key.length()));
+        if (*(value.end() - 1) == '\n') {
+            value.erase(value.end() - 1);
+        }
     } catch (...) {
     }
     this->filed_.insert(std::make_pair(key, value));
@@ -69,6 +72,8 @@ int CGIResponse::register_status_code(const std::string &status_line) {
             this->status_code_ += (status_line.at(1) - '0') * 10;
             this->status_code_ += (status_line.at(2) - '0') * 1;
             return 1;
+        } else {
+            status_code_ = 200;
         }
     } catch (...) {
 
@@ -78,8 +83,7 @@ int CGIResponse::register_status_code(const std::string &status_line) {
 
 void CGIResponse::register_body(std::vector<std::string> &splited_by_lf, const size_t &body_front) {
     for (size_t i = body_front; i < splited_by_lf.size(); i++) {
-        // split した時に消してるから若干情報欠落して完全に同じにならない(最後にlfあるかないかを区別できない)けど別にいいよね? //
-        this->body_ += splited_by_lf[i] + "\n";
+        this->body_ += splited_by_lf[i];
     }
 }
 
@@ -97,7 +101,7 @@ CGIResponse::CGIResponse(const std::string &buffer) {
     }
     // ここキモいかも　//
     for (; line_index < splited_by_lf.size(); line_index++) {
-        if (splited_by_lf.at(line_index) == "") {
+        if (splited_by_lf.at(line_index) == "\n") {
             break;
         }
         add_header(splited_by_lf.at(line_index));

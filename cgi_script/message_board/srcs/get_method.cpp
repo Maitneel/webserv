@@ -8,6 +8,7 @@ void get_method() {
     std::ifstream ifs(INDEX_HTML_PATH);
     std::string s;
     std::cout << "Content-Type:text/html" << "\n";
+    std::cout << "\n";
     while (getline(ifs, s)) {
         std::cout << s << "\n";
     }
