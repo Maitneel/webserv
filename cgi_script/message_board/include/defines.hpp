@@ -23,6 +23,7 @@
 #define COOKIE_USER_AUTH_KEY (std::string)("auth_key")
 // とりあえず1日 //
 #define COOKIE_MAX_AGE ("86400")
+#define COOKIE_PATH ("/cgi/message_board")
 
 #define USER_ID_LENGTH 16
 #define USER_AUTH_STRING_LENGTH 128
