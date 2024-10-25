@@ -56,8 +56,13 @@ void CGIResponse::add_header(const std::string &header_line) {
 }
 
 bool is_status_code_line(const std::string &line) {
+    const std::string status_str = "Status:";
     try {
-        if ('0' <= line.at(0) && line.at(0) <= 5 && is_digit(line.at(1)) && is_digit(line.at(2)) && line.at(3) == ' ') {
+        if (line.substr(0, status_str.length()) != status_str) {
+            return false;
+        }
+        std::string status_code_str = line.substr(line.find_first_not_of(" ", line.find_first_not_of(status_str)));
+        if ('0' <= status_code_str.at(0) && status_code_str.at(0) <= '5' && is_digit(status_code_str.at(1)) && is_digit(status_code_str.at(2)) && status_code_str.at(3) == ' ') {
             return true;
         }
     } catch (...) {
@@ -68,9 +73,11 @@ bool is_status_code_line(const std::string &line) {
 int CGIResponse::register_status_code(const std::string &status_line) {
     try {
         if (is_status_code_line(status_line)) {
-            this->status_code_ += (status_line.at(0) - '0') * 100;
-            this->status_code_ += (status_line.at(1) - '0') * 10;
-            this->status_code_ += (status_line.at(2) - '0') * 1;
+            std::string status_code_str = status_line.substr(status_line.find_first_not_of(" ", status_line.find_first_not_of("Status:")));
+            status_code_ = 0;
+            this->status_code_ += (status_code_str.at(0) - '0') * 100;
+            this->status_code_ += (status_code_str.at(1) - '0') * 10;
+            this->status_code_ += (status_code_str.at(2) - '0') * 1;
             return 1;
         } else {
             status_code_ = 200;
