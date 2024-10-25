@@ -55,7 +55,7 @@ void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
 
 #include <fstream>
 
-void post_method() {
+void post_method(const std::multimap<std::string, std::string> &cookie) {
     SimpleDB message_db(MESSAGE_DB_PATH);
     FormDataBody body;
 

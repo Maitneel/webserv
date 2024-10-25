@@ -12,11 +12,10 @@
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
 
-void get_method() {
+void get_method(const std::multimap<std::string, std::string> &cookie) {
     // TODO path がやばいのでどうにかする //
     std::ifstream ifs(INDEX_HTML_PATH);
     std::string s;
-    std::multimap<std::string, std::string> cookie = parse_cookie();
     SimpleDB auth_db(AUTH_DB_PATH);
 
     std::cout << "Content-Type:text/html" << "\n";

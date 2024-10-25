@@ -19,7 +19,7 @@ void delete_db_data(SimpleDB *message_db, const std::string &id) {
     }
 }
 
-void delete_method() {
+void delete_method(const std::multimap<std::string, std::string> &cookie) {
     std::string id;
     SimpleDB message_db(MESSAGE_DB_PATH);
 
