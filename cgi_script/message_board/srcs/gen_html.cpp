@@ -26,6 +26,7 @@ std::string create_message_div(const SimpleDB &message_db, const std::string &id
     std::string message = message_db.noexcept_get(DB_MESSAGE_ID_PREFIX + id);
     std::string time_stamp = message_db.noexcept_get(DB_TIME_STAMP_ID_PREFIX + id);
     std::string image_content_type = message_db.noexcept_get(DB_IMAGE_CONTENT_TYPE_PREFIX + id);
+    std::string posted_by = message_db.noexcept_get(DB_IMAGE_CONTENT_TYPE_PREFIX + id);
     std::string image_path = IMAGE_URL_PREFIX + id;
 
     if (time_stamp == "") {
@@ -33,7 +34,8 @@ std::string create_message_div(const SimpleDB &message_db, const std::string &id
     }
 
     html += "    <div class=\"message-div\" id=\"message-div-" + id + "\">\n";
-    html += "        <span class=\"time-stamp\" id=\"time-stamp-" + id + "\">" + time_stamp + "</span>\n";
+    html += "        <span class=\"message-id\" id=\"messge-id-" + id + "\">message: "  + id + "</span>\n";
+    html += "        <span class=\"time-stamp\" id=\"time-stamp-" + id + "\">date: " + time_stamp + "</span>\n";
     html += "        <span class=\"poster-id\" id=\"poster-id-" + id + "\">skdjh</span>\n";
     html += "        <button class=\"delete-button\" id=\"delete-button-" + id + "\">delete</button>\n";
     html += "        <br>\n";

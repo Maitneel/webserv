@@ -61,5 +61,6 @@ void post_method() {
 
     update_message_db(&message_db, body);
     create_index_html(message_db);
-    get_method();
+    std::cout << "Content-Type:text/html" << "\n";
+    std::cout << "\n\n";
 }
