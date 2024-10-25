@@ -217,7 +217,9 @@ int ft_accept(int fd) {
 
 //  雑of雑なので作り直さないといけないと思う //
 HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_path) {
+    std::cerr << "call cgi" << std::endl;
     CGIResponse cgi_res(call_cgi_script(req, cgi_path));
+    std::cerr << "cgi end" << std::endl;
     return cgi_res.make_http_response();
 }
 

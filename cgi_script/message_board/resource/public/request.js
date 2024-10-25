@@ -3,6 +3,14 @@ const messageBoardURL = '/cgi/message_board/';
 (function (){
     'use strict';
 
+    function reloadIfSuccessfulRequest(res, errorMessage) {
+        if (res.status == 200) {
+            location.reload();
+        } else {
+            alaert(res.status == 200 + '\n' + errorMessage);
+        }
+    }
+
     const deleteButtons = document.getElementsByClassName("delete-button")
     for (let i = 0; i < deleteButtons.length; i++) {
         const element = deleteButtons[i];
@@ -12,9 +20,8 @@ const messageBoardURL = '/cgi/message_board/';
                 body: element.id.substr('delete-button-'.length,)
             });
             fetch(req).then((res) => {
-                console.log(res);
-            })
-            setTimeout(location.reload(), (100));
+                reloadIfSuccessfulRequest(res, "delete failed");
+            });
         }
     }
 
@@ -32,7 +39,7 @@ const messageBoardURL = '/cgi/message_board/';
             body: postFormData
         });
         fetch(req).then((res) => {
-            location.reload();
-        })
+            reloadIfSuccessfulRequest(res, "post failed");
+        });
     }
 })();

@@ -99,3 +99,10 @@ std::multimap<std::string, std::string> parse_cookie() {
     }
     return cookie;
 }
+
+bool challenge_auth(const SimpleDB &auth_db, const std::multimap<std::string, std::string> &cookie, const std::string &user_id) {
+    if (cookie.count(COOKIE_USER_ID_KEY) != 1 || cookie.count(COOKIE_USER_AUTH_KEY) != 1) {
+        return false;
+    }
+    return (user_id == cookie.find(COOKIE_USER_ID_KEY)->second && auth_db.noexcept_get(cookie.find(COOKIE_USER_ID_KEY)->second) == cookie.find(COOKIE_USER_AUTH_KEY)->second);
+}

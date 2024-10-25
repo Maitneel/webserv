@@ -17,5 +17,6 @@ bool is_remove_prev_cookie(const SimpleDB &auth_db, const std::multimap<std::str
 std::string gen_new_auth_cookie(SimpleDB *auth_db);
 std::string get_cookie_header(const std::multimap<std::string, std::string> &cookie, SimpleDB *auth_db);
 std::multimap<std::string, std::string> parse_cookie();
+bool challenge_auth(const SimpleDB &auth_db, const std::multimap<std::string, std::string> &cookie, const std::string &user_id);
 
 #endif //INCLUDE_COOKIE_HPP_

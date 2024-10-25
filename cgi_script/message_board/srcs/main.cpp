@@ -25,13 +25,11 @@ int main() {
         init_index_html();
     }
     try {
-        cerr << "cgi method " << method << "------------------------------------ " <<endl;
         if (method == "GET") {
             get_method(cookie);
         } else if (method == "POST") {
             post_method(cookie);
         } else if (method == "DELETE") {
-            std::cerr << "cgi delete --------------------------------------------------" << std::endl;
             delete_method(cookie);
         }
     } catch (std::exception &e) {
