@@ -278,9 +278,6 @@ void Server::EventLoop() {
                 } else {
                     res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
                 }
-                res.AddHeader("Set-Cookie", "fuga=fuga; Max-age=1000000");
-                res.AddHeader("Set-Cookie", "hoge=hoge; Max-Age=100");
-
                 response_to_client(it->fd, res);
                 selector_.Unregister(it->fd);
                 close(it->fd);

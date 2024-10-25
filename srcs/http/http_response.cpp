@@ -80,10 +80,11 @@ HTTPResponse::HTTPResponse(const HTTPResponse& other) {
 HTTPResponse& HTTPResponse::operator=(const HTTPResponse& other) {
     if (this == &other)
         return *this;
-    this->status_code_  = other.status_code_;
-    this->description_  = other.description_;
-    this->content_type_ = other.content_type_;
-    this->body_         = other.body_;
+    this->status_code_      = other.status_code_;
+    this->description_      = other.description_;
+    this->content_type_     = other.content_type_;
+    this->body_             = other.body_;
+    this->extend_header_    = other.extend_header_;
     return *this;
 }
 
