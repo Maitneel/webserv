@@ -4,6 +4,8 @@
 #include "defines.hpp"
 #include "string_lib.hpp"
 
+#include <iostream>
+
 std::string get_remove_cookie(std::string name) {
     return ("Set-Cookie: " + name + "; Max-Age=-1\n");
 }
@@ -45,6 +47,7 @@ bool is_must_update(const SimpleDB &auth_db, const std::multimap<std::string, st
             return false;
         }
     }
+    std::cerr << "must_update true;" <<std::endl;
     return true;
 }
 
@@ -52,6 +55,7 @@ bool is_remove_prev_cookie(const SimpleDB &auth_db, const std::multimap<std::str
     if ((cookie.count(COOKIE_USER_ID_KEY) == 0 && cookie.count(COOKIE_USER_AUTH_KEY) == 0) || !is_must_update(auth_db, cookie)) {
         return false;
     }
+    std::cerr << "is_remove true" << std::endl;
     return true;
 }
 
@@ -59,7 +63,7 @@ std::string get_cookie_header(const std::multimap<std::string, std::string> &coo
     if (cookie.count(COOKIE_USER_ID_KEY) == 0 && cookie.count(COOKIE_USER_AUTH_KEY) == 0) {
         return gen_new_auth_cookie(auth_db);
     }
-    if (is_must_update(*auth_db, cookie)) {
+    if (!is_must_update(*auth_db, cookie)) {
         return "";
     }
 
