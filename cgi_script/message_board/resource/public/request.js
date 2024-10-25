@@ -7,7 +7,7 @@ const messageBoardURL = '/cgi/message_board/';
         if (res.status == 200) {
             location.reload();
         } else {
-            alaert(res.status == 200 + '\n' + errorMessage);
+            alert(res.status == 200 + '\n' + errorMessage);
         }
     }
 
