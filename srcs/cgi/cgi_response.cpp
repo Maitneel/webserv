@@ -83,12 +83,11 @@ int CGIResponse::register_status_code(const std::string &status_line) {
             status_code_ = 200;
         }
     } catch (...) {
-
     }
     return 0;
 }
 
-void CGIResponse::register_body(std::vector<std::string> &splited_by_lf, const size_t &body_front) {
+void CGIResponse::register_body(const std::vector<std::string> &splited_by_lf, const size_t &body_front) {
     for (size_t i = body_front; i < splited_by_lf.size(); i++) {
         this->body_ += splited_by_lf[i];
     }
@@ -100,7 +99,7 @@ CGIResponse::CGIResponse(const std::string &buffer) {
     add_header(splited_by_lf.at(0));
     if (this->type_ == kLocalRedirectResponse) {
         // if (2 < splited_by_lf.size()) の場合エラーなのでthrowしてもいいがめんどくさいのでしない
-        return ;
+        return;
     }
     size_t line_index = 1;
     if (this->type_ == kDocumentResponse) {
@@ -121,7 +120,6 @@ CGIResponse::CGIResponse(const std::string &buffer) {
 }
 
 CGIResponse::~CGIResponse() {
-
 }
 
 HTTPResponse CGIResponse::make_http_response() {

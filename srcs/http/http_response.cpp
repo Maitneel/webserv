@@ -1,5 +1,8 @@
 #include <sstream>
 #include <string>
+#include <vector>
+#include <map>
+#include <utility>
 #include "http_response.hpp"
 
 const char HTTPResponse::kHTTPVersion[] = "HTTP/1.1";

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 #include "http_response.hpp"
 
@@ -25,12 +26,12 @@ class CGIResponse {
 
     void add_header(const std::string &header_line);
     int register_status_code(const std::string &status_line);
-    void register_body(std::vector<std::string> &splited_by_lf, const size_t &body_front);
- public:
+    void register_body(const std::vector<std::string> &splited_by_lf, const size_t &body_front);
 
-    CGIResponse(const std::string &str);
+ public:
+    explicit CGIResponse(const std::string &str);
     ~CGIResponse();
     HTTPResponse make_http_response();
 };
 
-#endif // INCLUDE_CGI_RESPONSE_HPP_
+#endif  // INCLUDE_CGI_RESPONSE_HPP_

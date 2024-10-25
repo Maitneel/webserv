@@ -7,6 +7,7 @@
 #include "cgi_valid.hpp"
 #include "extend_stdlib.hpp"
 
+// ここlint通らないけど、このまま行きたい気がする //
 const std::string defined_meta_val_by_rfc_array[] = {
     "auth-scheme",
     "content-type",
