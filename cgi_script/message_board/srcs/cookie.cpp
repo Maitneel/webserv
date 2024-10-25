@@ -8,11 +8,11 @@ std::string get_remove_cookie(std::string name) {
     return ("Set-Cookie: " + name + "; Max-Age=-1\n");
 }
 
-std::string gen_user_id(const SimpleDB *auth_db) {
+std::string gen_user_id(const SimpleDB &auth_db) {
     std::string user_id;
     do {
         user_id = gen_random_str(USER_ID_LENGTH);
-    } while (auth_db->is_include_key(user_id));
+    } while (auth_db.is_include_key(user_id));
     return user_id;
 }
 
@@ -33,7 +33,7 @@ std::string get_auth_cookie_header(const std::string &user_id, const std::string
 }
 
 std::string gen_new_auth_cookie(SimpleDB *auth_db) {
-    std::string user_id = gen_user_id(auth_db);
+    std::string user_id = gen_user_id(*auth_db);
     std::string auth_str = gen_auth_str();
     register_auth_info_to_db(auth_db, user_id, auth_str);
     return get_auth_cookie_header(user_id, auth_str);

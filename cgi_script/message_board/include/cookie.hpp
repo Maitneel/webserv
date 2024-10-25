@@ -7,7 +7,7 @@
 #include "simple_db.hpp"
 
 std::string get_remove_cookie(std::string name);
-std::string gen_user_id(const SimpleDB *auth_db);
+std::string gen_user_id(const SimpleDB &auth_db);
 std::string gen_auth_str();
 void register_auth_info_to_db(SimpleDB *auth_db, std::string user_id, std::string auth_str);
 std::string get_auth_cookie_header(const std::string &user_id, const std::string &auth_str);
