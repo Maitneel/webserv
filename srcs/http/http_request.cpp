@@ -94,6 +94,10 @@ void HTTPRequest::valid_content_type(const std::string &value) {
     try {
         std::vector<std::string> splited_parameter = escaped_quote_split(value.substr(semi_colon_index + 1), ";");
         for (size_t i = 0; i < splited_parameter.size(); i++) {
+            std::string ows;
+            ows.push_back(SP);
+            ows.push_back(HTAB);
+            splited_parameter.at(i) = trim_string(splited_parameter.at(i), ows);
             std::cerr << splited_parameter.at(i) << std::endl;
             if (splited_parameter.at(i) == ";" || splited_parameter.at(i) == "") {
                 continue;
@@ -374,7 +378,7 @@ void HTTPRequest::transform_content_type() {
 
 void HTTPRequest::transform_headers() {
     if (this->header_.find("content-type") != this->header_.end()) {
-        transform_content_type();
+    //     transform_content_type();
     }
 }
 
@@ -395,6 +399,9 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
     this->transform_headers();
 }
 
+HTTPRequest::HTTPRequest() {
+}
+
 HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
     remove_front_crlf(&buffer);
     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
@@ -402,7 +409,6 @@ HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_
 
     const size_t header_count = this->registor_field(splited_buffer);
     this->valid_headers();
-    this->registor_entity_body(splited_buffer, header_count + 1);
 }
 
 HTTPRequest::~HTTPRequest() {
@@ -506,6 +512,9 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
         break;
     case kContentLength:
         return "HTTPHeader: invalid 'Content-Length' header";
+        break;
+    case kContentType:
+        return "HTTPHeader: invalid 'Content-Type' header";
         break;
     case kDate:
         return "HTTPHeader: invalid 'Date' header";

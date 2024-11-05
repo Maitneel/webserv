@@ -93,7 +93,7 @@ class HTTPRequest {
     std::string entity_body_;  // これstringでいいのか要検討 //
     std::vector<std::string> allow_;
     std::string content_encoding_;
-    int content_length_;
+    size_t content_length_;
     MIMEType content_type_;
     std::string date_;
     std::string expires_;
@@ -105,6 +105,7 @@ class HTTPRequest {
     std::string referer_;
     std::vector<std::string> user_agent_;
 
+    explicit HTTPRequest();
     explicit HTTPRequest(const int fd);
     explicit HTTPRequest(std::string buffer);
     ~HTTPRequest();
