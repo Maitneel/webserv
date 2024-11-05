@@ -5,8 +5,10 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 
 #include "http_request.hpp"
+#include <cgi.hpp>
 
 #define PIPE_READ_FD 0
 #define PIPE_WRITE_FD 1
@@ -31,24 +33,30 @@ char **create_argv(const std::string &cgi_script_path) {
     return argv;
 }
 
-void set_meta_valiable(const HTTPRequest &request) {
-    // TODO(maitneel): meta-variable の設定 //
-}
-
 void child_process(const HTTPRequest &request, const std::string &cgi_script_path, const int to_script_pipe_fd[2], const int to_server_pipe_fd[2]) {
-    set_meta_valiable(request);
     dup2(to_script_pipe_fd[PIPE_READ_FD], STDIN_FILENO);
     dup2(to_server_pipe_fd[PIPE_WRITE_FD], STDOUT_FILENO);
     close_pipe_fds(to_script_pipe_fd);
     close_pipe_fds(to_server_pipe_fd);
     char **argv = create_argv(cgi_script_path);
-    execve(cgi_script_path.c_str(), argv, NULL);
+    char **env = make_env_array(request);
+    execve(cgi_script_path.c_str(), argv, env);
     exit(127);
 }
 
 
 void write_body_to_script(const HTTPRequest &request, const int &fd) {
-    // TODO(maitneel): bodyの書き込み //
+    const std::string body = request.entity_body_;
+    int remining_date = request.entity_body_.length();
+    // TODO(maitneel): bug: 全て書き込めなかった場合に最初から書き込み直している　//
+    // あとノンブロッキングじゃない //
+    do {
+        int write_ret = write(fd, body.c_str(), remining_date);
+        if (write_ret < 0) {
+            throw std::runtime_error("write");
+        }
+        remining_date -= write_ret;
+    } while (remining_date);
 }
 
 std::string read_cgi_responce(const int &fd) {

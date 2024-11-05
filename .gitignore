@@ -2,6 +2,7 @@
 *.d
 ./objs/*
 a.out
+*.out
 webserv
 .vscode
 *.dSYM

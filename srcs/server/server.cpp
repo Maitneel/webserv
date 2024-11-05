@@ -23,6 +23,7 @@
 #include "poll_selector.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "cgi_response.hpp"
 #include "cgi.hpp"
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
@@ -63,11 +64,12 @@ std::string read_request(int fd) {
     char buf[BUFFER_SIZE];
     std::string content;
     int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
+    debug(n_read);
     if (n_read < 0) {
         return "";
     }
     buf[n_read] = '\0';
-    return std::string(buf);
+    return std::string(buf, n_read);
 }
 
 void response_to_client(int fd, const HTTPResponse& response) {
@@ -215,22 +217,10 @@ int ft_accept(int fd) {
 
 //  雑of雑なので作り直さないといけないと思う //
 HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_path) {
-    std::string cgi_responce = call_cgi_script(req, cgi_path);
-    std::string content_type;
-    std::string body;
-
-    try {
-        std::string::size_type nl_index = cgi_responce.find('\n');
-        std::string::size_type colon_index = cgi_responce.find(':');
-        if (colon_index == std::string::npos) {
-            throw std::runtime_error("cgi error");
-        }
-        content_type = cgi_responce.substr(colon_index + 1, nl_index - colon_index - 1);
-        body = cgi_responce.substr(nl_index);
-    } catch (...) {
-        return HTTPResponse(HTTPResponse::kInternalServerErrror, "text/html", "Internal Server Error");
-    }
-    return HTTPResponse(HTTPResponse::kOK, content_type, body);
+    std::cerr << "call cgi" << std::endl;
+    CGIResponse cgi_res(call_cgi_script(req, cgi_path));
+    std::cerr << "cgi end" << std::endl;
+    return cgi_res.make_http_response();
 }
 
 void Server::AcceptRequest(int fd) {
@@ -260,12 +250,12 @@ void Server::EventLoop() {
             } else if (it->event == kEventRead) {
                 HTTPContext& ctx = ctxs_.at(it->fd);
                 ctx.AppendBuffer(read_request(it->fd));
-                debug(ctx.GetBuffer());
+                std::cerr << ctx.GetBuffer() << std::endl;
+
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         ctx.ParseRequestHeader();
-                        
-                    } 
+                    }
                 }
                 if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
                     ctx.ParseRequestBody();
@@ -273,25 +263,28 @@ void Server::EventLoop() {
                 }
             } else if (it->event == kEventWrite) {
                 HTTPContext& ctx = ctxs_.at(it->fd);
-                    HTTPRequest &req = ctx.GetHTTPRequest();
-                    req.print_info();
-                    
-                    std::string method = req.get_method();
+                HTTPRequest &req = ctx.GetHTTPRequest();
+                req.print_info();
 
-                    HTTPResponse res;
-                    if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-                        res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
-                    } else if (method == "GET") {
-                        res = this->GetHandler(ctx.GetSocketFD(), req);
-                    } else {
-                        res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
-                    }
-                    response_to_client(it->fd, res);
-                    selector_.Unregister(it->fd);
-                    close(it->fd);
-                    // keep-alive のことを考えるならeraseするべきではないかもしれない //
-                    ctxs_.erase(it->fd);
-                // }
+                std::string method = req.get_method();
+
+                HTTPResponse res;
+                if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
+                    res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
+                } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
+                    res = create_cgi_responce(req, "./cgi_script/echo/echo.cgi");
+                } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
+                    res = create_cgi_responce(req, "./cgi_script/message_board/message_board.cgi");
+                } else if (method == "GET") {
+                    res = this->GetHandler(ctx.GetSocketFD(), req);
+                } else {
+                    res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+                }
+                response_to_client(it->fd, res);
+                selector_.Unregister(it->fd);
+                close(it->fd);
+                // keep-alive のことを考えるならeraseするべきではないかもしれない //
+                ctxs_.erase(it->fd);
             } else if (it->event == kEvnetError) {
                 ctxs_.erase(it->fd);
                 close(it->fd);

@@ -5,5 +5,6 @@
 #include "http_request.hpp"
 
 std::string call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path);
+char **make_env_array(const HTTPRequest &request);
 
 #endif  // INCLUDE_CGI_HPP_

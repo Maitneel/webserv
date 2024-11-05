@@ -373,11 +373,26 @@ bool is_valid_http_header_element(const std::string &str) {
     return is_valid_http_header_element(str.substr(i));
 }
 
+bool is_include_crlf_in_last(const std::string &str) {
+    return (
+        (2 <= str.length()) &&
+        (str.at(str.length() - 2) == CR) &&
+        (str.at(str.length() - 1) == LF)
+    );
+}
+
+
 // https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-3
 // これって HTABも含むの？？ //
 bool is_valid_http_header(const std::string &str) {
     try {
-        const std::string removed_crlf = str.substr(0, str.length() - strlen(CRLF));
+        // なんかよくわかんないけど "Accept-Language: ja"みたいなのが来ると、なぜか最後にCRLFが入ってなくて死ぬからとりあえず死なないようにした //
+        std::string removed_crlf;
+        if (is_include_crlf_in_last(str)) {
+            removed_crlf = str.substr(0, str.length() - strlen(CRLF));
+        } else {
+            removed_crlf = str;
+        }
         const std::string field_name = get_first_token(removed_crlf);
         if (removed_crlf.at(field_name.length()) != ':' && !is_crlf(str.substr(str.length() - strlen(CRLF)))) {
             return false;
