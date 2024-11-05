@@ -9,74 +9,19 @@
 #include "defines.hpp"
 #include "gen_html.hpp"
 #include "form_data.hpp"
+#include "formated_string.hpp"
+#include "cookie.hpp"
 
-std::string get_formated_date() {
-    struct tm newtime;
-    time_t ltime;
-    char buf[50];
-
-    ltime = time(&ltime);
-    localtime_r(&ltime, &newtime);
-    std::string now_string(asctime_r(&newtime, buf));
-    now_string.erase(
-        remove(now_string.begin(), now_string.end(), '\n'),
-        now_string.end());
-    return now_string;
-}
-
-std::string create_message_div(const SimpleDB &message_db, const std::string &id) {
-    std::string html;
-    std::string message = message_db.noexcept_get(DB_MESSAGE_ID_PREFIX + id);
-    std::string time_stamp = message_db.noexcept_get(DB_TIME_STAMP_ID_PREFIX + id);
-    std::string image_content_type = message_db.noexcept_get(DB_IMAGE_CONTENT_TYPE_PREFIX + id);
-    std::string image_path = IMAGE_URL_PREFIX + id;
-
-    if (time_stamp == "") {
-        time_stamp = "unknown post time";
-    }
-
-    html += "    <div class=\"message-div\" id=\"message-div-";
-    html += id;
-    html += "\">\n";
-    html += "        <span class=\"time-stamp\" id=\"time-stamp-";
-    html += id;
-    html += "\">";
-    html += time_stamp;
-    html += "</span>\n";
-    html += "        <span class=\"poster-id\" id=\"poster-id-";
-    html += id;
-    html += "\">skdjh</span>\n";
-    html += "        <br>\n";
-    if (image_content_type != "") {
-        html += "        <img src=\"" + image_path + "\">\n";
-        html += "        <br>";
-    }
-    html += "        <span class=\"message\" id=\"message-";
-    html += id;
-    html += "\">";
-    html += message;
-    html += "</span>";
-    html += "    </div>\n";
-    html += "    <hr>\n";
-
-    return html;
-}
-
-std::string get_formated_id(const int &n) {
-    std::stringstream ss;
-    ss << std::setw(4) << std::setfill('0') << n;
-    return (std::string(ss.str()));
-}
-
-void update_text_message (SimpleDB *message_db, const FormDataBody &body, const std::string &id) {
+void update_text_message (SimpleDB *message_db, const FormDataBody &body, const std::string &message_id, const std::string &user_id) {
     std::string message = body.get_body("message");
-    message_db->add((DB_MESSAGE_ID_PREFIX + id), message);
-    message_db->add((DB_TIME_STAMP_ID_PREFIX + id), get_formated_date());
+    message_db->add((DB_MESSAGE_ID_PREFIX + message_id), message);
+    message_db->add((DB_TIME_STAMP_ID_PREFIX + message_id), get_formated_date());
+    message_db->add((DB_SENDER_PREFIX + message_id), user_id);
 }
 
 void update_image_message (SimpleDB *message_db, const FormDataBody &body, const std::string &id) {
     const std::string &attachment = body.get_body("attachment");
-    if (attachment.size() == 0)  {
+    if (attachment == "undefined")  {
         return;
     }
     const std::string file_path = RESOURCE_IMAGE_PREFIX + id;
@@ -91,11 +36,12 @@ void update_image_message (SimpleDB *message_db, const FormDataBody &body, const
         content_type = "application/octet-stream";
     }
     ofs << attachment;
+    ofs.close();
     message_db->add(DB_IMAGE_CONTENT_TYPE_PREFIX + id, content_type);
     message_db->add(DB_IMAGE_PATH_PREFIX + id, file_path);
 }
 
-void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
+void update_message_db(SimpleDB *message_db, const FormDataBody &body, const std::string &user_id) {
     int message_count;
     if (message_db->is_include_key(DB_MESSAGE_COUNT_ID)) {
         message_count = std::stoi(message_db->get(DB_MESSAGE_COUNT_ID));
@@ -104,32 +50,32 @@ void update_message_db(SimpleDB *message_db, const FormDataBody &body) {
     }
     message_count++;
     message_db->update(DB_MESSAGE_COUNT_ID, std::to_string(message_count));
-    std::string id = get_formated_id(message_count - 1);
-    update_text_message(message_db, body, id);
-    update_image_message(message_db, body, id);
-}
-
-void create_index_html(SimpleDB &message_db) {
-    std::string html;
-    html += create_template_front();
-    int message_count = stoi(message_db.get(DB_MESSAGE_COUNT_ID));
-    for (int i = 0; i < message_count; i++) {
-        std::string id(get_formated_id(i));
-        html += create_message_div(message_db, id);
-    }
-    html += create_template_end();
-
-    std::ofstream ofs(INDEX_HTML_PATH);
-    ofs << html << std::endl;
+    std::string message_id = get_formated_id(message_count - 1);
+    update_text_message(message_db, body, message_id, user_id);
+    update_image_message(message_db, body, message_id);
 }
 
 #include <fstream>
 
-void post_method() {
+void post_method(const std::multimap<std::string, std::string> &cookie) {
     SimpleDB message_db(MESSAGE_DB_PATH);
+    SimpleDB auth_db(AUTH_DB_PATH);
     FormDataBody body;
+    std::string cookie_header;
+    std::string user_id;
 
-    update_message_db(&message_db, body);
+    if (is_must_update(auth_db, cookie)) {
+        user_id = gen_user_id(auth_db);
+        std::string auth_str = gen_auth_str();
+        register_auth_info_to_db(&auth_db, user_id, auth_str);
+        cookie_header = get_auth_cookie_header(user_id, auth_str);
+    } else {
+        user_id = cookie.find(COOKIE_USER_ID_KEY)->second;
+    }
+
+    update_message_db(&message_db, body, user_id);
     create_index_html(message_db);
-    get_method();
+    std::cout << "Content-Type:text/html" << "\n";
+    std::cout << cookie_header;
+    std::cout << "\n\n";
 }

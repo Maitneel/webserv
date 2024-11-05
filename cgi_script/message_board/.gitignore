@@ -1,1 +1,2 @@
-resource
+resource/*/*
+!resource/public/request.js

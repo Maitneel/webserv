@@ -12,6 +12,9 @@ SRCS = 	main.cpp \
 		post_method.cpp \
 		delete_method.cpp \
 		gen_html.cpp \
+		formated_string.cpp \
+		string_lib.cpp \
+		cookie.cpp \
 
 RESOURCE_DIR = ./resource
 

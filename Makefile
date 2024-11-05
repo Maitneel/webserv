@@ -9,7 +9,7 @@ HTTP_DIR		= http/
 UTILS_DIR		= utils/
 SERVER_DIR  	= server/
 CONFIG_DIR  	= config/
-CGI_SERVER_DIR 	= cgi_server/
+CGI_DIR 	= cgi/
 DEPS_DIR		= ${OBJS_DIR}
 INCLUDE_DIR 	= ./include
 
@@ -27,9 +27,10 @@ SRCS		=	main.cpp \
 				${SERVER_DIR}server.cpp \
 				${SERVER_DIR}http_context.cpp \
 				${CONFIG_DIR}config.cpp \
-				${CGI_SERVER_DIR}cgi_server.cpp \
-				${CGI_SERVER_DIR}set_meta_valiable.cpp \
-				${CGI_SERVER_DIR}valid_words.cpp \
+				${CGI_DIR}cgi_server.cpp \
+				${CGI_DIR}set_meta_valiable.cpp \
+				${CGI_DIR}valid_words.cpp \
+				${CGI_DIR}cgi_response.cpp \
 
 
 KERNEL	  := ${shell uname -s}
@@ -63,7 +64,7 @@ ${OBJS_DIR} :
 	mkdir -p ${OBJS_DIR}${UTILS_DIR}
 	mkdir -p ${OBJS_DIR}${SERVER_DIR}
 	mkdir -p ${OBJS_DIR}${CONFIG_DIR}
-	mkdir -p ${OBJS_DIR}${CGI_SERVER_DIR}
+	mkdir -p ${OBJS_DIR}${CGI_DIR}
 
 ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE_DIR} -c -o $@ $<

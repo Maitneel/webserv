@@ -23,6 +23,7 @@
 #include "poll_selector.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "cgi_response.hpp"
 #include "cgi.hpp"
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
@@ -216,23 +217,10 @@ int ft_accept(int fd) {
 
 //  雑of雑なので作り直さないといけないと思う //
 HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_path) {
-    std::string cgi_responce = call_cgi_script(req, cgi_path);
-    std::string content_type;
-    std::string body;
-
-    try {
-        std::string::size_type nl_index = cgi_responce.find('\n');
-        std::string::size_type colon_index = cgi_responce.find(':');
-        if (colon_index == std::string::npos) {
-            throw std::runtime_error("cgi error");
-        }
-        content_type = cgi_responce.substr(colon_index + 1, nl_index - colon_index - 1);
-        body = cgi_responce.substr(nl_index);
-    } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return HTTPResponse(HTTPResponse::kInternalServerErrror, "text/html", "Internal Server Error");
-    }
-    return HTTPResponse(HTTPResponse::kOK, content_type, body);
+    std::cerr << "call cgi" << std::endl;
+    CGIResponse cgi_res(call_cgi_script(req, cgi_path));
+    std::cerr << "cgi end" << std::endl;
+    return cgi_res.make_http_response();
 }
 
 void Server::AcceptRequest(int fd) {
