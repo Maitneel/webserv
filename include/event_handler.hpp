@@ -39,7 +39,7 @@ class FdManager {
     ReadWriteStatType Write();
     const std::string &get_read_buffer();
     void add_writen_buffer(const std::string &src);
-    void erase_read_buffer(std::string::size_type &front, std::string::size_type &len);
+    void erase_read_buffer(const std::string::size_type &front, const std::string::size_type &len);
     const FdType &get_type() const;
 };
 
@@ -58,7 +58,7 @@ class FdEventHandler {
 
     void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
-  
+
     std::vector<std::pair<int, FdManager *> >   Wait(int timeout);
 };
 
@@ -74,6 +74,7 @@ struct ConnectionEvent {
     int connection_fd;
     int file_fd;
     int socket_fd;
+    FdManager *content;
 };
 
 class ServerEventHandler {
@@ -93,7 +94,7 @@ class ServerEventHandler {
     void RegistorSocketFd(const int &fd);
     void RegistorFileFd(const int &fd, const int &connection_fd);
     void UnregistorConnectionFd(const int &fd);
-    std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout); // 戻り値の型は変えたほうが良いかも //
+    std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout);  // 戻り値の型は変えたほうが良いかも //
 };
 
-#endif // INCLUDE_EVENT_HANDLER_HPP_
+#endif  // INCLUDE_EVENT_HANDLER_HPP_

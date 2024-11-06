@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <utility>
 
 #include "event_handler.hpp"
 
@@ -12,6 +13,8 @@
 
 #define BUFFER_SIZE 1024
 
+// TODO(maitneel): たぶんおそらくメイビー移動させる //
+int ft_accept(int fd);
 
 // ------------------------------------------------------------------------ //
 //                                                                          //
@@ -21,11 +24,9 @@
 
 
 FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type) {
-
 }
 
 FdManager::~FdManager() {
-
 }
 
 ReadWriteStatType FdManager::Read() {
@@ -75,7 +76,7 @@ void FdManager::add_writen_buffer(const std::string &src) {
     this->writen_buffer_ += src;
 }
 
-void FdManager::erase_read_buffer(std::string::size_type &front, std::string::size_type &len) {
+void FdManager::erase_read_buffer(const std::string::size_type &front, const std::string::size_type &len) {
     this->read_buffer_.erase(front, len);
 }
 
@@ -91,11 +92,9 @@ const FdType &FdManager::get_type() const {
 // ------------------------------------------------------------------------ //
 
 FdEventHandler::FdEventHandler() {
-
 }
 
 FdEventHandler::~FdEventHandler() {
-
 }
 
 void FdEventHandler::Register(const int &fd, const FdType &type) {
@@ -164,14 +163,10 @@ std::vector<std::pair<int, FdManager *> > FdEventHandler::Wait(int timeout) {
 //                                                                          //
 // ------------------------------------------------------------------------ //
 
-
-
 ServerEventHandler::ServerEventHandler() {
-
 }
 
 ServerEventHandler::~ServerEventHandler() {
-
 }
 
 void ServerEventHandler::RegistorSocketFd(const int &fd) {
@@ -231,11 +226,15 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeo
             int fd = fd_events[i].first;
             FdManager *manager = fd_events[i].second;
             if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
-                // TODO accept
+                int accept_fd = ft_accept(fd);
+                this->fd_event_handler_.Register(accept_fd, kConnection);
+                this->connection_fds_.insert(accept_fd);
+                this->pairent_.insert(std::make_pair(accept_fd, fd));
+                this->related_fd_[fd].insert(accept_fd);
             } else {
                 int socket_fd = this->GetSocketFd(fd);
                 int connection_fd = this->GetConnectionFd(fd);
-                
+
                 ConnectionEvent connection_event;
                 connection_event.connection_fd = connection_fd;
                 connection_event.socket_fd = socket_fd;
@@ -247,7 +246,7 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeo
                     connection_event.event = kReadableRequest;
                 }
                 connections.push_back(std::make_pair(fd, connection_event));
-                is_wait_continue = false;    
+                is_wait_continue = false;
             }
         }
     } while (is_wait_continue);

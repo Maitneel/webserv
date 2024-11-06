@@ -15,13 +15,13 @@ enum ServerEventType {
 
 class ServerEvent {
     ServerEventType type_;
-    HTTPContext ;
+    HTTPContext;
 };
 
 class ServerEventSelector {
     PollSelector poll_selector_;
     std::map<int, HTTPContext>  contexts_;
-    std::vector<int> socket_fds; // constructor でもらう。
+    std::vector<int> socket_fds;  // constructor でもらう。//
 };
 
 std::vector<ServerEvent> ServerEventSelector::Select() {
@@ -31,7 +31,6 @@ std::vector<ServerEvent> ServerEventSelector::Select() {
     std::vector<FDEvent>::const_iterator it;
     for (it = events.begin(); it != events.end(); it++) {
         if (this->IsIncludeFd(it->fd) && it->event == kEventRead) {
-            
         } else if (it->event == kEventRead) {
     }
-};
+}
