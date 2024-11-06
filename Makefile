@@ -26,6 +26,7 @@ SRCS		=	main.cpp \
 				${UTILS_DIR}int_to_string.cpp \
 				${SERVER_DIR}server.cpp \
 				${SERVER_DIR}http_context.cpp \
+				${SERVER_DIR}event_handler.cpp \
 				${CONFIG_DIR}config.cpp \
 				${CGI_DIR}cgi_server.cpp \
 				${CGI_DIR}set_meta_valiable.cpp \
