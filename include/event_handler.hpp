@@ -12,9 +12,10 @@
 #include "http_response.hpp"
 
 typedef enum FdTypeEnum {
+    kUnknownFd,
     kSocket,
     kConnection,
-    kFile
+    kFile,
 } FdType;
 
 typedef enum ReadWriteStatEnum {
@@ -44,38 +45,55 @@ class FdManager {
 
 class FdEventHandler {
  private:
-    std::map<int, FdManager *> fds_;
-    std::set<int> socket_fds_;
+    // FdManager をポインタで返す関数があるのでほぼpublic //
+    // どこがFdManagerの所有権を持つべきかよくわからない //
+    std::map<int, FdManager> fds_;
     std::vector<pollfd> poll_fds_;
 
-    std::vector<int> ReadBuffer();
+    std::vector<std::pair<int, FdManager *> >  ReadBuffer();
 
  public:
     FdEventHandler();
     ~FdEventHandler();
 
-    void RegisterSocket(const int &fd);
-    void Register(const int &fd, FdManager *fd_manager);
+    void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
   
-    std::vector<int> Wait(int timeout);
+    std::vector<std::pair<int, FdManager *> >   Wait(int timeout);
 };
 
 typedef enum FdEventTypeEnum {
-    kRequest,
-    kResponce,
+    kUnknownEvent,
+    kReadableRequest,
+    kReadableFile,
+    kReadableRequestAndFile
 } FdEventType;
+
+struct ConnectionEvent {
+    FdEventType event;
+    int connection_fd;
+    int file_fd;
+    int socket_fd;
+};
 
 class ServerEventHandler {
  private:
-    FdEventHandler FdEvent;
-    std::map<int, std::set<int> > related_fd;
+    FdEventHandler fd_event_handler_;
+    std::map<int, std::set<int> > related_fd_;
+    std::set<int> socket_fds_;
+    std::set<int> connection_fds_;
+    std::map<int, int> pairent_;
+
+    int GetSocketFd(const int &fd);
+    int GetConnectionFd(const int &fd);
  public:
     ServerEventHandler();
     ~ServerEventHandler();
 
-    void RegistorSocketFd();
-    std::vector<std::pair<int, FdEventType> > Wait(int timeout); // 戻り値の型は変えたほうが良いかも //
+    void RegistorSocketFd(const int &fd);
+    void RegistorFileFd(const int &fd, const int &connection_fd);
+    void UnregistorConnectionFd(const int &fd);
+    std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout); // 戻り値の型は変えたほうが良いかも //
 };
 
 #endif // INCLUDE_EVENT_HANDLER_HPP_

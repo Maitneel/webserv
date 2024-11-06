@@ -98,20 +98,14 @@ FdEventHandler::~FdEventHandler() {
 
 }
 
-void FdEventHandler::RegisterSocket(const int &fd) {
-    socket_fds_.insert(fd);
-    this->poll_fds_.push_back({fd, POLLIN, 0});
-}
-
-void FdEventHandler::Register(const int &fd, FdManager *fd_manager) {
-    this->fds_.insert(std::make_pair(fd, fd_manager));
-    this->poll_fds_.push_back({fd, POLLIN, 0});
+void FdEventHandler::Register(const int &fd, const FdType &type) {
+    this->fds_.insert(std::make_pair(fd, FdManager(fd, type)));
+    struct pollfd pfd = {fd, POLLIN, 0};
+    this->poll_fds_.push_back(pfd);
 }
 
 void FdEventHandler::Unregister(const int &fd) {
-    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
-        this->socket_fds_.erase(fd);
-    } else {
+    if (this->fds_.find(fd) != this->fds_.end()) {
         this->fds_.erase(fd);
     }
     for (std::vector<pollfd>::iterator it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
@@ -122,16 +116,17 @@ void FdEventHandler::Unregister(const int &fd) {
     }
 }
 
-std::vector<int> FdEventHandler::ReadBuffer() {
-    std::vector<int> events;
+std::vector<std::pair<int, FdManager *> > FdEventHandler::ReadBuffer() {
+    std::vector<std::pair<int, FdManager *> > events;
     std::vector<pollfd>::iterator it;
     for (it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
         if (it->revents != 0) {
-            if (this->socket_fds_.find(it->fd) != this->socket_fds_.end()) {
-                // TODO accept;
+            if (this->fds_.find(it->fd) != this->fds_.end()) {
+                FdManager &manager = this->fds_.at(it->fd);
+                manager.Read();
+                events.push_back(std::make_pair(it->fd, &manager));
             } else {
-                this->fds_.at(it->fd)->Read();
-                events.push_back(it->fd);
+                events.push_back(std::make_pair(it->fd, static_cast<FdManager *>(NULL)));
             }
         }
         it->revents = 0;
@@ -139,12 +134,12 @@ std::vector<int> FdEventHandler::ReadBuffer() {
     return events;
 }
 
-std::vector<int> FdEventHandler::Wait(int timeout) {
+std::vector<std::pair<int, FdManager *> > FdEventHandler::Wait(int timeout) {
     bool should_continue_to_write;
     do {
         should_continue_to_write = false;
-        for (std::map<int, FdManager *>::iterator it = this->fds_.begin(); it != this->fds_.end(); it++) {
-            if (it->second->Write() == kContinue) {
+        for (std::map<int, FdManager>::iterator it = this->fds_.begin(); it != this->fds_.end(); it++) {
+            if (it->second.Write() == kContinue) {
                 should_continue_to_write = true;
             }
         }
@@ -158,7 +153,7 @@ std::vector<int> FdEventHandler::Wait(int timeout) {
         throw std::runtime_error("poll: failed");
     }
     if (ret == 0) {
-        return std::vector<int>();
+        return std::vector<std::pair<int, FdManager *> > ();
     }
     return this->ReadBuffer();
 }
@@ -179,6 +174,82 @@ ServerEventHandler::~ServerEventHandler() {
 
 }
 
-std::vector<std::pair<int, FdEventType> > ServerEventHandler::Wait(int timeout) {
+void ServerEventHandler::RegistorSocketFd(const int &fd) {
+    this->socket_fds_.insert(fd);
+}
 
+void ServerEventHandler::RegistorFileFd(const int &fd, const int &connection_fd) {
+    this->fd_event_handler_.Register(fd, kFile);
+    if (0 <= connection_fd) {
+        this->related_fd_.at(connection_fd).insert(fd);
+        this->pairent_.insert(std::make_pair(fd, connection_fd));
+    }
+}
+
+void ServerEventHandler::UnregistorConnectionFd(const int &fd) {
+    for (std::set<int>::iterator it = this->related_fd_.at(fd).begin(); it != this->related_fd_.at(fd).end(); it++) {
+        this->fd_event_handler_.Unregister(*it);
+        this->pairent_.erase(*it);
+    }
+    related_fd_.erase(fd);
+    this->fd_event_handler_.Unregister(fd);
+    connection_fds_.erase(fd);
+    this->related_fd_.at(this->pairent_.at(fd)).erase(fd);
+    this->pairent_.erase(fd);
+}
+
+int ServerEventHandler::GetSocketFd(const int &fd) {
+    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
+        return fd;
+    } else if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
+        return this->pairent_.at(fd);
+    } else {
+        return this->pairent_.at(this->pairent_.at(fd));
+    }
+}
+
+int ServerEventHandler::GetConnectionFd(const int &fd) {
+    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
+        return -1;
+    } else if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
+        return fd;
+    } else {
+        return this->pairent_.at(fd);
+    }
+}
+
+std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeout) {
+    bool is_wait_continue;
+    std::vector<std::pair<int, ConnectionEvent> > connections;
+    do {
+        is_wait_continue = true;
+        std::vector<std::pair<int, FdManager *> > fd_events = this->fd_event_handler_.Wait(timeout);
+        if (fd_events.size() == 0) {
+            return connections;
+        }
+        for (size_t i = 0; i < fd_events.size(); i++) {
+            int fd = fd_events[i].first;
+            FdManager *manager = fd_events[i].second;
+            if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
+                // TODO accept
+            } else {
+                int socket_fd = this->GetSocketFd(fd);
+                int connection_fd = this->GetConnectionFd(fd);
+                
+                ConnectionEvent connection_event;
+                connection_event.connection_fd = connection_fd;
+                connection_event.socket_fd = socket_fd;
+                connection_event.file_fd = -1;
+                if (fd != connection_fd) {
+                    connection_event.file_fd = fd;
+                    connection_event.event = kReadableFile;
+                } else {
+                    connection_event.event = kReadableRequest;
+                }
+                connections.push_back(std::make_pair(fd, connection_event));
+                is_wait_continue = false;    
+            }
+        }
+    } while (is_wait_continue);
+    return connections;
 }
