@@ -15,11 +15,12 @@ typedef enum FdTypeEnum {
     kUnknownFd,
     kSocket,
     kConnection,
-    kFile,
+    kFile
 } FdType;
 
 typedef enum ReadWriteStatEnum {
     kSuccess,
+    kReturnedZero,
     kFail,
     kContinue
 } ReadWriteStatType;
@@ -32,6 +33,8 @@ class FdManager {
     std::string writen_buffer_;
 
  public:
+    bool is_eof_;
+
     FdManager(const int &fd, const FdType &type);
     ~FdManager();
 
@@ -58,8 +61,9 @@ class FdEventHandler {
 
     void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
+    std::vector<std::pair<int, FdManager *> > Wait(int timeout);
 
-    std::vector<std::pair<int, FdManager *> >   Wait(int timeout);
+    FdManager *GetBuffer(const int &fd);
 };
 
 typedef enum FdEventTypeEnum {
@@ -87,6 +91,7 @@ class ServerEventHandler {
 
     int GetSocketFd(const int &fd);
     int GetConnectionFd(const int &fd);
+    void Unregistor(const int &fd);
  public:
     ServerEventHandler();
     ~ServerEventHandler();
@@ -94,7 +99,11 @@ class ServerEventHandler {
     void RegistorSocketFd(const int &fd);
     void RegistorFileFd(const int &fd, const int &connection_fd);
     void UnregistorConnectionFd(const int &fd);
+    void UnregistorFileFd(const int &fd);
+    void UnRegistorConnectionOrFile(const int &fd);
     std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout);  // 戻り値の型は変えたほうが良いかも //
+
+    FdManager *GetBuffer(const int &fd);
 };
 
 #endif  // INCLUDE_EVENT_HANDLER_HPP_

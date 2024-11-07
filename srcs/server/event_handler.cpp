@@ -1,11 +1,13 @@
 #include <unistd.h>
 #include <poll.h>
+#include <sys/socket.h>
 
 #include <string>
 #include <vector>
 #include <map>
 #include <set>
 #include <utility>
+#include <algorithm>
 
 #include "event_handler.hpp"
 
@@ -23,7 +25,7 @@ int ft_accept(int fd);
 // ------------------------------------------------------------------------ //
 
 
-FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type) {
+FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), is_eof_(false) {
 }
 
 FdManager::~FdManager() {
@@ -33,7 +35,7 @@ ReadWriteStatType FdManager::Read() {
     char buffer[BUFFER_SIZE];
     int read_size = 0;
     if (this->type_ == kConnection) {
-        // recv;
+        read_size = recv(this->fd_, buffer, BUFFER_SIZE, 0);
     } else if (this->type_ == kFile) {
         read_size = read(this->fd_, &buffer, BUFFER_SIZE);
     }
@@ -42,6 +44,10 @@ ReadWriteStatType FdManager::Read() {
     }
     if (read_size < 0) {
         return kFail;
+    } else if (read_size == 0) {
+        // read, recv が0を返した時、常にEOFなのか自信がない //
+        this->is_eof_ = true;
+        return kReturnedZero;
     }
     return kSuccess;
 }
@@ -52,9 +58,9 @@ ReadWriteStatType FdManager::Write() {
     }
     int writed_size;
     if (this->type_ == kConnection) {
-        // send;
+        writed_size = send(this->fd_, this->writen_buffer_.c_str(), std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length()), 0);
     } else if (this->type_ == kFile) {
-        writed_size = write(this->fd_, this->writen_buffer_.c_str(), BUFFER_SIZE);
+        writed_size = write(this->fd_, this->writen_buffer_.c_str(), std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length()));
     }
     if (0 < writed_size) {
         this->writen_buffer_.erase(0, writed_size);
@@ -157,6 +163,13 @@ std::vector<std::pair<int, FdManager *> > FdEventHandler::Wait(int timeout) {
     return this->ReadBuffer();
 }
 
+FdManager *FdEventHandler::GetBuffer(const int &fd) {
+    if (this->fds_.find(fd) != this->fds_.end()) {
+        return &this->fds_.at(fd);
+    }
+    return NULL;
+}
+
 // ------------------------------------------------------------------------ //
 //                                                                          //
 //                              ServerEventHandler                          //
@@ -181,7 +194,7 @@ void ServerEventHandler::RegistorFileFd(const int &fd, const int &connection_fd)
     }
 }
 
-void ServerEventHandler::UnregistorConnectionFd(const int &fd) {
+void ServerEventHandler::Unregistor(const int &fd) {
     for (std::set<int>::iterator it = this->related_fd_.at(fd).begin(); it != this->related_fd_.at(fd).end(); it++) {
         this->fd_event_handler_.Unregister(*it);
         this->pairent_.erase(*it);
@@ -191,6 +204,28 @@ void ServerEventHandler::UnregistorConnectionFd(const int &fd) {
     connection_fds_.erase(fd);
     this->related_fd_.at(this->pairent_.at(fd)).erase(fd);
     this->pairent_.erase(fd);
+}
+
+void ServerEventHandler::UnregistorConnectionFd(const int &fd) {
+    if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
+        this->Unregistor(fd);
+    }
+}
+
+void ServerEventHandler::UnregistorFileFd(const int &fd) {
+    if (this->socket_fds_.find(fd) == this->socket_fds_.end() && this->connection_fds_.find(fd) == this->connection_fds_.end()) {
+        this->Unregistor(fd);
+    }
+}
+
+void ServerEventHandler::UnRegistorConnectionOrFile(const int &fd) {
+    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
+        // そういう処理もかけるけどするべきではない気がする //
+    } else if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
+        this->UnregistorConnectionFd(fd);
+    } else {
+        this->Unregistor(fd);
+    }
 }
 
 int ServerEventHandler::GetSocketFd(const int &fd) {
@@ -225,7 +260,9 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeo
         for (size_t i = 0; i < fd_events.size(); i++) {
             int fd = fd_events[i].first;
             FdManager *manager = fd_events[i].second;
-            if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
+            if (manager != NULL && manager->is_eof_) {
+                this->Unregistor(fd);
+            } else if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
                 int accept_fd = ft_accept(fd);
                 this->fd_event_handler_.Register(accept_fd, kConnection);
                 this->connection_fds_.insert(accept_fd);
@@ -253,3 +290,47 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeo
     } while (is_wait_continue);
     return connections;
 }
+
+FdManager *ServerEventHandler::GetBuffer(const int &fd) {
+    return this->fd_event_handler_.GetBuffer(fd);
+}
+
+/*
+#include <sys/fcntl.h>
+#include <iostream>
+#define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
+int main() {
+    using namespace std;
+
+    int of_fd = open("./hogehoge.txt", (O_RDWR | O_CREAT), 0777);
+    int if_fd = open("./Makefile", O_RDONLY);
+
+    debug(of_fd);
+    debug(if_fd);
+
+    FdEventHandler event_handler;
+    event_handler.Register(of_fd, kFile);
+    event_handler.Register(if_fd, kFile);
+    event_handler.Register(STDIN_FILENO, kFile);
+    FdManager *of_buffer = event_handler.GetBuffer(of_fd);
+    FdManager *if_buffer = event_handler.GetBuffer(if_fd);
+    FdManager *stdin_buffer = event_handler.GetBuffer(STDIN_FILENO);
+
+    for (int i = 0; i < 10; i++) {
+        vector<pair<int, FdManager*> > event_content =  event_handler.Wait(1000 * 1000);
+        // of_buffer->add_writen_buffer("hogehogehoge\n");
+        // cout << if_buffer->get_read_buffer() << endl;
+        // cout << stdin_buffer->get_read_buffer() << endl;
+        for (size_t j = 0; j < event_content.size(); j++) {
+            if (event_content.at(j).second->is_eof_) {
+                event_handler.Unregister(event_content.at(j).first);
+            } else {
+                cout << event_content.at(j).first << ' ' << event_content.at(j).second->get_read_buffer() << endl;
+            }
+        }
+        
+        cout << "=======================================================================" << endl;
+    }
+
+}
+*/
