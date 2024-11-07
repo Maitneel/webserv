@@ -75,10 +75,19 @@ typedef enum FdEventTypeEnum {
 
 struct ConnectionEvent {
     FdEventType event;
+    FdManager *content;
+    int socket_fd;
     int connection_fd;
     int file_fd;
-    int socket_fd;
-    FdManager *content;
+
+    ConnectionEvent();
+    ConnectionEvent(
+        const FdEventType &event_arg,
+        FdManager *content_arg,
+        const int &socket_fd_arg,
+        const int &connection_fd_arg,
+        const int &file_fd_arg
+    );
 };
 
 class ServerEventHandler {
@@ -92,6 +101,8 @@ class ServerEventHandler {
     int GetSocketFd(const int &fd);
     int GetConnectionFd(const int &fd);
     void Unregistor(const int &fd);
+    void RegistorNewConnection(const int &socket_fd);
+    ConnectionEvent CreateConnectionEvent(const int &fd, FdManager *fd_buffer);
  public:
     ServerEventHandler();
     ~ServerEventHandler();

@@ -127,9 +127,9 @@ std::vector<std::pair<int, FdManager *> > FdEventHandler::ReadBuffer() {
     for (it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
         if (it->revents != 0) {
             if (this->fds_.find(it->fd) != this->fds_.end()) {
-                FdManager &manager = this->fds_.at(it->fd);
-                manager.Read();
-                events.push_back(std::make_pair(it->fd, &manager));
+                FdManager &fd_buffer = this->fds_.at(it->fd);
+                fd_buffer.Read();
+                events.push_back(std::make_pair(it->fd, &fd_buffer));
             } else {
                 events.push_back(std::make_pair(it->fd, static_cast<FdManager *>(NULL)));
             }
@@ -176,10 +176,45 @@ FdManager *FdEventHandler::GetBuffer(const int &fd) {
 //                                                                          //
 // ------------------------------------------------------------------------ //
 
+ConnectionEvent::ConnectionEvent() {
+}
+
+ConnectionEvent::ConnectionEvent(
+    const FdEventType &event_arg,
+    FdManager *content_arg,
+    const int &socket_fd_arg,
+    const int &connection_fd_arg,
+    const int &file_fd_arg
+) : event(event_arg),  content(content_arg), socket_fd(socket_fd_arg), connection_fd(connection_fd_arg), file_fd(file_fd_arg) {
+}
+
 ServerEventHandler::ServerEventHandler() {
 }
 
 ServerEventHandler::~ServerEventHandler() {
+}
+
+ConnectionEvent ServerEventHandler::CreateConnectionEvent(const int &fd, FdManager *fd_buffer) {
+    int socket_fd = this->GetSocketFd(fd);
+    int connection_fd = this->GetConnectionFd(fd);
+    int file_fd = -1;
+    FdEventType event;
+
+    if (fd != connection_fd) {
+        file_fd = fd;
+        event = kReadableFile;
+    } else {
+        event = kReadableRequest;
+    }
+    return ConnectionEvent(event, fd_buffer, socket_fd, connection_fd, file_fd);
+}
+
+void ServerEventHandler::RegistorNewConnection(const int &socket_fd) {
+    int accept_fd = ft_accept(socket_fd);
+    this->fd_event_handler_.Register(accept_fd, kConnection);
+    this->connection_fds_.insert(accept_fd);
+    this->pairent_.insert(std::make_pair(accept_fd, socket_fd));
+    this->related_fd_[socket_fd].insert(accept_fd);
 }
 
 void ServerEventHandler::RegistorSocketFd(const int &fd) {
@@ -219,11 +254,7 @@ void ServerEventHandler::UnregistorFileFd(const int &fd) {
 }
 
 void ServerEventHandler::UnRegistorConnectionOrFile(const int &fd) {
-    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
-        // そういう処理もかけるけどするべきではない気がする //
-    } else if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
-        this->UnregistorConnectionFd(fd);
-    } else {
+    if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
         this->Unregistor(fd);
     }
 }
@@ -259,31 +290,13 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeo
         }
         for (size_t i = 0; i < fd_events.size(); i++) {
             int fd = fd_events[i].first;
-            FdManager *manager = fd_events[i].second;
-            if (manager != NULL && manager->is_eof_) {
+            FdManager *fd_buffer = fd_events[i].second;
+            if (fd_buffer != NULL && fd_buffer->is_eof_) {
                 this->Unregistor(fd);
             } else if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
-                int accept_fd = ft_accept(fd);
-                this->fd_event_handler_.Register(accept_fd, kConnection);
-                this->connection_fds_.insert(accept_fd);
-                this->pairent_.insert(std::make_pair(accept_fd, fd));
-                this->related_fd_[fd].insert(accept_fd);
+                this->RegistorNewConnection(fd);
             } else {
-                int socket_fd = this->GetSocketFd(fd);
-                int connection_fd = this->GetConnectionFd(fd);
-
-                ConnectionEvent connection_event;
-                connection_event.connection_fd = connection_fd;
-                connection_event.socket_fd = socket_fd;
-                connection_event.file_fd = -1;
-                connection_event.content = manager;
-                if (fd != connection_fd) {
-                    connection_event.file_fd = fd;
-                    connection_event.event = kReadableFile;
-                } else {
-                    connection_event.event = kReadableRequest;
-                }
-                connections.push_back(std::make_pair(fd, connection_event));
+                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_buffer)));
                 is_wait_continue = false;
             }
         }
