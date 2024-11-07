@@ -239,6 +239,7 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventHandler::Wait(int timeo
                 connection_event.connection_fd = connection_fd;
                 connection_event.socket_fd = socket_fd;
                 connection_event.file_fd = -1;
+                connection_event.content = manager;
                 if (fd != connection_fd) {
                     connection_event.file_fd = fd;
                     connection_event.event = kReadableFile;
