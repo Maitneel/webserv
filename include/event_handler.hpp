@@ -103,6 +103,7 @@ class ServerEventHandler {
     void Unregistor(const int &fd);
     void RegistorNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, FdManager *fd_buffer);
+
  public:
     ServerEventHandler();
     ~ServerEventHandler();
