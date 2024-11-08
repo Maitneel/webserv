@@ -1,5 +1,5 @@
-#ifndef INCLUDE_EVENT_HANDLER_HPP_
-#define INCLUDE_EVENT_HANDLER_HPP_
+#ifndef INCLUDE_EVENT_DISPATCHER_HPP_
+#define INCLUDE_EVENT_DISPATCHER_HPP_
 
 #include <poll.h>
 
@@ -46,7 +46,7 @@ class FdManager {
     const FdType &get_type() const;
 };
 
-class FdEventHandler {
+class FdEventDispatcher {
  private:
     // FdManager をポインタで返す関数があるのでほぼpublic //
     // どこがFdManagerの所有権を持つべきかよくわからない //
@@ -56,8 +56,8 @@ class FdEventHandler {
     std::vector<std::pair<int, FdManager *> >  ReadBuffer();
 
  public:
-    FdEventHandler();
-    ~FdEventHandler();
+    FdEventDispatcher();
+    ~FdEventDispatcher();
 
     void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
@@ -90,9 +90,9 @@ struct ConnectionEvent {
     );
 };
 
-class ServerEventHandler {
+class ServerEventDispatcher {
  private:
-    FdEventHandler fd_event_handler_;
+    FdEventDispatcher fd_event_dispatcher_;
     std::map<int, std::set<int> > related_fd_;
     std::set<int> socket_fds_;
     std::set<int> connection_fds_;
@@ -105,8 +105,8 @@ class ServerEventHandler {
     ConnectionEvent CreateConnectionEvent(const int &fd, FdManager *fd_buffer);
 
  public:
-    ServerEventHandler();
-    ~ServerEventHandler();
+    ServerEventDispatcher();
+    ~ServerEventDispatcher();
 
     void RegistorSocketFd(const int &fd);
     void RegistorFileFd(const int &fd, const int &connection_fd);
@@ -118,4 +118,4 @@ class ServerEventHandler {
     FdManager *GetBuffer(const int &fd);
 };
 
-#endif  // INCLUDE_EVENT_HANDLER_HPP_
+#endif  // INCLUDE_EVENT_DISPATCHER_HPP_
