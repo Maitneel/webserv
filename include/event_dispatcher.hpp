@@ -43,6 +43,7 @@ class FdManager {
     const std::string &get_read_buffer();
     void add_writen_buffer(const std::string &src);
     void erase_read_buffer(const std::string::size_type &front, const std::string::size_type &len);
+    bool HaveWriteableBuffer();
     const FdType &get_type() const;
 };
 
@@ -54,7 +55,9 @@ class FdEventDispatcher {
     std::vector<pollfd> poll_fds_;
 
     std::vector<std::pair<int, FdManager *> >  ReadBuffer();
+    ReadWriteStatType WriteBuffer();
 
+    void UpdatePollEvents();
  public:
     FdEventDispatcher();
     ~FdEventDispatcher();

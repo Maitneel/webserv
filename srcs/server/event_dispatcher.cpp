@@ -52,6 +52,7 @@ ReadWriteStatType FdManager::Read() {
     return kSuccess;
 }
 
+// fdがnon-blocking であればブロックしないが、そうでなければブロックするのでnon-blockingである必要がある //
 ReadWriteStatType FdManager::Write() {
     if (this->writen_buffer_.length() == 0) {
         return kSuccess;
@@ -84,6 +85,10 @@ void FdManager::add_writen_buffer(const std::string &src) {
 
 void FdManager::erase_read_buffer(const std::string::size_type &front, const std::string::size_type &len) {
     this->read_buffer_.erase(front, len);
+}
+
+bool FdManager::HaveWriteableBuffer() {
+    return (this->writen_buffer_.size() != 0);
 }
 
 const FdType &FdManager::get_type() const {
@@ -125,7 +130,7 @@ std::vector<std::pair<int, FdManager *> > FdEventDispatcher::ReadBuffer() {
     std::vector<std::pair<int, FdManager *> > events;
     std::vector<pollfd>::iterator it;
     for (it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
-        if (it->revents != 0) {
+        if ((it->revents & POLLIN) == POLLIN) {
             if (this->fds_.find(it->fd) != this->fds_.end()) {
                 FdManager &fd_buffer = this->fds_.at(it->fd);
                 fd_buffer.Read();
@@ -139,28 +144,57 @@ std::vector<std::pair<int, FdManager *> > FdEventDispatcher::ReadBuffer() {
     return events;
 }
 
-std::vector<std::pair<int, FdManager *> > FdEventDispatcher::Wait(int timeout) {
-    bool should_continue_to_write;
-    do {
-        should_continue_to_write = false;
-        for (std::map<int, FdManager>::iterator it = this->fds_.begin(); it != this->fds_.end(); it++) {
-            if (it->second.Write() == kContinue) {
-                should_continue_to_write = true;
+ReadWriteStatType FdEventDispatcher::WriteBuffer() {
+    ReadWriteStatType result = kSuccess;
+    for (size_t i = 0; i < this->poll_fds_.size(); i++) {
+        struct pollfd &processing = this->poll_fds_.at(i);
+        const int fd = processing.fd;
+        const short revents = processing.revents;
+
+        if ((revents & POLLOUT) == POLLOUT) {
+            ReadWriteStatType write_ret = this->fds_.at(fd).Write();
+            if (write_ret == kFail) {
+                result = kFail;
+            } else if (write_ret == kContinue && result != kFail) {
+                result = kContinue;
             }
         }
-        if (1 <= poll(this->poll_fds_.data(), this->poll_fds_.size(), 0)) {
-            return ReadBuffer();
-        }
-    } while (should_continue_to_write);
+    }
+    return result;
+}
 
-    int ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
-    if (ret < 0) {
-        throw std::runtime_error("poll: failed");
+void FdEventDispatcher::UpdatePollEvents() {
+    for (size_t i = 0; i < this->poll_fds_.size(); i++) {
+        pollfd &processing = this->poll_fds_.at(i);
+        const int fd = processing.fd;
+
+        if (this->fds_.at(fd).HaveWriteableBuffer()) {
+            processing.events = (POLLIN | POLLOUT);
+        } else {
+            processing.events = (POLLIN);
+        }
     }
-    if (ret == 0) {
-        return std::vector<std::pair<int, FdManager *> > ();
+}
+
+std::vector<std::pair<int, FdManager *> > FdEventDispatcher::Wait(int timeout) {
+    std::vector<std::pair<int, FdManager *> > handled_readable_fd;
+
+    while (handled_readable_fd.size() == 0) {
+        this->UpdatePollEvents();
+        int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
+        if (poll_ret < 0) {
+            throw std::runtime_error("poll: failed");
+        }
+        if (poll_ret == 0) {
+            return std::vector<std::pair<int, FdManager *> > ();
+        }
+        // Writeしたことも伝えたほうがよければ while しないほうがいい　 //
+        //   ->　 write した時に何も呼び出し元に通知しないというのは何かしらの問題が起こりそうな気がするが、毎回通知する必要があるかと言われると微妙 //
+        //   -> write するバッファがなくなった時に通知するとかが妥当かもしれない //
+        this->WriteBuffer();
+        handled_readable_fd = this->ReadBuffer();
     }
-    return this->ReadBuffer();
+    return handled_readable_fd;
 }
 
 FdManager *FdEventDispatcher::GetBuffer(const int &fd) {
@@ -346,4 +380,26 @@ int main() {
     }
 
 }
-*/
+// */
+
+
+/*
+// how to test this tests is:
+g++ ./temp/delay_read.cpp
+./webserv | ./a.out
+
+#include <iostream>
+using namespace std;
+int main() {
+    FdEventDispatcher fde;
+    fde.Register(STDOUT_FILENO, kFile);
+    for (int i = 0; i < 7000; i++) {
+        fde.GetBuffer(STDOUT_FILENO)->add_writen_buffer("0123456789");
+    }
+    while (fde.GetBuffer(STDOUT_FILENO)->HaveWriteableBuffer()) {
+        fde.Wait(-1);
+        cout << "-------------------------------------------------------------" << endl;
+    }
+}
+
+//  */
