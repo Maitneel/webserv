@@ -19,10 +19,12 @@ typedef enum FdTypeEnum {
 } FdType;
 
 typedef enum ReadWriteStatEnum {
+    kReadWriteStatUndefined,
     kSuccess,
     kReturnedZero,
     kFail,
-    kContinue
+    kContinue,
+    kNoBuffer
 } ReadWriteStatType;
 
 class FdManager {
@@ -31,6 +33,8 @@ class FdManager {
     const FdType type_;
     std::string read_buffer_;
     std::string writen_buffer_;
+    ReadWriteStatType write_status_;
+
 
  public:
     bool is_eof_;
@@ -45,6 +49,25 @@ class FdManager {
     void erase_read_buffer(const std::string::size_type &front, const std::string::size_type &len);
     bool HaveWriteableBuffer();
     const FdType &get_type() const;
+    const bool &IsEndedWrite() const;
+};
+
+typedef enum FdEventTypeEnum {
+    kFdEventTypeUndefined_,
+    kHaveReadableBuffer_,
+    kChanged,
+    kWriteEnd_,
+    kFdEventFail_
+} FdEventType;
+
+struct FdEvent {
+    int fd_;
+    FdEventType event_;
+    FdManager *content_;
+
+    FdEvent(const int &fd_arg, const FdEventType &event_arg, FdManager * content_arg);
+    // const FdEvent &operator=(const FdEvent &rhs);
+    // FdEvent(const FdEvent &src);
 };
 
 class FdEventDispatcher {
@@ -54,8 +77,8 @@ class FdEventDispatcher {
     std::map<int, FdManager> fds_;
     std::vector<pollfd> poll_fds_;
 
-    std::vector<std::pair<int, FdManager *> >  ReadBuffer();
-    ReadWriteStatType WriteBuffer();
+    std::vector<FdEvent> ReadBuffer();
+    std::vector<FdEvent> WriteBuffer();
 
     void UpdatePollEvents();
  public:
@@ -64,20 +87,22 @@ class FdEventDispatcher {
 
     void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
-    std::vector<std::pair<int, FdManager *> > Wait(int timeout);
+    std::vector<FdEvent> Wait(int timeout);
 
     FdManager *GetBuffer(const int &fd);
 };
 
-typedef enum FdEventTypeEnum {
+typedef enum ServerEventTypeEnum {
     kUnknownEvent,
     kReadableRequest,
     kReadableFile,
-    kReadableRequestAndFile
-} FdEventType;
+    kReadableRequestAndFile,
+    kResponceWriteEnd_,
+    kFileWriteEnd_
+} ServerEventType;
 
 struct ConnectionEvent {
-    FdEventType event;
+    ServerEventType event;
     FdManager *content;
     int socket_fd;
     int connection_fd;
@@ -85,7 +110,7 @@ struct ConnectionEvent {
 
     ConnectionEvent();
     ConnectionEvent(
-        const FdEventType &event_arg,
+        const ServerEventType &event_arg,
         FdManager *content_arg,
         const int &socket_fd_arg,
         const int &connection_fd_arg,
@@ -105,7 +130,7 @@ class ServerEventDispatcher {
     int GetConnectionFd(const int &fd);
     void Unregistor(const int &fd);
     void RegistorNewConnection(const int &socket_fd);
-    ConnectionEvent CreateConnectionEvent(const int &fd, FdManager *fd_buffer);
+    ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event, FdManager *fd_buffer);
 
  public:
     ServerEventDispatcher();

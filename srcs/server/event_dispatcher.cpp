@@ -15,6 +15,10 @@
 
 #define BUFFER_SIZE 1024
 
+// #include <iostream>
+// using namespace std;
+// #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
+
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
 
@@ -25,7 +29,7 @@ int ft_accept(int fd);
 // ------------------------------------------------------------------------ //
 
 
-FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), is_eof_(false) {
+FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), is_eof_(false), write_status_(kNoBuffer) {
 }
 
 FdManager::~FdManager() {
@@ -68,7 +72,7 @@ ReadWriteStatType FdManager::Write() {
     }
     if (0 < this->writen_buffer_.size()) {
         return kContinue;
-    } else if (writed_size == 0) {
+    } else if (writed_size == 0 || this->writen_buffer_.size() == 0) {
         return kSuccess;
     } else {
         return kFail;
@@ -81,6 +85,7 @@ const std::string &FdManager::get_read_buffer() {
 
 void FdManager::add_writen_buffer(const std::string &src) {
     this->writen_buffer_ += src;
+    this->write_status_ = kContinue;
 }
 
 void FdManager::erase_read_buffer(const std::string::size_type &front, const std::string::size_type &len) {
@@ -95,12 +100,27 @@ const FdType &FdManager::get_type() const {
     return this->type_;
 }
 
+const bool &FdManager::IsEndedWrite() const {
+    return (this->write_status_ == kSuccess);
+}
 
 // ------------------------------------------------------------------------ //
 //                                                                          //
 //                                FdEventDispatcher                            //
 //                                                                          //
 // ------------------------------------------------------------------------ //
+
+FdEvent::FdEvent(const int &fd_arg, const FdEventType &event_arg, FdManager * content_arg) : fd_(fd_arg), event_(event_arg), content_(content_arg) {
+}
+
+// const FdEvent &FdEvent::operator=(const FdEvent &rhs) {
+//     if (this == &rhs) {
+//         return *this;
+//     }
+//     this->fd_ = rhs.fd_;
+//     this->event_ = rhs.event_;
+//     this->content_ = rhs.content_;
+// }
 
 FdEventDispatcher::FdEventDispatcher() {
 }
@@ -126,17 +146,17 @@ void FdEventDispatcher::Unregister(const int &fd) {
     }
 }
 
-std::vector<std::pair<int, FdManager *> > FdEventDispatcher::ReadBuffer() {
-    std::vector<std::pair<int, FdManager *> > events;
+std::vector<FdEvent> FdEventDispatcher::ReadBuffer() {
+    std::vector<FdEvent> events;
     std::vector<pollfd>::iterator it;
     for (it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
         if ((it->revents & POLLIN) == POLLIN) {
             if (this->fds_.find(it->fd) != this->fds_.end()) {
                 FdManager &fd_buffer = this->fds_.at(it->fd);
                 fd_buffer.Read();
-                events.push_back(std::make_pair(it->fd, &fd_buffer));
+                events.push_back(FdEvent(it->fd, kHaveReadableBuffer_, &fd_buffer));
             } else {
-                events.push_back(std::make_pair(it->fd, static_cast<FdManager *>(NULL)));
+                events.push_back(FdEvent(it->fd, kChanged, static_cast<FdManager *>(NULL)));
             }
         }
         it->revents = 0;
@@ -144,8 +164,8 @@ std::vector<std::pair<int, FdManager *> > FdEventDispatcher::ReadBuffer() {
     return events;
 }
 
-ReadWriteStatType FdEventDispatcher::WriteBuffer() {
-    ReadWriteStatType result = kSuccess;
+std::vector<FdEvent> FdEventDispatcher::WriteBuffer() {
+    std::vector<FdEvent> result_array;
     for (size_t i = 0; i < this->poll_fds_.size(); i++) {
         struct pollfd &processing = this->poll_fds_.at(i);
         const int fd = processing.fd;
@@ -153,14 +173,15 @@ ReadWriteStatType FdEventDispatcher::WriteBuffer() {
 
         if ((revents & POLLOUT) == POLLOUT) {
             ReadWriteStatType write_ret = this->fds_.at(fd).Write();
-            if (write_ret == kFail) {
-                result = kFail;
-            } else if (write_ret == kContinue && result != kFail) {
-                result = kContinue;
+            // TODO(maitneel): write_ret がfailとかの場合どうするか考える //
+            if (write_ret == kSuccess) {
+                result_array.push_back(FdEvent(fd, kWriteEnd_,  static_cast<FdManager *>(NULL)));
+            } else if (write_ret == kFail) {
+                result_array.push_back(FdEvent(fd, kFdEventFail_,  static_cast<FdManager *>(NULL)));
             }
         }
     }
-    return result;
+    return result_array;
 }
 
 void FdEventDispatcher::UpdatePollEvents() {
@@ -176,24 +197,30 @@ void FdEventDispatcher::UpdatePollEvents() {
     }
 }
 
-std::vector<std::pair<int, FdManager *> > FdEventDispatcher::Wait(int timeout) {
-    std::vector<std::pair<int, FdManager *> > handled_readable_fd;
+std::vector<FdEvent> FdEventDispatcher::Wait(int timeout) {
+    std::vector<FdEvent> handled_readable_fd;
+    std::vector<FdEvent> handled_write_fd;
 
-    while (handled_readable_fd.size() == 0) {
+    while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0) {
         this->UpdatePollEvents();
         int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
         if (poll_ret < 0) {
             throw std::runtime_error("poll: failed");
         }
         if (poll_ret == 0) {
-            return std::vector<std::pair<int, FdManager *> > ();
+            return std::vector<FdEvent> ();
         }
         // Writeしたことも伝えたほうがよければ while しないほうがいい　 //
         //   ->　 write した時に何も呼び出し元に通知しないというのは何かしらの問題が起こりそうな気がするが、毎回通知する必要があるかと言われると微妙 //
         //   -> write するバッファがなくなった時に通知するとかが妥当かもしれない //
-        this->WriteBuffer();
+        handled_write_fd = this->WriteBuffer();
         handled_readable_fd = this->ReadBuffer();
     }
+    // 少ない方から大きい方にマージすることで計算量が減る一般的なテク //
+    if (handled_readable_fd.size() < handled_write_fd.size()) {
+        std::swap(handled_readable_fd, handled_write_fd);
+    }
+    handled_readable_fd.insert(handled_readable_fd.begin(), handled_write_fd.begin(), handled_write_fd.end());
     return handled_readable_fd;
 }
 
@@ -214,7 +241,7 @@ ConnectionEvent::ConnectionEvent() {
 }
 
 ConnectionEvent::ConnectionEvent(
-    const FdEventType &event_arg,
+    const ServerEventType &event_arg,
     FdManager *content_arg,
     const int &socket_fd_arg,
     const int &connection_fd_arg,
@@ -228,17 +255,26 @@ ServerEventDispatcher::ServerEventDispatcher() {
 ServerEventDispatcher::~ServerEventDispatcher() {
 }
 
-ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, FdManager *fd_buffer) {
+ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, const FdEventType &fd_event, FdManager *fd_buffer) {
     int socket_fd = this->GetSocketFd(fd);
     int connection_fd = this->GetConnectionFd(fd);
     int file_fd = -1;
-    FdEventType event;
+    ServerEventType event;
 
-    if (fd != connection_fd) {
-        file_fd = fd;
-        event = kReadableFile;
+    if (fd_event == kWriteEnd_) {
+        if (fd != connection_fd) {
+            file_fd = fd;
+            event = kFileWriteEnd_;
+        } else {
+            event = kResponceWriteEnd_;
+        }
     } else {
-        event = kReadableRequest;
+        if (fd != connection_fd) {
+            file_fd = fd;
+            event = kReadableFile;
+        } else {
+            event = kReadableRequest;
+        }
     }
     return ConnectionEvent(event, fd_buffer, socket_fd, connection_fd, file_fd);
 }
@@ -317,24 +353,31 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int ti
     bool is_wait_continue;
     std::vector<std::pair<int, ConnectionEvent> > connections;
     do {
-        is_wait_continue = true;
-        std::vector<std::pair<int, FdManager *> > fd_events = this->fd_event_dispatcher_.Wait(timeout);
+        std::vector<FdEvent> fd_events = this->fd_event_dispatcher_.Wait(timeout);
         if (fd_events.size() == 0) {
             return connections;
         }
         for (size_t i = 0; i < fd_events.size(); i++) {
-            int fd = fd_events[i].first;
-            FdManager *fd_buffer = fd_events[i].second;
-            if (fd_buffer != NULL && fd_buffer->is_eof_) {
-                this->Unregistor(fd);
-            } else if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
+            int fd = fd_events[i].fd_;
+            FdManager *fd_buffer = fd_events[i].content_;
+            if (fd_events[i].event_ == kHaveReadableBuffer_) {
+                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_events[i].event_, fd_buffer)));
+            } else if (fd_events[i].event_ == kChanged) {
                 this->RegistorNewConnection(fd);
-            } else {
-                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_buffer)));
-                is_wait_continue = false;
+            } else if (fd_events[i].event_ == kWriteEnd_) {
+                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_events[i].event_, fd_buffer)));
             }
+
+            // if (fd_buffer != NULL && fd_buffer->is_eof_) {
+            //     this->Unregistor(fd);
+            // } else if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
+            //     this->RegistorNewConnection(fd);
+            // } else {
+            //     connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_buffer)));
+            //     is_wait_continue = false;
+            // }
         }
-    } while (is_wait_continue);
+    } while (connections.size() == 0);
     return connections;
 }
 
@@ -364,15 +407,15 @@ int main() {
     FdManager *stdin_buffer = event_dispatcher.GetBuffer(STDIN_FILENO);
 
     for (int i = 0; i < 10; i++) {
-        vector<pair<int, FdManager*> > event_content =  event_dispatcher.Wait(1000 * 1000);
+        vector<FdEvent> event_content =  event_dispatcher.Wait(1000 * 1000);
         // of_buffer->add_writen_buffer("hogehogehoge\n");
         // cout << if_buffer->get_read_buffer() << endl;
         // cout << stdin_buffer->get_read_buffer() << endl;
         for (size_t j = 0; j < event_content.size(); j++) {
-            if (event_content.at(j).second->is_eof_) {
-                event_dispatcher.Unregister(event_content.at(j).first);
+            if (event_content.at(j).content_->is_eof_) {
+                event_dispatcher.Unregister(event_content.at(j).fd_);
             } else {
-                cout << event_content.at(j).first << ' ' << event_content.at(j).second->get_read_buffer() << endl;
+                cout << "[fd, event, buffer]: [" << event_content.at(j).fd_ << ", " << event_content.at(j).event_ << ", '" << event_content.at(j).content_->get_read_buffer() << "']" << endl;
             }
         }
         
@@ -385,21 +428,26 @@ int main() {
 
 /*
 // how to test this tests is:
-g++ ./temp/delay_read.cpp
-./webserv | ./a.out
+// g++ ./temp/delay_read.cpp
+// ./webserv | ./a.out
 
 #include <iostream>
 using namespace std;
 int main() {
     FdEventDispatcher fde;
     fde.Register(STDOUT_FILENO, kFile);
-    for (int i = 0; i < 7000; i++) {
+    for (int i = 0; i < 105; i++) {
         fde.GetBuffer(STDOUT_FILENO)->add_writen_buffer("0123456789");
     }
     while (fde.GetBuffer(STDOUT_FILENO)->HaveWriteableBuffer()) {
-        fde.Wait(-1);
-        cout << "-------------------------------------------------------------" << endl;
+        vector<FdEvent> event = fde.Wait(2000);
+        cerr << event.size() << endl;
+        for (size_t i = 0; i < event.size(); i++) {
+            cerr << "[fd, event] : [" << event[i].fd_ << ", " << event[i].event_ << "]" << endl;
+        }
+        cerr << "-------------------------------------------------------------" << endl;
     }
+    cerr << "webserv end" << endl;
 }
 
 //  */
