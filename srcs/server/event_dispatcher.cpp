@@ -15,10 +15,6 @@
 
 #define BUFFER_SIZE 1024
 
-// #include <iostream>
-// using namespace std;
-// #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
-
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
 
@@ -113,15 +109,6 @@ const bool &FdManager::IsEndedWrite() const {
 FdEvent::FdEvent(const int &fd_arg, const FdEventType &event_arg, FdManager * content_arg) : fd_(fd_arg), event_(event_arg), content_(content_arg) {
 }
 
-// const FdEvent &FdEvent::operator=(const FdEvent &rhs) {
-//     if (this == &rhs) {
-//         return *this;
-//     }
-//     this->fd_ = rhs.fd_;
-//     this->event_ = rhs.event_;
-//     this->content_ = rhs.content_;
-// }
-
 FdEventDispatcher::FdEventDispatcher() {
 }
 
@@ -173,7 +160,6 @@ std::vector<FdEvent> FdEventDispatcher::WriteBuffer() {
 
         if ((revents & POLLOUT) == POLLOUT) {
             ReadWriteStatType write_ret = this->fds_.at(fd).Write();
-            // TODO(maitneel): write_ret がfailとかの場合どうするか考える //
             if (write_ret == kSuccess) {
                 result_array.push_back(FdEvent(fd, kWriteEnd_,  static_cast<FdManager *>(NULL)));
             } else if (write_ret == kFail) {
@@ -210,9 +196,6 @@ std::vector<FdEvent> FdEventDispatcher::Wait(int timeout) {
         if (poll_ret == 0) {
             return std::vector<FdEvent> ();
         }
-        // Writeしたことも伝えたほうがよければ while しないほうがいい　 //
-        //   ->　 write した時に何も呼び出し元に通知しないというのは何かしらの問題が起こりそうな気がするが、毎回通知する必要があるかと言われると微妙 //
-        //   -> write するバッファがなくなった時に通知するとかが妥当かもしれない //
         handled_write_fd = this->WriteBuffer();
         handled_readable_fd = this->ReadBuffer();
     }
@@ -368,13 +351,9 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int ti
                 connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_events[i].event_, fd_buffer)));
             }
 
+            // TODO(maitneel):  なんでunregustirしてるか全然わかんないけど、なんかしてるから要検証 //
             // if (fd_buffer != NULL && fd_buffer->is_eof_) {
-            //     this->Unregistor(fd);
-            // } else if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
-            //     this->RegistorNewConnection(fd);
-            // } else {
-            //     connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_buffer)));
-            //     is_wait_continue = false;
+            //    this->Unregistor(fd);
             // }
         }
     } while (connections.size() == 0);
