@@ -7,3 +7,5 @@ webserv
 .vscode
 *.dSYM
 .DS_Store
+*.s
+*.S
