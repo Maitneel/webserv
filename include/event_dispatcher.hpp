@@ -1,9 +1,6 @@
 #ifndef INCLUDE_EVENT_DISPATCHER_HPP_
 #define INCLUDE_EVENT_DISPATCHER_HPP_
 
-// TODO FdManager を直接触れないようにする //
-// TODO socket の名前の統一
-
 #include <poll.h>
 
 #include <string>
@@ -88,7 +85,7 @@ class FdEventDispatcher {
     void Unregister(const int &fd);
     std::vector<FdEvent> Wait(int timeout);
 
-    const std::string &get_read_buffer(const int &fd) const ;
+    const std::string &get_read_buffer(const int &fd) const;
     void add_writen_buffer(const int &fd, const std::string &src);
     void erase_read_buffer(const int &fd, const std::string::size_type &front, const std::string::size_type &len);
     bool IsEmptyWritebleBuffer(const int &fd);
@@ -147,7 +144,7 @@ class RelatedFds {
 
     int GetPairentSocket(const AnyFdType &fd);
     int GetPairentConnection(const FileFdType &fd);
-    
+
     void RegistorSocketFd(const SocketFdType &socket_fd);
     void RegistorConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd);
     void RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd, SocketFdType socket_fd = -1);
@@ -165,7 +162,6 @@ class RelatedFds {
 
 class ServerEventDispatcher {
  private:
-    // TODO　構造体にする
     FdEventDispatcher fd_event_dispatcher_;
     RelatedFds registerd_fds_;
 
@@ -182,7 +178,7 @@ class ServerEventDispatcher {
     void UnregistorFileFd(const int &file_fd);
     std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout);
 
-    const std::string &get_read_buffer(const int &fd) const ;
+    const std::string &get_read_buffer(const int &fd) const;
     void add_writen_buffer(const int &fd, const std::string &src);
     void erase_read_buffer(const int &fd, const std::string::size_type &front, const std::string::size_type &len);
     bool IsEmptyWritebleBuffer(const int &fd);
