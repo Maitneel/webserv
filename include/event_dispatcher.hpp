@@ -139,6 +139,8 @@ class RelatedFds {
     std::map<SocketFdType, std::set<AnyFdType> > socket_children_;
     std::map<ConnectionFdType, std::set<FileFdType> > connection_childlen_;
 
+    std::map<AnyFdType, FdType> fd_type_;
+
  public:
     RelatedFds();
     ~RelatedFds();
@@ -154,6 +156,9 @@ class RelatedFds {
     void UnregistorConnectionFd(const ConnectionFdType &connection_fd);
     void UnregistorFileFd(const FileFdType &file_fd);
 
+    FdType GetType(const AnyFdType &fd) const;
+    const std::set<AnyFdType> &GetChildrenFd(const int &fd);
+
     // この関数auto使ってるのでC++98環境では動かない //
     // void print();  // for debug;
 };
@@ -162,14 +167,8 @@ class ServerEventDispatcher {
  private:
     // TODO　構造体にする
     FdEventDispatcher fd_event_dispatcher_;
-    std::map<int, std::set<int> > related_fd_;
-    std::set<int> socket_fds_;
-    std::set<int> connection_fds_;
-    std::map<int, int> pairent_;
+    RelatedFds registerd_fds_;
 
-    int GetSocketFd(const int &connection_fd);
-    int GetConnectionFd(const int &file_fd);
-    void Unregistor(const int &fd);
     void RegistorNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
 
@@ -177,14 +176,12 @@ class ServerEventDispatcher {
     ServerEventDispatcher();
     ~ServerEventDispatcher();
 
-    void RegistorSocketFd(const int &fd);
-    void RegistorFileFd(const int &fd, const int &connection_fd);
-    void UnregistorConnectionFd(const int &fd);
-    void UnregistorFileFd(const int &fd);
-    void UnRegistorConnectionOrFile(const int &fd);
+    void RegistorSocketFd(const int &socket_fd);
+    void RegistorFileFd(const int &file_fd, const int &connection_fd);
+    void UnregistorConnectionFd(const int &connection_fd);
+    void UnregistorFileFd(const int &file_fd);
     std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout);
 
-    // FdManager *GetBuffer(const int &fd);
     const std::string &get_read_buffer(const int &fd) const ;
     void add_writen_buffer(const int &fd, const std::string &src);
     void erase_read_buffer(const int &fd, const std::string::size_type &front, const std::string::size_type &len);

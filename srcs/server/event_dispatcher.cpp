@@ -276,16 +276,17 @@ int RelatedFds::GetPairentConnection(const FileFdType &fd) {
 void RelatedFds::RegistorSocketFd(const SocketFdType &socket_fd) {
     this->registerd_fds_.insert(socket_fd);
     this->socket_fds_.insert(socket_fd);
+    this->fd_type_.insert(std::make_pair(socket_fd, kSocket));
+    this->socket_children_.insert(std::make_pair(socket_fd, std::set<AnyFdType>()));
 }
 
 void RelatedFds::RegistorConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd) {
     this->registerd_fds_.insert(connection_fd);
     this->connection_fds_.insert(connection_fd);
+    this->fd_type_.insert(std::make_pair(connection_fd, kConnection));
     this->pairent_socket_.insert(std::make_pair(connection_fd, socket_fd));
-    if (this->socket_children_.find(socket_fd) == this->socket_children_.end()) {
-        this->socket_children_.insert(std::make_pair(socket_fd, std::set<AnyFdType>()));
-    }
     this->socket_children_.at(socket_fd).insert(connection_fd);
+    this->connection_childlen_.insert(std::make_pair(connection_fd, std::set<FileFdType>()));
 }
 
 void RelatedFds::RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd, SocketFdType socket_fd) {
@@ -295,21 +296,17 @@ void RelatedFds::RegistorFileFd(const FileFdType &file_fd, const ConnectionFdTyp
 
     this->registerd_fds_.insert(file_fd);
     this->file_fds_.insert(file_fd);
+    this->fd_type_.insert(std::make_pair(file_fd, kFile));
     this->pairent_socket_.insert(std::make_pair(file_fd, socket_fd));
-    if (this->socket_children_.find(socket_fd) == this->socket_children_.end()) {
-        this->socket_children_.insert(std::make_pair(socket_fd, std::set<AnyFdType>()));
-    }
     this->socket_children_.at(socket_fd).insert(file_fd);
     this->pairent_connection_.insert(std::make_pair(file_fd, connection_fd));
-    if (this->connection_childlen_.find(connection_fd) == this->connection_childlen_.end()) {
-        this->connection_childlen_.insert(std::make_pair(connection_fd, std::set<AnyFdType>()));
-    }
     this->connection_childlen_.at(connection_fd).insert(file_fd);
 }
 
 void RelatedFds::UnregistorSocketFd(const SocketFdType &socket_fd) {
     this->registerd_fds_.erase(socket_fd);
     this->socket_fds_.erase(socket_fd);
+    this->fd_type_.erase(socket_fd);
     std::set<AnyFdType> children = this->socket_children_.at(socket_fd);
     for (std::set<AnyFdType>::iterator it = children.begin(); it != children.end(); it++) {
         if (this->connection_fds_.find(*it) != this->connection_fds_.end()) {
@@ -326,6 +323,7 @@ void RelatedFds::UnregistorConnectionFd(const ConnectionFdType &connection_fd) {
 
     this->registerd_fds_.erase(connection_fd);
     this->connection_fds_.erase(connection_fd);
+    this->fd_type_.erase(connection_fd);
     this->pairent_socket_.erase(connection_fd);
     this->socket_children_.at(socket_fd).erase(connection_fd);
     std::set<AnyFdType> children = this->connection_childlen_.at(connection_fd);
@@ -341,10 +339,30 @@ void RelatedFds::UnregistorFileFd(const FileFdType &file_fd) {
 
     this->registerd_fds_.erase(file_fd);
     this->file_fds_.erase(file_fd);
+    this->fd_type_.erase(file_fd);
     this->socket_children_.at(socket_fd).erase(file_fd);
     this->pairent_socket_.erase(file_fd);
     this->connection_childlen_.at(connection_fd).erase(file_fd);
     this->pairent_connection_.erase(file_fd);
+}
+
+FdType RelatedFds::GetType(const AnyFdType &fd) const {
+    if (this->fd_type_.find(fd) == this->fd_type_.end()) {
+        return kUnknownFd;
+    }
+    return this->fd_type_.find(fd)->second;
+}
+
+const std::set<AnyFdType> &RelatedFds::GetChildrenFd(const int &fd) {
+    if (this->fd_type_.find(fd) == this->fd_type_.end()) {
+        throw std::runtime_error("unregisterd");
+    }
+    FdType type = this->fd_type_.find(fd)->second;
+    if (type == kSocket) {
+        return this->socket_children_.find(fd)->second;
+    } else {
+        return this->connection_childlen_.find(fd)->second;
+    }
 }
 
 /*
@@ -403,8 +421,8 @@ ServerEventDispatcher::~ServerEventDispatcher() {
 }
 
 ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, const FdEventType &fd_event) {
-    int socket_fd = this->GetSocketFd(fd);
-    int connection_fd = this->GetConnectionFd(fd);
+    int socket_fd = this->registerd_fds_.GetPairentSocket(fd);
+    int connection_fd = this->registerd_fds_.GetPairentConnection(fd);
     int file_fd = -1;
     ServerEventType event;
 
@@ -427,73 +445,45 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
 }
 
 void ServerEventDispatcher::RegistorNewConnection(const int &socket_fd) {
-    int accept_fd = ft_accept(socket_fd);
-    this->fd_event_dispatcher_.Register(accept_fd, kConnection);
-    this->connection_fds_.insert(accept_fd);
-    this->pairent_.insert(std::make_pair(accept_fd, socket_fd));
-    this->related_fd_[socket_fd].insert(accept_fd);
+    int connection_fd = ft_accept(socket_fd);
+    this->fd_event_dispatcher_.Register(connection_fd, kConnection);
+    this->registerd_fds_.RegistorConnectionFd(connection_fd, socket_fd);
+    // this->connection_fds_.insert(accept_fd);
+    // this->pairent_.insert(std::make_pair(accept_fd, socket_fd));
+    // this->related_fd_[socket_fd].insert(accept_fd);
 }
 
-void ServerEventDispatcher::RegistorSocketFd(const int &fd) {
-    this->socket_fds_.insert(fd);
+void ServerEventDispatcher::RegistorSocketFd(const int &socket_fd) {
+    this->registerd_fds_.RegistorSocketFd(socket_fd);
 }
 
-void ServerEventDispatcher::RegistorFileFd(const int &fd, const int &connection_fd) {
-    this->fd_event_dispatcher_.Register(fd, kFile);
+void ServerEventDispatcher::RegistorFileFd(const int &file_fd, const int &connection_fd) {
+    this->fd_event_dispatcher_.Register(file_fd, kFile);
     if (0 <= connection_fd) {
-        this->related_fd_.at(connection_fd).insert(fd);
-        this->pairent_.insert(std::make_pair(fd, connection_fd));
+        this->registerd_fds_.RegistorFileFd(file_fd, connection_fd);
     }
 }
 
-void ServerEventDispatcher::Unregistor(const int &fd) {
-    for (std::set<int>::iterator it = this->related_fd_.at(fd).begin(); it != this->related_fd_.at(fd).end(); it++) {
+void ServerEventDispatcher::UnregistorConnectionFd(const int &connection_fd) {
+    if (this->registerd_fds_.GetType(connection_fd) != kConnection) {
+        return;
+    }
+    const std::set<int> children = this->registerd_fds_.GetChildrenFd(connection_fd);
+    for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
         this->fd_event_dispatcher_.Unregister(*it);
-        this->pairent_.erase(*it);
     }
-    related_fd_.erase(fd);
-    this->fd_event_dispatcher_.Unregister(fd);
-    connection_fds_.erase(fd);
-    this->related_fd_.at(this->pairent_.at(fd)).erase(fd);
-    this->pairent_.erase(fd);
+    this->fd_event_dispatcher_.Unregister(connection_fd);
 }
 
-void ServerEventDispatcher::UnregistorConnectionFd(const int &fd) {
-    if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
-        this->Unregistor(fd);
+void ServerEventDispatcher::UnregistorFileFd(const int &file_fd) {
+    if (this->registerd_fds_.GetType(file_fd) != kFile) {
+        return;
     }
-}
-
-void ServerEventDispatcher::UnregistorFileFd(const int &fd) {
-    if (this->socket_fds_.find(fd) == this->socket_fds_.end() && this->connection_fds_.find(fd) == this->connection_fds_.end()) {
-        this->Unregistor(fd);
+    std::set<int> children = this->registerd_fds_.GetChildrenFd(file_fd);
+    for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
+        this->fd_event_dispatcher_.Unregister(*it);
     }
-}
-
-void ServerEventDispatcher::UnRegistorConnectionOrFile(const int &fd) {
-    if (this->socket_fds_.find(fd) == this->socket_fds_.end()) {
-        this->Unregistor(fd);
-    }
-}
-
-int ServerEventDispatcher::GetSocketFd(const int &fd) {
-    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
-        return fd;
-    } else if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
-        return this->pairent_.at(fd);
-    } else {
-        return this->pairent_.at(this->pairent_.at(fd));
-    }
-}
-
-int ServerEventDispatcher::GetConnectionFd(const int &fd) {
-    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
-        return -1;
-    } else if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
-        return fd;
-    } else {
-        return this->pairent_.at(fd);
-    }
+    this->fd_event_dispatcher_.Unregister(file_fd);
 }
 
 std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int timeout) {
