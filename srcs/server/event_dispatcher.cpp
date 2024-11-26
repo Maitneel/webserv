@@ -34,6 +34,9 @@ FdManager::~FdManager() {
 ReadWriteStatType FdManager::Read() {
     char buffer[BUFFER_SIZE];
     int read_size = 0;
+    if (this->type_ == kSocket) {
+        return kDidNotRead;
+    }
     if (this->type_ == kConnection) {
         read_size = recv(this->fd_, buffer, BUFFER_SIZE, 0);
     } else if (this->type_ == kFile) {
@@ -136,13 +139,19 @@ std::vector<FdEvent> FdEventDispatcher::ReadBuffer() {
         if ((it->revents & POLLIN) == POLLIN) {
             if (this->fds_.find(it->fd) != this->fds_.end()) {
                 FdManager &fd_buffer = this->fds_.at(it->fd);
-                fd_buffer.Read();
-                events.push_back(FdEvent(it->fd, kHaveReadableBuffer));
+                ReadWriteStatType stat = fd_buffer.Read();
+                FdEventType event_type;
+
+                if (stat == kDidNotRead) {
+                    event_type = kChanged;
+                } else {
+                    event_type = kHaveReadableBuffer;
+                }
+                events.push_back(FdEvent(it->fd, event_type));
             } else {
                 events.push_back(FdEvent(it->fd, kChanged));
             }
         }
-        it->revents = 0;
     }
     return events;
 }
@@ -176,14 +185,13 @@ void FdEventDispatcher::UpdatePollEvents() {
         } else {
             processing.events = (POLLIN);
         }
+        processing.revents = 0;
     }
 }
 
 std::vector<FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::vector<FdEvent> handled_readable_fd;
     std::vector<FdEvent> handled_write_fd;
-
-    
 
     while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0) {
         this->UpdatePollEvents();
@@ -262,6 +270,9 @@ RelatedFds::~RelatedFds() {
 }
 
 int RelatedFds::GetPairentSocket(const AnyFdType &fd) {
+    if (this->socket_fds_.find(fd) != this->socket_fds_.end()) {
+        return fd;
+    }
     if (this->pairent_socket_.find(fd) != this->pairent_socket_.end()) {
         return this->pairent_socket_.find(fd)->second;
     }
@@ -269,10 +280,21 @@ int RelatedFds::GetPairentSocket(const AnyFdType &fd) {
 }
 
 int RelatedFds::GetPairentConnection(const FileFdType &fd) {
+    if (this->connection_fds_.find(fd) != this->connection_fds_.end()) {
+        return fd;
+    }
     if (this->pairent_connection_.find(fd) != this->pairent_connection_.end()) {
         return this->pairent_connection_.find(fd)->second;
     }
     return -1;
+}
+
+const std::set<AnyFdType> &RelatedFds::GetSocketChildren(const SocketFdType &fd) {
+    return this->socket_children_.find(fd)->second;
+}
+
+const std::set<FileFdType> &RelatedFds::GetConnectionChildren(const ConnectionFdType &fd) {
+    return this->connection_childlen_.find(fd)->second;
 }
 
 void RelatedFds::RegistorSocketFd(const SocketFdType &socket_fd) {
@@ -428,6 +450,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
     int file_fd = -1;
     ServerEventType event;
 
+
     if (fd_event == kWriteEnd) {
         if (fd != connection_fd) {
             file_fd = fd;
@@ -446,6 +469,53 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
     return ConnectionEvent(event, socket_fd, connection_fd, file_fd);
 }
 
+bool ServerEventDispatcher::DoseNotAllChildrenHaveBuffer(const std::set<int> &children) {
+    for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
+        if (!this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ServerEventDispatcher::CloseScheduledFd() {
+    std::set<int> closeable_fd;
+    std::set<int> scheduled_close_copy = this->scheduled_close_;
+
+    for (std::set<int>::iterator it = scheduled_close_copy.begin(); it != scheduled_close_copy.end(); it++) {
+        try {
+            const FdType type = this->registerd_fds_.GetType(*it);
+
+            std::set<int> children;
+            if (type == kSocket) {
+                this->registerd_fds_.GetSocketChildren(*it);
+            } else if (type == kConnection) {
+                this->registerd_fds_.GetConnectionChildren(*it);
+            }
+            children.insert(*it);
+            if (this->DoseNotAllChildrenHaveBuffer(children)) {
+                closeable_fd.insert(children.begin(), children.end());
+                this->scheduled_close_.erase(*it);
+            }
+        } catch (...) {
+        }
+    }
+
+    for (std::set<int>::iterator it = closeable_fd.begin(); it != closeable_fd.end(); it++) {
+        if (this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
+            const FdType type = this->registerd_fds_.GetType(*it);
+            if (type == kSocket) {
+                this->registerd_fds_.UnregistorSocketFd(*it);
+            } else if (type == kConnection) {
+                this->registerd_fds_.UnregistorConnectionFd(*it);
+            } else if (type == kFile) {
+                this->registerd_fds_.UnregistorFileFd(*it);
+            }
+            close(*it);
+        }
+    }
+}
+
 void ServerEventDispatcher::RegistorNewConnection(const int &socket_fd) {
     int connection_fd = ft_accept(socket_fd);
     this->fd_event_dispatcher_.Register(connection_fd, kConnection);
@@ -454,6 +524,7 @@ void ServerEventDispatcher::RegistorNewConnection(const int &socket_fd) {
 
 void ServerEventDispatcher::RegistorSocketFd(const int &socket_fd) {
     this->registerd_fds_.RegistorSocketFd(socket_fd);
+    this->fd_event_dispatcher_.Register(socket_fd, kSocket);
 }
 
 void ServerEventDispatcher::RegistorFileFd(const int &file_fd, const int &connection_fd) {
@@ -485,10 +556,15 @@ void ServerEventDispatcher::UnregistorFileFd(const int &file_fd) {
     this->fd_event_dispatcher_.Unregister(file_fd);
 }
 
+void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
+    this->scheduled_close_.insert(fd);
+}
+
 std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int timeout) {
     bool is_wait_continue;
     std::vector<std::pair<int, ConnectionEvent> > connections;
     do {
+        this->CloseScheduledFd();
         std::vector<FdEvent> fd_events = this->fd_event_dispatcher_.Wait(timeout);
         if (fd_events.size() == 0) {
             return connections;
@@ -496,11 +572,13 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int ti
         for (size_t i = 0; i < fd_events.size(); i++) {
             int fd = fd_events[i].fd_;
             if (fd_events[i].event_ == kHaveReadableBuffer) {
-                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_events[i].event_)));
+                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBuffer)));
             } else if (fd_events[i].event_ == kChanged) {
                 this->RegistorNewConnection(fd);
             } else if (fd_events[i].event_ == kWriteEnd) {
-                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, fd_events[i].event_)));
+                if (this->scheduled_close_.find(fd) == this->scheduled_close_.end()) {
+                    connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, kWriteEnd)));
+                }
             }
 
             // TODO(maitneel):  なんでunregustirしてるか全然わかんないけど、なんかしてるから要検証 //

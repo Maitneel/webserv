@@ -24,7 +24,8 @@ typedef enum ReadWriteStatEnum {
     kReturnedZero,
     kFail,
     kContinue,
-    kNoBuffer
+    kNoBuffer,
+    kDidNotRead
 } ReadWriteStatType;
 
 class FdManager {
@@ -142,8 +143,12 @@ class RelatedFds {
     RelatedFds();
     ~RelatedFds();
 
+    // こいつらgetPairentといいつつ、自分自身が当てはまる場合返してるのキモいかも //
     int GetPairentSocket(const AnyFdType &fd);
     int GetPairentConnection(const FileFdType &fd);
+
+    const std::set<AnyFdType> &GetSocketChildren(const SocketFdType &fd);
+    const std::set<FileFdType> &GetConnectionChildren(const ConnectionFdType &fd);
 
     void RegistorSocketFd(const SocketFdType &socket_fd);
     void RegistorConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd);
@@ -164,9 +169,12 @@ class ServerEventDispatcher {
  private:
     FdEventDispatcher fd_event_dispatcher_;
     RelatedFds registerd_fds_;
+    std::set<int> scheduled_close_;
 
     void RegistorNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
+    bool DoseNotAllChildrenHaveBuffer(const std::set<int> &children);
+    void CloseScheduledFd();
 
  public:
     ServerEventDispatcher();
@@ -176,6 +184,8 @@ class ServerEventDispatcher {
     void RegistorFileFd(const int &file_fd, const int &connection_fd);
     void UnregistorConnectionFd(const int &connection_fd);
     void UnregistorFileFd(const int &file_fd);
+    void ScheduleCloseAfterWrite(const int &fd);
+
     std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout);
 
     const std::string &get_read_buffer(const int &fd) const;
