@@ -89,7 +89,7 @@ void FdManager::erase_read_buffer(const std::string::size_type &front, const std
 }
 
 bool FdManager::IsEmptyWritebleBuffer() {
-    return (this->writen_buffer_.size() != 0);
+    return (this->writen_buffer_.size() == 0);
 }
 
 const FdType &FdManager::get_type() const {
@@ -171,7 +171,7 @@ void FdEventDispatcher::UpdatePollEvents() {
         pollfd &processing = this->poll_fds_.at(i);
         const int fd = processing.fd;
 
-        if (this->fds_.at(fd).IsEmptyWritebleBuffer()) {
+        if (!this->fds_.at(fd).IsEmptyWritebleBuffer()) {
             processing.events = (POLLIN | POLLOUT);
         } else {
             processing.events = (POLLIN);
@@ -182,6 +182,8 @@ void FdEventDispatcher::UpdatePollEvents() {
 std::vector<FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::vector<FdEvent> handled_readable_fd;
     std::vector<FdEvent> handled_write_fd;
+
+    
 
     while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0) {
         this->UpdatePollEvents();
@@ -448,9 +450,6 @@ void ServerEventDispatcher::RegistorNewConnection(const int &socket_fd) {
     int connection_fd = ft_accept(socket_fd);
     this->fd_event_dispatcher_.Register(connection_fd, kConnection);
     this->registerd_fds_.RegistorConnectionFd(connection_fd, socket_fd);
-    // this->connection_fds_.insert(accept_fd);
-    // this->pairent_.insert(std::make_pair(accept_fd, socket_fd));
-    // this->related_fd_[socket_fd].insert(accept_fd);
 }
 
 void ServerEventDispatcher::RegistorSocketFd(const int &socket_fd) {
@@ -546,20 +545,14 @@ int main() {
     event_dispatcher.Register(of_fd, kFile);
     event_dispatcher.Register(if_fd, kFile);
     event_dispatcher.Register(STDIN_FILENO, kFile);
-    FdManager *of_buffer = event_dispatcher.GetBuffer(of_fd);
-    FdManager *if_buffer = event_dispatcher.GetBuffer(if_fd);
-    FdManager *stdin_buffer = event_dispatcher.GetBuffer(STDIN_FILENO);
 
     for (int i = 0; i < 10; i++) {
         vector<FdEvent> event_content =  event_dispatcher.Wait(1000 * 1000);
-        // of_buffer->add_writen_buffer("hogehogehoge\n");
-        // cout << if_buffer->get_read_buffer() << endl;
-        // cout << stdin_buffer->get_read_buffer() << endl;
         for (size_t j = 0; j < event_content.size(); j++) {
-            if (event_content.at(j).content_->is_eof_) {
+            if (event_dispatcher.IsEmptyWritebleBuffer(event_content.at(j).fd_)) {
                 event_dispatcher.Unregister(event_content.at(j).fd_);
             } else {
-                cout << "[fd, event, buffer]: [" << event_content.at(j).fd_ << ", " << event_content.at(j).event_ << ", '" << event_content.at(j).content_->get_read_buffer() << "']" << endl;
+                cout << "[fd, event, buffer]: [" << event_content.at(j).fd_ << ", " << event_content.at(j).event_ << ", '" << event_dispatcher.get_read_buffer(event_content.at(j).fd_) << "']" << endl;
             }
         }
         
@@ -581,9 +574,9 @@ int main() {
     FdEventDispatcher fde;
     fde.Register(STDOUT_FILENO, kFile);
     for (int i = 0; i < 205; i++) {
-        fde.GetBuffer(STDOUT_FILENO)->add_writen_buffer("0123456789");
+        fde.add_writen_buffer(STDOUT_FILENO, "0123456789");
     }
-    while (fde.GetBuffer(STDOUT_FILENO)->IsEmptyWritebleBuffer()) {
+    while (!fde.IsEmptyWritebleBuffer(STDOUT_FILENO)) {
         vector<FdEvent> event = fde.Wait(2000);
         cerr << event.size() << endl;
         for (size_t i = 0; i < event.size(); i++) {
