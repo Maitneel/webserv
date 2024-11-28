@@ -248,10 +248,6 @@ void HTTPRequest::valid_host(const std::string &value) {
     }
 }
 
-HTTPRequest::HTTPRequest(const int fd) {
-    // TODO(maitneel):
-}
-
 void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     if (this->protocol == http_0_9 || this->protocol == HTTP_1_0) {
@@ -399,12 +395,21 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
     this->transform_headers();
 }
 
-HTTPRequest::HTTPRequest() {
+HTTPRequest::HTTPRequest() : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
-    remove_front_crlf(&buffer);
-    std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
+// HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+//     remove_front_crlf(&buffer);
+//     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
+//     this->parse_request_line(splited_buffer[0]);
+
+//     const size_t header_count = this->registor_field(splited_buffer);
+//     this->valid_headers();
+// }
+
+void HTTPRequest::parse_request_header(std::string header_str) {
+    remove_front_crlf(&header_str);
+    std::vector<std::string> splited_buffer = escaped_quote_split(header_str, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
     const size_t header_count = this->registor_field(splited_buffer);

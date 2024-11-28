@@ -106,8 +106,7 @@ class HTTPRequest {
     std::vector<std::string> user_agent_;
 
     explicit HTTPRequest();
-    explicit HTTPRequest(const int fd);
-    explicit HTTPRequest(std::string buffer);
+    void parse_request_header(std::string header_str);
     ~HTTPRequest();
 
     // getter

@@ -25,8 +25,7 @@ bool HTTPContext::IsParsedHeader() const {
 void HTTPContext::ParseRequestHeader() {
     std::string header_str = buffer_.substr(0, buffer_.find("\r\n\r\n") + strlen(CRLF));
 
-    // TODO(maitneel): 新規でインスタンスを作らないようにする //
-    request_ = HTTPRequest(header_str);
+    request_.parse_request_header(header_str);
     buffer_ = buffer_.substr(buffer_.find("\r\n\r\n") + strlen("\r\n\r\n"));
     parsed_header_ = true;
 }

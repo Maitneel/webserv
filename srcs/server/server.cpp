@@ -263,24 +263,30 @@ void Server::EventLoop() {
             const int &event_fd = it->first;
             const ConnectionEvent &event = it->second;
 
-            if (event.event == kReadableRequest) {
-                if (ctxs_.find(event_fd) == ctxs_.end()) {
-                    ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
-                }
-                HTTPContext& ctx = ctxs_.at(event_fd);
-
-                // TODO(maitneel): 辻褄合わせをどうにかする //
-                ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
-                dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
-
-                if (ctx.IsParsedHeader() == false) {
-                    if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
-                        ctx.ParseRequestHeader();
+            switch (event.event)  {
+                case kReadableRequest: {
+                    if (ctxs_.find(event_fd) == ctxs_.end()) {
+                        ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
                     }
+                    HTTPContext& ctx = ctxs_.at(event_fd);
+
+                    // TODO(maitneel): 辻褄合わせをどうにかする //
+                    ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
+
+                    if (ctx.IsParsedHeader() == false) {
+                        if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
+                            ctx.ParseRequestHeader();
+                        }
+                    }
+                    if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
+                        ctx.ParseRequestBody();
+                        this->routing(event_fd, it->second.socket_fd);
+                    }
+                    break;
                 }
-                if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
-                    ctx.ParseRequestBody();
-                    this->routing(event_fd, it->second.socket_fd);
+                default: {
+                    break;
                 }
             }
         }
