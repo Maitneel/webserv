@@ -256,7 +256,15 @@ void Server::EventLoop() {
     }
 
     while(true) {
-        std::vector<std::pair<int, ConnectionEvent> > dis_events = dispatcher_.Wait(-1);
+        std::vector<std::pair<int, ConnectionEvent> > dis_events;
+        std::vector<pid_t> returned_child_pid;
+        try {
+            dis_events = dispatcher_.Wait(-1);
+        } catch (const SignalDelivered &e) {
+            dis_events = dis_events = dispatcher_.Wait(100);
+            // TODO
+            // returned_child_pid = get_returned_child_pid(children_pids);
+        }
 
         std::vector<std::pair<int, ConnectionEvent> >::const_iterator it;
         for (it = dis_events.begin(); it != dis_events.end(); it++) {

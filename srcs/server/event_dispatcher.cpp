@@ -1,8 +1,10 @@
 #include <unistd.h>
+#include <fcntl.h>
 #include <poll.h>
 #include <sys/socket.h>
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <map>
 #include <set>
@@ -24,6 +26,9 @@ int ft_accept(int fd);
 //                                                                          //
 // ------------------------------------------------------------------------ //
 
+static void signal_handler(int sigid) {
+    throw SignalDelivered(sigid);
+}
 
 FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), is_eof_(false), write_status_(kNoBuffer) {
 }
@@ -193,23 +198,30 @@ std::vector<FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::vector<FdEvent> handled_readable_fd;
     std::vector<FdEvent> handled_write_fd;
 
-    while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0) {
-        this->UpdatePollEvents();
-        int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
-        if (poll_ret < 0) {
-            throw std::runtime_error("poll: failed");
+    signal(SIGCHLD, signal_handler);
+    try {
+        while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0) {
+            this->UpdatePollEvents();
+            int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
+            if (poll_ret < 0) {
+                throw std::runtime_error("poll: failed");
+            }
+            if (poll_ret == 0) {
+                return std::vector<FdEvent> ();
+            }
+            handled_write_fd = this->WriteBuffer();
+            handled_readable_fd = this->ReadBuffer();
         }
-        if (poll_ret == 0) {
-            return std::vector<FdEvent> ();
+        // 少ない方から大きい方にマージすることで計算量が減る一般的なテク //
+        if (handled_readable_fd.size() < handled_write_fd.size()) {
+            std::swap(handled_readable_fd, handled_write_fd);
         }
-        handled_write_fd = this->WriteBuffer();
-        handled_readable_fd = this->ReadBuffer();
+        handled_readable_fd.insert(handled_readable_fd.begin(), handled_write_fd.begin(), handled_write_fd.end());
+    } catch (const SignalDelivered &e) {
+        signal(SIGCHLD, SIG_IGN);
+        throw e;
     }
-    // 少ない方から大きい方にマージすることで計算量が減る一般的なテク //
-    if (handled_readable_fd.size() < handled_write_fd.size()) {
-        std::swap(handled_readable_fd, handled_write_fd);
-    }
-    handled_readable_fd.insert(handled_readable_fd.begin(), handled_write_fd.begin(), handled_write_fd.end());
+    signal(SIGCHLD, SIG_IGN);
     return handled_readable_fd;
 }
 
@@ -605,6 +617,24 @@ void ServerEventDispatcher::erase_read_buffer(const int &fd, const std::string::
 bool ServerEventDispatcher::IsEmptyWritebleBuffer(const int &fd) {
     return this->fd_event_dispatcher_.IsEmptyWritebleBuffer(fd);
 }
+// ------------------------------------------------------------------------ //
+//                                                                          //
+//                       Exception class SignalDelivered                    //
+//                                                                          //
+// ------------------------------------------------------------------------ //
+
+SignalDelivered::SignalDelivered(const int sigid) : sigid_(sigid) {
+}
+
+const char* SignalDelivered::what() const throw() {
+    std::stringstream message;
+    message << "SignalDelivered: delivered signal '" << this->sigid_ << "'";
+    return message.str().c_str();
+}
+
+const int &SignalDelivered::GetSigid() const {
+    return this->sigid_;
+}
 
 /*
 #include <sys/fcntl.h>
@@ -704,4 +734,57 @@ int main() {
     fds.print();
 }
 
+// */
+
+/*
+#include <iostream>
+#include <Unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+using namespace std;
+
+void child(const int sv[2]) {
+    char *str = "from child";
+    write(sv[0], str, 10);
+    write(sv[1], str, 10);
+    std::cerr << "child  : sv: [" << sv[0] << ", " << sv[1] << "]" << endl;
+    system("sleep 1");
+}
+
+void pairent(const int sv[2]) {
+    usleep(10000);
+    std::cerr << "pairent: sv: [" << sv[0] << ", " << sv[1] << "]" << endl;
+
+    FdEventDispatcher dispatcher;
+    dispatcher.Register(sv[0], kFile);
+    dispatcher.Register(sv[1], kFile);
+    for (size_t j = 0; j < 2; j++) {
+        vector<FdEvent> event = dispatcher.Wait(-1);
+
+        for (size_t i = 0; i < event.size(); i++) {
+            cerr << event[i].fd_ << ": " << dispatcher.get_read_buffer(event[i].fd_) << endl;
+        }
+    }   
+    char *buf[10];
+    fcntl(sv[0], F_SETFL, O_NONBLOCK);
+    fcntl(sv[1], F_SETFL, O_NONBLOCK);
+    cerr << read(sv[0], buf, 1) << endl;
+    cerr << read(sv[1], buf, 1) << endl;
+
+}
+
+int main() {
+    int sv[2];
+
+    socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
+
+    pid_t cpid = fork();
+
+    if (cpid == 0) {
+        child(sv);
+    } else {
+        pairent(sv);
+    }
+    return 0;
+}
 // */

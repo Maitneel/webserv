@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <exception>
 
 #include "http_request.hpp"
 #include "http_response.hpp"
@@ -192,6 +193,17 @@ class ServerEventDispatcher {
     void add_writen_buffer(const int &fd, const std::string &src);
     void erase_read_buffer(const int &fd, const std::string::size_type &front, const std::string::size_type &len);
     bool IsEmptyWritebleBuffer(const int &fd);
+};
+
+class SignalDelivered : std::exception {
+ public:
+    explicit SignalDelivered(const int sigid);
+    const char* what() const throw();
+
+    const int &GetSigid() const;
+
+ private:
+    const int sigid_;
 };
 
 #endif  // INCLUDE_EVENT_DISPATCHER_HPP_
