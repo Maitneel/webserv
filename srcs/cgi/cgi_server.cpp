@@ -1,5 +1,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include <string>
 #include <stdexcept>
@@ -13,12 +16,13 @@
 #define PIPE_READ_FD 0
 #define PIPE_WRITE_FD 1
 
-#define BUFFER_SIZE 1024
+#define SOCKET_SERVER_WRITE_FD 0
+#define SOCKET_SERVER_READ_FD 1
 
-void close_pipe_fds(const int fds[2]) {
-    close(fds[0]);
-    close(fds[1]);
-}
+#define SOCKET_SCRIPT_WRITE_FD 1
+#define SOCKET_SCRIPT_READ_FD 0
+
+#define BUFFER_SIZE 1024
 
 char **create_argv(const std::string &cgi_script_path) {
     char **argv = reinterpret_cast<char **>(malloc(sizeof(char *) * 2));
@@ -33,11 +37,9 @@ char **create_argv(const std::string &cgi_script_path) {
     return argv;
 }
 
-void child_process(const HTTPRequest &request, const std::string &cgi_script_path, const int to_script_pipe_fd[2], const int to_server_pipe_fd[2]) {
-    dup2(to_script_pipe_fd[PIPE_READ_FD], STDIN_FILENO);
-    dup2(to_server_pipe_fd[PIPE_WRITE_FD], STDOUT_FILENO);
-    close_pipe_fds(to_script_pipe_fd);
-    close_pipe_fds(to_server_pipe_fd);
+void child_process(const HTTPRequest &request, const std::string &cgi_script_path, const int to_script_pipe_fd, const int to_server_pipe_fd) {
+    dup2(to_script_pipe_fd, STDIN_FILENO);
+    dup2(to_server_pipe_fd, STDOUT_FILENO);
     char **argv = create_argv(cgi_script_path);
     char **env = make_env_array(request);
     execve(cgi_script_path.c_str(), argv, env);
@@ -45,53 +47,49 @@ void child_process(const HTTPRequest &request, const std::string &cgi_script_pat
 }
 
 
-void write_body_to_script(const HTTPRequest &request, const int &fd) {
-    const std::string body = request.entity_body_;
-    int remining_date = request.entity_body_.length();
-    // TODO(maitneel): bug: 全て書き込めなかった場合に最初から書き込み直している　//
-    // あとノンブロッキングじゃない //
-    do {
-        int write_ret = write(fd, body.c_str(), remining_date);
-        if (write_ret < 0) {
-            throw std::runtime_error("write");
-        }
-        remining_date -= write_ret;
-    } while (remining_date);
-}
+// void write_body_to_script(const HTTPRequest &request, const int &fd) {
+//     const std::string body = request.entity_body_;
+//     int remining_date = request.entity_body_.length();
+//     // TODO(maitneel): bug: 全て書き込めなかった場合に最初から書き込み直している　//
+//     // あとノンブロッキングじゃない //
+//     do {
+//         int write_ret = write(fd, body.c_str(), remining_date);
+//         if (write_ret < 0) {
+//             throw std::runtime_error("write");
+//         }
+//         remining_date -= write_ret;
+//     } while (remining_date);
+// }
 
-std::string read_cgi_responce(const int &fd) {
-    // TODO(maitneel): CGIの結果の読み込み //
-    // RFC3875 では何種類かresponceが定義されているが、とりま、document responceしか考慮しない //
-    std::string document_responce;
-    char buffer[BUFFER_SIZE];
-    bzero(buffer, BUFFER_SIZE);
-    // ここのread, 0帰ってきたら終了でほんとにいいのかわからない //
-    while (0 < read(fd, buffer, BUFFER_SIZE)) {
-        document_responce += buffer;
-        bzero(buffer, BUFFER_SIZE);
-    }
-    return document_responce;
-}
+// std::string read_cgi_responce(const int &fd) {
+//     // TODO(maitneel): CGIの結果の読み込み //
+//     // RFC3875 では何種類かresponceが定義されているが、とりま、document responceしか考慮しない //
+//     std::string document_responce;
+//     char buffer[BUFFER_SIZE];
+//     bzero(buffer, BUFFER_SIZE);
+//     // ここのread, 0帰ってきたら終了でほんとにいいのかわからない //
+//     while (0 < read(fd, buffer, BUFFER_SIZE)) {
+//         document_responce += buffer;
+//         bzero(buffer, BUFFER_SIZE);
+//     }
+//     return document_responce;
+// }
 
-std::string call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path) {
-    int to_script_pipe_fd[2];
-    int to_server_pipe_fd[2];
-    if (pipe(to_script_pipe_fd) || pipe(to_server_pipe_fd)) {
+CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path) {
+    int sv[2];
+    int socketret = socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
+    std::cerr << "socketret: " <<  socketret << std::endl;
+    if (socketret != 0) {
         throw std::runtime_error("pipe failed");
     }
+
     const pid_t child_pid = fork();
     if (child_pid == 0) {
-        child_process(request, cgi_script_path, to_script_pipe_fd, to_server_pipe_fd);
+        child_process(request, cgi_script_path, sv[SOCKET_SCRIPT_READ_FD], sv[SOCKET_SCRIPT_WRITE_FD]);
     }
-    const int to_script = to_script_pipe_fd[PIPE_WRITE_FD];
-    const int from_script = to_server_pipe_fd[PIPE_READ_FD];
-    write_body_to_script(request, to_script);
-    close_pipe_fds(to_script_pipe_fd);
-    close(to_server_pipe_fd[PIPE_WRITE_FD]);
+    const int to_script = sv[SOCKET_SERVER_WRITE_FD];
+    const int from_script = sv[SOCKET_SERVER_READ_FD];
+    fcntl(from_script, F_SETFL, O_NONBLOCK);
 
-    waitpid(child_pid, NULL, 0);  // TODO(maitneel): ブロッキングしないようにする //
-    std::string cgi_responce = read_cgi_responce(from_script);
-    close(from_script);
-
-    return cgi_responce;
+    return CGIInfo(to_script, from_script, child_pid);
 }
