@@ -115,8 +115,8 @@ class HTTPRequest {
     const std::string &get_protocol() const;
 
     // print funcs
-    void print_info();
-    void print_info(std::ostream &stream);
+    void print_info() const;
+    void print_info(std::ostream &stream) const;
 
     // exception class
     class InvalidRequest :  public  std::exception {

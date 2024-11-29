@@ -434,16 +434,16 @@ const std::string &HTTPRequest::get_protocol() const {
 }
 
 // print func
-void HTTPRequest::print_info() {
+void HTTPRequest::print_info() const {
     this->print_info(std::cout);
 }
 
-void HTTPRequest::print_info(std::ostream &stream) {
+void HTTPRequest::print_info(std::ostream &stream) const {
     const size_t width = 25;
 
     stream << '[' << get_formated_date() << "] '" << this->get_method() << "' '" << this->get_request_uri() << "' '" << this->get_protocol() << "'" << std::endl;
     stream << "    header : {" << std::endl;
-    for (std::map<std::string, std::vector<std::string> >::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
+    for (std::map<std::string, std::vector<std::string> >::const_iterator i = this->header_.begin(); i != this->header_.end(); i++) {
         stream << "        " << std::setw(20) << std::left << i->first << ": ";
         for (size_t j = 0; j < i->second.size(); j++) {
             stream << "'"<< i->second[j] << "', ";
