@@ -18,6 +18,7 @@ std::string get_formated_date() {
 
 int main() {
     std::cout << "Content-Type:text/html" << "\n"; 
+    std::cout << "\n";
 
     std::cout << "<!DOCTYPE html>" << "\n";
     std::cout << "<html lang=\"en\">" << "\n";
