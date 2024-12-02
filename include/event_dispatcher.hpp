@@ -56,6 +56,7 @@ class FdManager {
 typedef enum FdEventTypeEnum {
     kFdEventTypeUndefined,
     kHaveReadableBuffer,
+    kHaveReadableBufferAndEndOfRead,
     kChanged,
     kWriteEnd,
     kFdEventFail
@@ -75,17 +76,21 @@ class FdEventDispatcher {
     std::map<int, FdManager> fds_;
     std::vector<pollfd> poll_fds_;
 
-    std::vector<FdEvent> ReadBuffer();
-    std::vector<FdEvent> WriteBuffer();
+    std::multimap<int, FdEvent> ReadBuffer();
+    std::multimap<int, FdEvent> WriteBuffer();
+    std::multimap<int, FdEvent> GetErrorFds();
 
     void UpdatePollEvents();
+    void UpdateReadStatus(std::multimap<int, FdEvent> *read_event);
+    std::multimap<int, FdEvent> MergeEvents(const std::multimap<int, FdEvent> &read_event, const std::multimap<int, FdEvent> &write_events, const std::multimap<int, FdEvent> &error_events);
+
  public:
     FdEventDispatcher();
     ~FdEventDispatcher();
 
     void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
-    std::vector<FdEvent> Wait(int timeout);
+    std::multimap<int, FdEvent> Wait(int timeout);
 
     const std::string &get_read_buffer(const int &fd) const;
     void add_writen_buffer(const int &fd, const std::string &src);

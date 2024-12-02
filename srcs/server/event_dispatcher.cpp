@@ -137,8 +137,8 @@ void FdEventDispatcher::Unregister(const int &fd) {
     }
 }
 
-std::vector<FdEvent> FdEventDispatcher::ReadBuffer() {
-    std::vector<FdEvent> events;
+std::multimap<int, FdEvent> FdEventDispatcher::ReadBuffer() {
+    std::multimap<int, FdEvent> events;
     std::vector<pollfd>::iterator it;
     for (it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
         if ((it->revents & POLLIN) == POLLIN) {
@@ -147,22 +147,24 @@ std::vector<FdEvent> FdEventDispatcher::ReadBuffer() {
                 ReadWriteStatType stat = fd_buffer.Read();
                 FdEventType event_type;
 
-                if (stat == kDidNotRead) {
+                if (stat == kReturnedZero) {
+                    continue;
+                } if (stat == kDidNotRead) {
                     event_type = kChanged;
                 } else {
                     event_type = kHaveReadableBuffer;
                 }
-                events.push_back(FdEvent(it->fd, event_type));
+                events.insert(std::make_pair(it->fd, FdEvent(it->fd, event_type)));
             } else {
-                events.push_back(FdEvent(it->fd, kChanged));
+                events.insert(std::make_pair(it->fd, FdEvent(it->fd, kChanged)));
             }
         }
     }
     return events;
 }
 
-std::vector<FdEvent> FdEventDispatcher::WriteBuffer() {
-    std::vector<FdEvent> result_array;
+std::multimap<int, FdEvent> FdEventDispatcher::WriteBuffer() {
+    std::multimap<int, FdEvent> result_array;
     for (size_t i = 0; i < this->poll_fds_.size(); i++) {
         struct pollfd &processing = this->poll_fds_.at(i);
         const int fd = processing.fd;
@@ -171,14 +173,30 @@ std::vector<FdEvent> FdEventDispatcher::WriteBuffer() {
         if ((revents & POLLOUT) == POLLOUT) {
             ReadWriteStatType write_ret = this->fds_.at(fd).Write();
             if (write_ret == kSuccess) {
-                result_array.push_back(FdEvent(fd, kWriteEnd));
+                result_array.insert(std::make_pair(fd, FdEvent(fd, kWriteEnd)));
             } else if (write_ret == kFail) {
-                result_array.push_back(FdEvent(fd, kFdEventFail));
+                result_array.insert(std::make_pair(fd, FdEvent(fd, kFdEventFail)));
             }
         }
     }
     return result_array;
 }
+
+std::multimap<int, FdEvent> FdEventDispatcher::GetErrorFds() {
+    std::multimap<int, FdEvent> error_fds;
+    for (size_t i = 0; i < this->poll_fds_.size(); i++) {
+        struct pollfd &processing = this->poll_fds_.at(i);
+        const int &fd = processing.fd;
+        const short &events = processing.events;
+        const short &revents = processing.revents;
+
+        if (revents & (~ events)) {
+            error_fds.insert(std::make_pair(fd, FdEvent(fd, kFdEventFail)));
+        }
+    }
+    return error_fds;
+}
+
 
 void FdEventDispatcher::UpdatePollEvents() {
     for (size_t i = 0; i < this->poll_fds_.size(); i++) {
@@ -194,35 +212,67 @@ void FdEventDispatcher::UpdatePollEvents() {
     }
 }
 
-std::vector<FdEvent> FdEventDispatcher::Wait(int timeout) {
-    std::vector<FdEvent> handled_readable_fd;
-    std::vector<FdEvent> handled_write_fd;
+void FdEventDispatcher::UpdateReadStatus(std::multimap<int, FdEvent> *read_event) {
+    std::vector<pollfd> before_proc = this->poll_fds_;
+    poll(this->poll_fds_.data(), this->poll_fds_.size(), 0);
+    for (size_t i = 0; i < this->poll_fds_.size(); i++) {
+        if (!(this->poll_fds_[i].revents & POLLIN) && (before_proc[i].revents & POLLIN)) {
+            std::multimap<int, FdEvent>::iterator it = read_event->find(this->poll_fds_[i].fd);
+            while (it->first == this->poll_fds_[i].fd) {
+                if (it->second.event_ == kHaveReadableBuffer) {
+                    it->second.event_ = kHaveReadableBufferAndEndOfRead;
+                }
+                it++;
+            }
+        }
+    }
+}
+
+std::multimap<int, FdEvent> FdEventDispatcher::MergeEvents(const std::multimap<int, FdEvent> &read_event, const std::multimap<int, FdEvent> &write_events, const std::multimap<int, FdEvent> &error_events) {
+    std::multimap<int, FdEvent> events(read_event);
+
+    for (std::multimap<int, FdEvent>::const_iterator it = write_events.begin(); it != write_events.end(); it++) {
+        events.insert(*it);
+    }
+    for (std::multimap<int, FdEvent>::const_iterator it = error_events.begin(); it != error_events.end(); it++) {
+        const int &fd = it->first;
+        if (read_event.find(fd) == read_event.end() && write_events.find(fd) == write_events.end()) {
+            events.insert(*it);
+        }
+    }return events;
+}
+
+std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
+    if (poll_fds_.size() == 0) {
+        return std::multimap<int, FdEvent>();
+    }
+
+    std::multimap<int, FdEvent> handled_readable_fd;
+    std::multimap<int, FdEvent> handled_write_fd;
+    std::multimap<int, FdEvent> handled_error_fd;
 
     signal(SIGCHLD, signal_handler);
     try {
-        while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0) {
+        while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0 && handled_error_fd.size() == 0) {
             this->UpdatePollEvents();
             int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
             if (poll_ret < 0) {
                 throw std::runtime_error("poll: failed");
             }
             if (poll_ret == 0) {
-                return std::vector<FdEvent> ();
+                return std::multimap<int, FdEvent> ();
             }
             handled_write_fd = this->WriteBuffer();
             handled_readable_fd = this->ReadBuffer();
+            handled_error_fd = this->GetErrorFds();
         }
-        // 少ない方から大きい方にマージすることで計算量が減る一般的なテク //
-        if (handled_readable_fd.size() < handled_write_fd.size()) {
-            std::swap(handled_readable_fd, handled_write_fd);
-        }
-        handled_readable_fd.insert(handled_readable_fd.begin(), handled_write_fd.begin(), handled_write_fd.end());
+        this->UpdateReadStatus(&handled_readable_fd);
     } catch (const SignalDelivered &e) {
         signal(SIGCHLD, SIG_IGN);
         throw e;
     }
     signal(SIGCHLD, SIG_IGN);
-    return handled_readable_fd;
+    return this->MergeEvents(handled_readable_fd, handled_write_fd, handled_error_fd);
 }
 
 const std::string &FdEventDispatcher::get_read_buffer(const int &fd) const {
@@ -577,17 +627,18 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int ti
     std::vector<std::pair<int, ConnectionEvent> > connections;
     do {
         this->CloseScheduledFd();
-        std::vector<FdEvent> fd_events = this->fd_event_dispatcher_.Wait(timeout);
+        std::multimap<int, FdEvent> fd_events = this->fd_event_dispatcher_.Wait(timeout);
         if (fd_events.size() == 0) {
             return connections;
         }
-        for (size_t i = 0; i < fd_events.size(); i++) {
-            int fd = fd_events[i].fd_;
-            if (fd_events[i].event_ == kHaveReadableBuffer) {
+        for (std::multimap<int, FdEvent>::iterator it = fd_events.begin(); it != fd_events.end(); it++) {
+            const int &fd = it->second.fd_;
+            const FdEventType &event = it->second.event_;
+            if (event == kHaveReadableBuffer) {
                 connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBuffer)));
-            } else if (fd_events[i].event_ == kChanged) {
+            } else if (event == kChanged) {
                 this->RegistorNewConnection(fd);
-            } else if (fd_events[i].event_ == kWriteEnd) {
+            } else if (event == kWriteEnd) {
                 if (this->scheduled_close_.find(fd) == this->scheduled_close_.end()) {
                     connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, kWriteEnd)));
                 }
@@ -786,5 +837,27 @@ int main() {
         pairent(sv);
     }
     return 0;
+}
+// */
+
+
+/*
+#include <iostream>
+using namespace std;
+int main() {
+    FdEventDispatcher disp;
+
+    disp.Register(STDIN_FILENO, kFile);
+    for (size_t i = 0; i < 10; i++) {
+        cerr << "waiting" << endl;
+        std::multimap<int, FdEvent> event = disp.Wait(1000);
+        for (auto it = event.begin(); it != event.end(); it++) {
+            cout << it->second.fd_ << ' ' << it->second.event_ << endl;
+            // cerr << disp.get_read_buffer(it->second.fd_) << endl;
+            if (event.count(it->second.fd_) == 1 && it->second.event_ == kFdEventFail) {
+                disp.Unregister(it->second.fd_);
+            } 
+        }
+    }
 }
 // */
