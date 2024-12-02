@@ -3,15 +3,15 @@
 #include "http_context.hpp"
 #include "http_validation.hpp"
 
-HTTPContext::HTTPContext(int fd) : socket_fd_(fd), parsed_header_(false) {
+HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false) {
 }
 
 
 HTTPContext::~HTTPContext() {
 }
 
-int HTTPContext::GetSocketFD() const {
-    return socket_fd_;
+int HTTPContext::GetConnectionFD() const {
+    return connection_fd_;
 }
 
 const std::string& HTTPContext::GetBuffer() const {
