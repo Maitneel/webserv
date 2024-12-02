@@ -30,7 +30,7 @@ static void signal_handler(int sigid) {
     throw SignalDelivered(sigid);
 }
 
-FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), is_eof_(false), write_status_(kNoBuffer) {
+FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), write_status_(kNoBuffer) {
 }
 
 FdManager::~FdManager() {
@@ -54,7 +54,6 @@ ReadWriteStatType FdManager::Read() {
         return kFail;
     } else if (read_size == 0) {
         // read, recv が0を返した時、常にEOFなのか自信がない //
-        this->is_eof_ = true;
         return kReturnedZero;
     }
     return kSuccess;
@@ -112,6 +111,8 @@ const FdType &FdManager::get_type() const {
 
 FdEvent::FdEvent(const int &fd_arg, const FdEventType &event_arg) : fd_(fd_arg), event_(event_arg) {
 }
+
+const std::string FdEventDispatcher::empty_string_ = "";
 
 FdEventDispatcher::FdEventDispatcher() {
 }
@@ -281,7 +282,7 @@ const std::string &FdEventDispatcher::get_read_buffer(const int &fd) const {
         return target->second.get_read_buffer();
     }
     // 何かしら throw するべきかも //
-    return "";
+    return this->empty_string_;
 }
 
 void FdEventDispatcher::add_writen_buffer(const int &fd, const std::string &src) {
@@ -623,7 +624,6 @@ void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
 }
 
 std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int timeout) {
-    bool is_wait_continue;
     std::vector<std::pair<int, ConnectionEvent> > connections;
     do {
         this->CloseScheduledFd();

@@ -39,8 +39,6 @@ class FdManager {
 
 
  public:
-    bool is_eof_;
-
     FdManager(const int &fd, const FdType &type);
     ~FdManager();
 
@@ -79,6 +77,8 @@ class FdEventDispatcher {
     std::multimap<int, FdEvent> ReadBuffer();
     std::multimap<int, FdEvent> WriteBuffer();
     std::multimap<int, FdEvent> GetErrorFds();
+
+    static const std::string empty_string_;
 
     void UpdatePollEvents();
     void UpdateReadStatus(std::multimap<int, FdEvent> *read_event);
