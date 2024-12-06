@@ -150,7 +150,7 @@ std::multimap<int, FdEvent> FdEventDispatcher::ReadBuffer() {
 
                 if (stat == kReturnedZero) {
                     continue;
-                } if (stat == kDidNotRead) {
+                } else if (stat == kDidNotRead) {
                     event_type = kChanged;
                 } else {
                     event_type = kHaveReadableBuffer;
@@ -191,7 +191,7 @@ std::multimap<int, FdEvent> FdEventDispatcher::GetErrorFds() {
         const short &events = processing.events;
         const short &revents = processing.revents;
 
-        if (revents & (~ events)) {
+        if (revents & (~events)) {
             error_fds.insert(std::make_pair(fd, FdEvent(fd, kFdEventFail)));
         }
     }
@@ -547,7 +547,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kFdEventFail) {
             event = kServerEventFail;
         }
-    } 
+    }
 
     return ConnectionEvent(event, socket_fd, connection_fd, file_fd);
 }

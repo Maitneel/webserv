@@ -267,7 +267,7 @@ void Server::EventLoop() {
         try {
             dis_events = dispatcher_.Wait(2000);
         } catch (const SignalDelivered &e) {
-            // TODO
+            // TODO(maitneel): pidを見てなんとかするとかしないとか //
             // returned_child_pid = get_returned_child_pid(children_pids);
         }
 
@@ -278,7 +278,7 @@ void Server::EventLoop() {
             const ConnectionEvent &event = it->second;
 
             if (event.event == kUnknownEvent) {
-
+                // Nothing to do;
             } else if (event.event == kReadableRequest || event.event == kReadableRequestAndEndOfRead) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
                 if (ctxs_.find(event_fd) == ctxs_.end()) {
                     ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
