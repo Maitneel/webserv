@@ -102,10 +102,12 @@ class FdEventDispatcher {
 typedef enum ServerEventTypeEnum {
     kUnknownEvent,
     kReadableRequest,
+    kReadableRequestAndEndOfRead,
     kReadableFile,
-    kReadableRequestAndFile,
+    kReadableFileAndEndOfRead,
     kResponceWriteEnd_,
-    kFileWriteEnd_
+    kFileWriteEnd_,
+    kServerEventFail
 } ServerEventType;
 
 struct ConnectionEvent {
@@ -192,7 +194,7 @@ class ServerEventDispatcher {
     void UnregistorFileFd(const int &file_fd);
     void ScheduleCloseAfterWrite(const int &fd);
 
-    std::vector<std::pair<int, ConnectionEvent> > Wait(int timeout);
+    std::multimap<int, ConnectionEvent> Wait(int timeout);
 
     const std::string &get_read_buffer(const int &fd) const;
     void add_writen_buffer(const int &fd, const std::string &src);

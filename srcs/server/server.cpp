@@ -215,12 +215,15 @@ int ft_accept(int fd) {
 }
 
 
-//  雑of雑なので作り直さないといけないと思う //
-HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_path) {
+void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path) {
     std::cerr << "call cgi" << std::endl;
-    CGIResponse cgi_res(call_cgi_script(req, cgi_path));
+    ctxs_.at(connection_fd).cgi_info_ = call_cgi_script(req, cgi_path);
+    ctxs_.at(connection_fd).is_cgi_ = true;
+    const CGIInfo &cgi_info = this->ctxs_.at(connection_fd).cgi_info_;
+    dispatcher_.RegistorFileFd(cgi_info.reading_fd, connection_fd);
+    dispatcher_.RegistorFileFd(cgi_info.writing_fd, connection_fd);
+    dispatcher_.add_writen_buffer(cgi_info.writing_fd, req.entity_body_);
     std::cerr << "cgi end" << std::endl;
-    return cgi_res.make_http_response();
 }
 
 
@@ -233,11 +236,14 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
 
     HTTPResponse res;
     if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-        res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
+        CallCGI(connection_fd, req, "./cgi_script/date/date.cgi");
+        return;
     } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
-        res = create_cgi_responce(req, "./cgi_script/echo/echo.cgi");
+        CallCGI(connection_fd, req, "./cgi_script/echo/echo.cgi");
+        return;
     } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
-        res = create_cgi_responce(req, "./cgi_script/message_board/message_board.cgi");
+        CallCGI(connection_fd, req, "./cgi_script/message_board/message_board.cgi");
+        return;
     } else if (method == "GET") {
         res = this->GetHandler(socket_fd, req);
     } else {
@@ -256,46 +262,71 @@ void Server::EventLoop() {
     }
 
     while(true) {
-        std::vector<std::pair<int, ConnectionEvent> > dis_events;
+        std::multimap<int, ConnectionEvent> dis_events;
         std::vector<pid_t> returned_child_pid;
         try {
-            dis_events = dispatcher_.Wait(-1);
+            dis_events = dispatcher_.Wait(2000);
         } catch (const SignalDelivered &e) {
-            dis_events = dis_events = dispatcher_.Wait(100);
             // TODO
             // returned_child_pid = get_returned_child_pid(children_pids);
         }
 
-        std::vector<std::pair<int, ConnectionEvent> >::const_iterator it;
+        std::multimap<int, ConnectionEvent>::const_iterator it;
+
         for (it = dis_events.begin(); it != dis_events.end(); it++) {
             const int &event_fd = it->first;
             const ConnectionEvent &event = it->second;
 
-            switch (event.event)  {
-                case kReadableRequest: {
-                    if (ctxs_.find(event_fd) == ctxs_.end()) {
-                        ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
-                    }
-                    HTTPContext& ctx = ctxs_.at(event_fd);
+            if (event.event == kUnknownEvent) {
 
-                    // TODO(maitneel): 辻褄合わせをどうにかする //
-                    ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
+            } else if (event.event == kReadableRequest || event.event == kReadableRequestAndEndOfRead) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
+                if (ctxs_.find(event_fd) == ctxs_.end()) {
+                    ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
+                }
+                HTTPContext& ctx = ctxs_.at(event_fd);
 
-                    if (ctx.IsParsedHeader() == false) {
-                        if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
-                            ctx.ParseRequestHeader();
-                        }
+                // TODO(maitneel): 辻褄合わせをどうにかする //
+                ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
+                dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
+
+                if (ctx.IsParsedHeader() == false) {
+                    if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
+                        ctx.ParseRequestHeader();
                     }
-                    if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
-                        ctx.ParseRequestBody();
-                        this->routing(event_fd, it->second.socket_fd);
-                    }
-                    break;
                 }
-                default: {
-                    break;
+                if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
+                    ctx.ParseRequestBody();
+                    this->routing(event_fd, it->second.socket_fd);
                 }
+            } else if (event.event == kReadableRequestAndEndOfRead) {
+                // TODO(maitneel): Do it;
+            } else if (event.event == kReadableFile) {
+                // TODO(maitneel): Do it;
+            } else if (event.event == kReadableFileAndEndOfRead) {
+                // TODO(maitneel): Do it;
+                if (ctxs_.at(event.connection_fd).is_cgi_) {
+                    CGIInfo &cgi_info = ctxs_.at(event.connection_fd).cgi_info_;
+                    CGIResponse cgi_res(dispatcher_.get_read_buffer(event_fd));
+                    HTTPResponse res = cgi_res.make_http_response();
+                    dispatcher_.UnregistorFileFd(cgi_info.reading_fd);
+                    close(cgi_info.reading_fd);
+                    dispatcher_.UnregistorFileFd(cgi_info.writing_fd);
+                    close(cgi_info.writing_fd);
+                    dispatcher_.add_writen_buffer(event.connection_fd, res.toString());
+                }
+                // cerr << dispatcher_.get_read_buffer(it->first) << endl;
+            } else if (event.event == kResponceWriteEnd_) {
+                // TODO(maitneel): Do it;
+            } else if (event.event == kFileWriteEnd_) {
+                // TODO(maitneel): Do it;
+            } else if (event.event == kServerEventFail) {
+                // TODO(maitneel): Do it;
+                if (event_fd == event.connection_fd) {
+                    dispatcher_.UnregistorConnectionFd(event_fd);
+                } else if (event_fd == event.file_fd) {
+                    dispatcher_.UnregistorFileFd(event_fd);
+                }
+                close(event_fd);
             }
         }
     }

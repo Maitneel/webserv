@@ -19,15 +19,15 @@ SRCS		=	main.cpp \
 				${HTTP_DIR}http_validation.cpp \
 				${HTTP_DIR}getters.cpp \
 				${HTTP_DIR}http_header.cpp \
-				${UTILS_DIR}split.cpp \
 				${SERVER_DIR}poll_selector.cpp \
-				${UTILS_DIR}safe_to_integer.cpp \
-				${UTILS_DIR}string.cpp \
-				${UTILS_DIR}int_to_string.cpp \
 				${SERVER_DIR}server.cpp \
 				${SERVER_DIR}http_context.cpp \
 				${SERVER_DIR}event_dispatcher.cpp \
 				${CONFIG_DIR}config.cpp \
+				${UTILS_DIR}split.cpp \
+				${UTILS_DIR}safe_to_integer.cpp \
+				${UTILS_DIR}string.cpp \
+				${UTILS_DIR}int_to_string.cpp \
 				${CGI_DIR}cgi_server.cpp \
 				${CGI_DIR}set_meta_valiable.cpp \
 				${CGI_DIR}valid_words.cpp \

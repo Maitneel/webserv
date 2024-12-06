@@ -252,15 +252,18 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::multimap<int, FdEvent> handled_write_fd;
     std::multimap<int, FdEvent> handled_error_fd;
 
+    // TODO(maitneel): 運が悪いとsignal関係で死ぬ //
     signal(SIGCHLD, signal_handler);
     try {
         while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0 && handled_error_fd.size() == 0) {
             this->UpdatePollEvents();
             int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
             if (poll_ret < 0) {
+                signal(SIGCHLD, SIG_IGN);
                 throw std::runtime_error("poll: failed");
             }
             if (poll_ret == 0) {
+                signal(SIGCHLD, SIG_IGN);
                 return std::multimap<int, FdEvent> ();
             }
             handled_write_fd = this->WriteBuffer();
@@ -268,11 +271,11 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
             handled_error_fd = this->GetErrorFds();
         }
         this->UpdateReadStatus(&handled_readable_fd);
+        signal(SIGCHLD, SIG_IGN);
     } catch (const SignalDelivered &e) {
         signal(SIGCHLD, SIG_IGN);
         throw e;
     }
-    signal(SIGCHLD, SIG_IGN);
     return this->MergeEvents(handled_readable_fd, handled_write_fd, handled_error_fd);
 }
 
@@ -447,9 +450,11 @@ const std::set<AnyFdType> &RelatedFds::GetChildrenFd(const int &fd) {
     FdType type = this->fd_type_.find(fd)->second;
     if (type == kSocket) {
         return this->socket_children_.find(fd)->second;
-    } else {
+    } else if (type == kConnection) {
         return this->connection_childlen_.find(fd)->second;
     }
+    // TODO(maitneel): どうにかする //
+    return std::set<AnyFdType>();
 }
 
 /*
@@ -511,24 +516,39 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
     int socket_fd = this->registerd_fds_.GetPairentSocket(fd);
     int connection_fd = this->registerd_fds_.GetPairentConnection(fd);
     int file_fd = -1;
-    ServerEventType event;
+    ServerEventType event = kUnknownEvent;
 
-
-    if (fd_event == kWriteEnd) {
-        if (fd != connection_fd) {
-            file_fd = fd;
-            event = kFileWriteEnd_;
-        } else {
-            event = kResponceWriteEnd_;
-        }
-    } else {
-        if (fd != connection_fd) {
-            file_fd = fd;
-            event = kReadableFile;
-        } else {
+    if (fd == connection_fd) {
+        if (fd_event == kFdEventTypeUndefined) {
+            // Nothing to do;
+        } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableRequest;
+        } else if (fd_event == kHaveReadableBufferAndEndOfRead) {
+            event = kReadableRequestAndEndOfRead;
+        } else if (fd_event == kChanged) {
+            // Nothing to do;
+        } else if (fd_event == kWriteEnd) {
+            event = kResponceWriteEnd_;
+        } else if (fd_event == kFdEventFail) {
+            event = kServerEventFail;
         }
-    }
+    } else if (fd != connection_fd) {
+        file_fd = fd;
+        if (fd_event == kFdEventTypeUndefined) {
+            // Nothing to do;
+        } else if (fd_event == kHaveReadableBuffer) {
+            event = kReadableFile;
+        } else if (fd_event == kHaveReadableBufferAndEndOfRead) {
+            event = kReadableFileAndEndOfRead;
+        } else if (fd_event == kChanged) {
+            // Nothing to do;
+        } else if (fd_event == kWriteEnd) {
+            event = kFileWriteEnd_;
+        } else if (fd_event == kFdEventFail) {
+            event = kServerEventFail;
+        }
+    } 
+
     return ConnectionEvent(event, socket_fd, connection_fd, file_fd);
 }
 
@@ -571,6 +591,7 @@ void ServerEventDispatcher::CloseScheduledFd() {
                 this->registerd_fds_.UnregistorSocketFd(*it);
             } else if (type == kConnection) {
                 this->registerd_fds_.UnregistorConnectionFd(*it);
+                this->fd_event_dispatcher_.Unregister(*it);
             } else if (type == kFile) {
                 this->registerd_fds_.UnregistorFileFd(*it);
             }
@@ -604,27 +625,26 @@ void ServerEventDispatcher::UnregistorConnectionFd(const int &connection_fd) {
     const std::set<int> children = this->registerd_fds_.GetChildrenFd(connection_fd);
     for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
         this->fd_event_dispatcher_.Unregister(*it);
+        this->registerd_fds_.UnregistorFileFd(*it);
     }
     this->fd_event_dispatcher_.Unregister(connection_fd);
+    this->registerd_fds_.UnregistorConnectionFd(connection_fd);
 }
 
 void ServerEventDispatcher::UnregistorFileFd(const int &file_fd) {
     if (this->registerd_fds_.GetType(file_fd) != kFile) {
         return;
     }
-    std::set<int> children = this->registerd_fds_.GetChildrenFd(file_fd);
-    for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
-        this->fd_event_dispatcher_.Unregister(*it);
-    }
     this->fd_event_dispatcher_.Unregister(file_fd);
+    this->registerd_fds_.UnregistorFileFd(file_fd);
 }
 
 void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
     this->scheduled_close_.insert(fd);
 }
 
-std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int timeout) {
-    std::vector<std::pair<int, ConnectionEvent> > connections;
+std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
+    std::multimap<int, ConnectionEvent> connections;
     do {
         this->CloseScheduledFd();
         std::multimap<int, FdEvent> fd_events = this->fd_event_dispatcher_.Wait(timeout);
@@ -634,20 +654,21 @@ std::vector<std::pair<int, ConnectionEvent> > ServerEventDispatcher::Wait(int ti
         for (std::multimap<int, FdEvent>::iterator it = fd_events.begin(); it != fd_events.end(); it++) {
             const int &fd = it->second.fd_;
             const FdEventType &event = it->second.event_;
-            if (event == kHaveReadableBuffer) {
-                connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBuffer)));
+            if (event == kFdEventTypeUndefined) {
+                // Nothing to do;
+            } else if (event == kHaveReadableBuffer) {
+                connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBuffer)));
+            } else if (event == kHaveReadableBufferAndEndOfRead) {
+                connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBufferAndEndOfRead)));
             } else if (event == kChanged) {
                 this->RegistorNewConnection(fd);
             } else if (event == kWriteEnd) {
                 if (this->scheduled_close_.find(fd) == this->scheduled_close_.end()) {
-                    connections.push_back(std::make_pair(fd, this->CreateConnectionEvent(fd, kWriteEnd)));
+                    connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kWriteEnd)));
                 }
+            } else if (event == kFdEventFail) {
+                connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kFdEventFail)));
             }
-
-            // TODO(maitneel):  なんでunregustirしてるか全然わかんないけど、なんかしてるから要検証 //
-            // if (fd_buffer != NULL && fd_buffer->is_eof_) {
-            //    this->Unregistor(fd);
-            // }
         }
     } while (connections.size() == 0);
     return connections;

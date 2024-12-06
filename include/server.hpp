@@ -33,6 +33,7 @@ class Server {
     std::map<int, HTTPContext> ctxs_;
 
     void routing(const int &connection_fd, const int &socket_fd);
+    void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path);
 
  public:
     explicit Server(std::vector<ServerConfig> confs);
