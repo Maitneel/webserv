@@ -16,11 +16,8 @@
 #define PIPE_READ_FD 0
 #define PIPE_WRITE_FD 1
 
-#define SOCKET_SERVER_WRITE_FD 0
-#define SOCKET_SERVER_READ_FD 1
-
-#define SOCKET_SCRIPT_WRITE_FD 1
-#define SOCKET_SCRIPT_READ_FD 0
+#define UNIX_SOCKET_SERVER 0
+#define UNIX_SOCKET_SCRIPT 1
 
 #define BUFFER_SIZE 1024
 
@@ -37,9 +34,9 @@ char **create_argv(const std::string &cgi_script_path) {
     return argv;
 }
 
-void child_process(const HTTPRequest &request, const std::string &cgi_script_path, const int to_script_pipe_fd, const int to_server_pipe_fd) {
-    dup2(to_script_pipe_fd, STDIN_FILENO);
-    dup2(to_server_pipe_fd, STDOUT_FILENO);
+void child_process(const HTTPRequest &request, const std::string &cgi_script_path, const int &unix_socet_fd) {
+    dup2(unix_socet_fd, STDIN_FILENO);
+    dup2(unix_socet_fd, STDOUT_FILENO);
     char **argv = create_argv(cgi_script_path);
     char **env = make_env_array(request);
     execve(cgi_script_path.c_str(), argv, env);
@@ -85,12 +82,13 @@ CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_scrip
 
     const pid_t child_pid = fork();
     if (child_pid == 0) {
-        child_process(request, cgi_script_path, sv[SOCKET_SCRIPT_READ_FD], sv[SOCKET_SCRIPT_WRITE_FD]);
+        close(sv[UNIX_SOCKET_SERVER]);
+        child_process(request, cgi_script_path, sv[UNIX_SOCKET_SCRIPT]);
     }
     // TODO(maitneel): ここどっちがどっちかよくわかんない //
     const int to_script = sv[1];
     const int from_script = sv[0];
     fcntl(from_script, F_SETFL, O_NONBLOCK);
-
-    return CGIInfo(to_script, from_script, child_pid);
+    close(sv[UNIX_SOCKET_SCRIPT]);
+    return CGIInfo(sv[UNIX_SOCKET_SERVER], child_pid);
 }

@@ -6,14 +6,13 @@
 
 struct CGIInfo {
  public:
-    int writing_fd;
-    int reading_fd;
+    int fd;
     pid_t pid;
     bool is_proccess_end;
 
-    CGIInfo() : writing_fd(-1), reading_fd(-1), pid(0), is_proccess_end(false) {}
-    CGIInfo(const int &writing_fd_arg, const int &reading_fd_arg,  const pid_t &pid_arg) : writing_fd(writing_fd_arg), reading_fd(reading_fd_arg), pid(pid_arg), is_proccess_end(false) {}
-    CGIInfo(const CGIInfo & src) : writing_fd(src.writing_fd), reading_fd(src.reading_fd), pid(src.pid) {}
+    CGIInfo() :fd(-1), pid(0), is_proccess_end(false) {}
+    CGIInfo(const int &fd_arg,  const pid_t &pid_arg) : fd(fd_arg), pid(pid_arg), is_proccess_end(false) {}
+    CGIInfo(const CGIInfo & src) : fd(src.fd), pid(src.pid) {}
 };
 
 CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path);

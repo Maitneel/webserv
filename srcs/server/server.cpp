@@ -222,11 +222,9 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     ctxs_.at(connection_fd).cgi_info_ = call_cgi_script(req, cgi_path);
     ctxs_.at(connection_fd).is_cgi_ = true;
     const CGIInfo &cgi_info = this->ctxs_.at(connection_fd).cgi_info_;
-    dispatcher_.RegistorFileFd(cgi_info.reading_fd, connection_fd);
-    dispatcher_.RegistorFileFd(cgi_info.writing_fd, connection_fd);
-    dispatcher_.add_writen_buffer(cgi_info.writing_fd, req.entity_body_);
-    debug(cgi_info.reading_fd);
-    debug(cgi_info.writing_fd);
+    dispatcher_.RegistorFileFd(cgi_info.fd, connection_fd);
+    dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    debug(cgi_info.fd);
     std::cerr << "cgi end" << std::endl;
 }
 
@@ -268,14 +266,14 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
 
         int temp_child_exit_code;
         if (current.is_cgi_ && 0 < waitpid(current.cgi_info_.pid, &temp_child_exit_code, WNOHANG)) {
-            if (0 <= cgi_info.writing_fd && events->find(cgi_info.writing_fd) == events->end()) {
+            if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
                 // TODO(maitneel): check これつけるべきだと思うんだけど、なぜか動かなくなるからコメントアウト　//
-                // cerr << "inserting kFail   : " << cgi_info.writing_fd << endl;
-                // events->insert(std::make_pair(cgi_info.writing_fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.writing_fd)));
+                // cerr << "inserting kFail   : " << cgi_info.fd << endl;
+                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
             }
-            if (0 <= cgi_info.reading_fd && events->find(cgi_info.reading_fd) == events->end()) {
-                cerr << "inserting readable: " <<  cgi_info.reading_fd << endl;
-                events->insert(std::make_pair(cgi_info.reading_fd, ConnectionEvent(kReadableFileAndEndOfRead, -1, current.GetConnectionFD(),cgi_info.writing_fd)));
+            if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
+                cerr << "inserting readable: " <<  cgi_info.fd << endl;
+                events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kReadableFileAndEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
             }
         }
     }
@@ -288,7 +286,7 @@ void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::st
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 
     // プロセス終了時の処理で再度レスポンスが生成されないようにするための処理 //
-    this->ctxs_.at(connection_fd).cgi_info_.reading_fd = -1;
+    this->ctxs_.at(connection_fd).cgi_info_.fd = -1;
 }
 
 void Server::EventLoop() {
@@ -345,6 +343,7 @@ void Server::EventLoop() {
                     if (ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                         this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                         dispatcher_.UnregistorFileFd(event_fd);
+                        cerr << "closing: " << event_fd << endl;
                         close(event_fd);
                     }
                 }
@@ -354,6 +353,7 @@ void Server::EventLoop() {
                 // fdのclose忘れが出てきたらここが原因 //
                 ctxs_.erase(event.connection_fd);
                 dispatcher_.UnregistorConnectionFd(event_fd);
+                cerr << "closing: " << event_fd << endl;
                 close(event_fd);
             } else if (event.event == kFileWriteEnd_) {
                 // TODO(maitneel): Do it;
@@ -369,6 +369,7 @@ void Server::EventLoop() {
                     }
                     dispatcher_.UnregistorFileFd(event_fd);
                 }
+                cerr << "closing: " << event_fd << endl;
                 close(event_fd);
             }
         }
