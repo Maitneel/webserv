@@ -54,7 +54,7 @@ class FdManager {
 typedef enum FdEventTypeEnum {
     kFdEventTypeUndefined,
     kHaveReadableBuffer,
-    kHaveReadableBufferAndEndOfRead,
+    kEOF,
     kChanged,
     kWriteEnd,
     kFdEventFail
@@ -81,7 +81,6 @@ class FdEventDispatcher {
     static const std::string empty_string_;
 
     void UpdatePollEvents();
-    void UpdateReadStatus(std::multimap<int, FdEvent> *read_event);
     std::multimap<int, FdEvent> MergeEvents(const std::multimap<int, FdEvent> &read_event, const std::multimap<int, FdEvent> &write_events, const std::multimap<int, FdEvent> &error_events);
 
  public:
@@ -102,9 +101,9 @@ class FdEventDispatcher {
 typedef enum ServerEventTypeEnum {
     kUnknownEvent,                 // 0
     kReadableRequest,              // 1
-    kReadableRequestAndEndOfRead,  // 2
+    kReqeustEndOfRead,             // 2
     kReadableFile,                 // 3
-    kReadableFileAndEndOfRead,     // 4
+    kFileEndOfRead,                // 4
     kResponceWriteEnd_,            // 5
     kFileWriteEnd_,                // 6
     kChildProcessChanged,          // 7

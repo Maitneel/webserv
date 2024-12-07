@@ -179,7 +179,8 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
-HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
+// TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
+int Server::GetHandler(int sock, const HTTPRequest& req) {
     ServerConfig conf = this->GetConfigByFd(sock);
     std::string path = conf.document_root + req.get_request_uri();
 
@@ -191,16 +192,14 @@ HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        return HTTPResponse(HTTPResponse::kNotFound, "text/html", "Not Found");
+        return -2;
     }
 
-    std::string content;
-    try {
-        content = GetContent(path);
-    } catch (std::invalid_argument& e) {
-        return HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+    int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK));
+    if (0 <= fd) {
+        return fd;
     }
-    return HTTPResponse(HTTPResponse::kOK, GetContentType(path), content);
+    return -1;
 }
 
 int ft_accept(int fd) {
@@ -219,9 +218,10 @@ int ft_accept(int fd) {
 
 void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path) {
     std::cerr << "call cgi" << std::endl;
-    ctxs_.at(connection_fd).cgi_info_ = call_cgi_script(req, cgi_path);
-    ctxs_.at(connection_fd).is_cgi_ = true;
-    const CGIInfo &cgi_info = this->ctxs_.at(connection_fd).cgi_info_;
+    HTTPContext &context = ctxs_.at(connection_fd);
+    context.cgi_info_ = call_cgi_script(req, cgi_path);
+    context.is_cgi_ = true;
+    const CGIInfo &cgi_info = context.cgi_info_;
     dispatcher_.RegistorFileFd(cgi_info.fd, connection_fd);
     dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
     debug(cgi_info.fd);
@@ -247,7 +247,15 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         CallCGI(connection_fd, req, "./cgi_script/message_board/message_board.cgi");
         return;
     } else if (method == "GET") {
-        res = this->GetHandler(socket_fd, req);
+        int fd = this->GetHandler(socket_fd, req);
+        if (fd == -1) {
+            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+        } else if (fd == -2) {
+            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+        } else if (0 <= fd) {
+            dispatcher_.RegistorFileFd(fd, connection_fd);
+            return;
+        }
     } else {
         res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
     }
@@ -273,7 +281,7 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
             }
             if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
                 cerr << "inserting readable: " <<  cgi_info.fd << endl;
-                events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kReadableFileAndEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
+                events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kFileEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
             }
         }
     }
@@ -287,6 +295,12 @@ void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::st
 
     // プロセス終了時の処理で再度レスポンスが生成されないようにするための処理 //
     this->ctxs_.at(connection_fd).cgi_info_.fd = -1;
+}
+
+void Server::SendResponceFromFile(const int &connection_fd, const std::string &file_content) {
+    // TODO(maitneel): content-typeをどうにかする //
+    HTTPResponse res(HTTPResponse::kOK, "/", file_content);
+    dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
 void Server::EventLoop() {
@@ -314,7 +328,7 @@ void Server::EventLoop() {
             }
             if (event.event == kUnknownEvent) {
                 // Nothing to do;
-            } else if (event.event == kReadableRequest || event.event == kReadableRequestAndEndOfRead) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
+            } else if (event.event == kReadableRequest || event.event == kReqeustEndOfRead) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
                 if (ctxs_.find(event_fd) == ctxs_.end()) {
                     ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
                 }
@@ -333,11 +347,11 @@ void Server::EventLoop() {
                     ctx.ParseRequestBody();
                     this->routing(event_fd, it->second.socket_fd);
                 }
-            } else if (event.event == kReadableRequestAndEndOfRead) {
-                // TODO(maitneel): Do it;
+            // } else if (event.event == kReadableRequestAndEndOfRead) {
+            //     // TODO(maitneel): Do it;
             } else if (event.event == kReadableFile) {
                 // TODO(maitneel): Do it;
-            } else if (event.event == kReadableFileAndEndOfRead) {
+            } else if (event.event == kFileEndOfRead) {
                 // TODO(maitneel): Do it;
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                     if (ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
@@ -346,8 +360,25 @@ void Server::EventLoop() {
                         cerr << "closing: " << event_fd << endl;
                         close(event_fd);
                     }
+                } else if (true) {
+                    this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregistorFileFd(event_fd);
+                    close(event_fd);
                 }
                 // cerr << dispatcher_.get_read_buffer(it->first) << endl;
+            } else if (event.event == kFileEndOfRead) {
+                if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
+                    if (ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
+                        this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                        dispatcher_.UnregistorFileFd(event_fd);
+                        cerr << "closing: " << event_fd << endl;
+                        close(event_fd);
+                    }
+                } else if (true) {
+                    this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregistorFileFd(event_fd);
+                    close(event_fd);
+                }
             } else if (event.event == kResponceWriteEnd_) {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //

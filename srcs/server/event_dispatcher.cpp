@@ -11,15 +11,15 @@
 #include <utility>
 #include <algorithm>
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 #include "event_dispatcher.hpp"
 
 #include "poll_selector.hpp"
 
 #define BUFFER_SIZE 1024
-
-#include <iostream>
-using std::cerr;
-using std::endl;
 
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
@@ -155,7 +155,7 @@ std::multimap<int, FdEvent> FdEventDispatcher::ReadBuffer() {
                 FdEventType event_type;
 
                 if (stat == kReturnedZero) {
-                    continue;
+                    event_type = kEOF;
                 } else if (stat == kDidNotRead) {
                     event_type = kChanged;
                 } else {
@@ -219,22 +219,6 @@ void FdEventDispatcher::UpdatePollEvents() {
     }
 }
 
-void FdEventDispatcher::UpdateReadStatus(std::multimap<int, FdEvent> *read_event) {
-    std::vector<pollfd> before_proc = this->poll_fds_;
-    poll(this->poll_fds_.data(), this->poll_fds_.size(), 0);
-    for (size_t i = 0; i < this->poll_fds_.size(); i++) {
-        if (!(this->poll_fds_[i].revents & POLLIN) && (before_proc[i].revents & POLLIN)) {
-            std::multimap<int, FdEvent>::iterator it = read_event->find(this->poll_fds_[i].fd);
-            while (it->first == this->poll_fds_[i].fd) {
-                if (it->second.event_ == kHaveReadableBuffer) {
-                    it->second.event_ = kHaveReadableBufferAndEndOfRead;
-                }
-                it++;
-            }
-        }
-    }
-}
-
 std::multimap<int, FdEvent> FdEventDispatcher::MergeEvents(const std::multimap<int, FdEvent> &read_event, const std::multimap<int, FdEvent> &write_events, const std::multimap<int, FdEvent> &error_events) {
     std::multimap<int, FdEvent> events(read_event);
 
@@ -285,7 +269,6 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
             handled_readable_fd = this->ReadBuffer();
             handled_error_fd = this->GetErrorFds();
         }
-        this->UpdateReadStatus(&handled_readable_fd);
         // signal(SIGCHLD, SIG_IGN);
     // } catch (const SignalDelivered &e) {
         // signal(SIGCHLD, SIG_IGN);
@@ -538,8 +521,9 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
             // Nothing to do;
         } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableRequest;
-        } else if (fd_event == kHaveReadableBufferAndEndOfRead) {
-            event = kReadableRequestAndEndOfRead;
+        } else if (fd_event == kEOF) {
+            // TODO(maitneel): 上のと分離する方がいいかも //
+            event == kReqeustEndOfRead;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
@@ -553,8 +537,8 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
             // Nothing to do;
         } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableFile;
-        } else if (fd_event == kHaveReadableBufferAndEndOfRead) {
-            event = kReadableFileAndEndOfRead;
+        } else if (fd_event == kEOF) {
+            event = kFileEndOfRead;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
@@ -680,8 +664,8 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
                 // Nothing to do;
             } else if (event == kHaveReadableBuffer) {
                 connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBuffer)));
-            } else if (event == kHaveReadableBufferAndEndOfRead) {
-                connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kHaveReadableBufferAndEndOfRead)));
+            } else if (event == kEOF) {
+                connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kEOF)));
             } else if (event == kChanged) {
                 this->RegistorNewConnection(fd);
             } else if (event == kWriteEnd) {

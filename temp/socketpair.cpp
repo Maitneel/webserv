@@ -7,7 +7,10 @@ using namespace std;
 
 void pairent(int fd) {
     char buf[10];
+    sleep(1);
+    cerr << "sleep end" << endl;
     write(fd, "fp_sv0", 6);
+    cerr << "write end" << endl;
     buf[read(fd, buf, 10)] = 0;
     cout << "pairent: " << buf << endl;
 }
