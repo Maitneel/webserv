@@ -17,6 +17,10 @@
 
 #define BUFFER_SIZE 1024
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
 
@@ -26,8 +30,10 @@ int ft_accept(int fd);
 //                                                                          //
 // ------------------------------------------------------------------------ //
 
+static int recived_signal = 0;
 static void signal_handler(int sigid) {
-    throw SignalDelivered(sigid);
+    cerr << "recive signal" << endl;
+    recived_signal = sigid;
 }
 
 FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), write_status_(kNoBuffer) {
@@ -253,17 +259,26 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::multimap<int, FdEvent> handled_error_fd;
 
     // TODO(maitneel): 運が悪いとsignal関係で死ぬ //
+    // TODO(maitneel): どこで設定するべきか考える //
     signal(SIGCHLD, signal_handler);
-    try {
+    // try {
+    if (recived_signal != 0) {
+        recived_signal = 0;
+        throw SignalDelivered(SIGCHLD);
+    }
         while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0 && handled_error_fd.size() == 0) {
             this->UpdatePollEvents();
             int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
+            if (recived_signal != 0) {
+                recived_signal = 0;
+                throw SignalDelivered(SIGCHLD);
+            }
             if (poll_ret < 0) {
-                signal(SIGCHLD, SIG_IGN);
+                // signal(SIGCHLD, SIG_IGN);
                 throw std::runtime_error("poll: failed");
             }
             if (poll_ret == 0) {
-                signal(SIGCHLD, SIG_IGN);
+                // signal(SIGCHLD, SIG_IGN);
                 return std::multimap<int, FdEvent> ();
             }
             handled_write_fd = this->WriteBuffer();
@@ -271,11 +286,11 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
             handled_error_fd = this->GetErrorFds();
         }
         this->UpdateReadStatus(&handled_readable_fd);
-        signal(SIGCHLD, SIG_IGN);
-    } catch (const SignalDelivered &e) {
-        signal(SIGCHLD, SIG_IGN);
-        throw e;
-    }
+        // signal(SIGCHLD, SIG_IGN);
+    // } catch (const SignalDelivered &e) {
+        // signal(SIGCHLD, SIG_IGN);
+    //     throw e;
+    // }
     return this->MergeEvents(handled_readable_fd, handled_write_fd, handled_error_fd);
 }
 
@@ -645,9 +660,16 @@ void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
 
 std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
     std::multimap<int, ConnectionEvent> connections;
+    bool is_signal_recived = false;
     do {
         this->CloseScheduledFd();
-        std::multimap<int, FdEvent> fd_events = this->fd_event_dispatcher_.Wait(timeout);
+        std::multimap<int, FdEvent> fd_events;
+        try {
+            fd_events = this->fd_event_dispatcher_.Wait(timeout);
+        } catch (const SignalDelivered &e) {
+            is_signal_recived = true;
+            continue;
+        }
         if (fd_events.size() == 0) {
             return connections;
         }
@@ -671,6 +693,9 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
             }
         }
     } while (connections.size() == 0);
+    if (is_signal_recived) {
+        connections.insert(std::make_pair(-1, ConnectionEvent(kChildProcessChanged, -1, -1, -1)));
+    }
     return connections;
 }
 

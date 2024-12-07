@@ -100,14 +100,15 @@ class FdEventDispatcher {
 
 // TODO(Maitneel): 命名規則の確認
 typedef enum ServerEventTypeEnum {
-    kUnknownEvent,
-    kReadableRequest,
-    kReadableRequestAndEndOfRead,
-    kReadableFile,
-    kReadableFileAndEndOfRead,
-    kResponceWriteEnd_,
-    kFileWriteEnd_,
-    kServerEventFail
+    kUnknownEvent,                 // 0
+    kReadableRequest,              // 1
+    kReadableRequestAndEndOfRead,  // 2
+    kReadableFile,                 // 3
+    kReadableFileAndEndOfRead,     // 4
+    kResponceWriteEnd_,            // 5
+    kFileWriteEnd_,                // 6
+    kChildProcessChanged,          // 7
+    kServerEventFail               // 8
 } ServerEventType;
 
 struct ConnectionEvent {

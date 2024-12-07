@@ -87,8 +87,9 @@ CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_scrip
     if (child_pid == 0) {
         child_process(request, cgi_script_path, sv[SOCKET_SCRIPT_READ_FD], sv[SOCKET_SCRIPT_WRITE_FD]);
     }
-    const int to_script = sv[SOCKET_SERVER_WRITE_FD];
-    const int from_script = sv[SOCKET_SERVER_READ_FD];
+    // TODO(maitneel): ここどっちがどっちかよくわかんない //
+    const int to_script = sv[1];
+    const int from_script = sv[0];
     fcntl(from_script, F_SETFL, O_NONBLOCK);
 
     return CGIInfo(to_script, from_script, child_pid);

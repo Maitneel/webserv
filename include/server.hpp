@@ -34,6 +34,8 @@ class Server {
 
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path);
+    void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
+    void SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string);
 
  public:
     explicit Server(std::vector<ServerConfig> confs);
