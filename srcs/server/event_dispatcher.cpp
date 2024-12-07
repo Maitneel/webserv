@@ -642,6 +642,20 @@ void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
     this->scheduled_close_.insert(fd);
 }
 
+void ServerEventDispatcher::UnregistorWithClose(const int &fd) {
+    FdType type = registerd_fds_.GetType(fd);
+
+    if (type == kUnknownFd) {
+        return;
+    } else if (type == kConnection) {
+        // TODO(maitneel): Bug: 多分支配下のfdがcloseできていない　(F5 attack　すると使用しているfdが増加していく現象が確認できる)
+        this->UnregistorConnectionFd(fd);
+    } else if (type == kFile) {
+        this->UnregistorFileFd(fd);
+    }
+    close(fd);
+}
+
 std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
     std::multimap<int, ConnectionEvent> connections;
     bool is_signal_recived = false;

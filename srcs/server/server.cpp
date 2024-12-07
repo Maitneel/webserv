@@ -347,61 +347,42 @@ void Server::EventLoop() {
                     ctx.ParseRequestBody();
                     this->routing(event_fd, it->second.socket_fd);
                 }
-            // } else if (event.event == kReadableRequestAndEndOfRead) {
-            //     // TODO(maitneel): Do it;
             } else if (event.event == kReadableFile) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kFileEndOfRead) {
                 // TODO(maitneel): Do it;
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                    if (ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                        this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                        dispatcher_.UnregistorFileFd(event_fd);
-                        cerr << "closing: " << event_fd << endl;
-                        close(event_fd);
-                    }
-                } else if (true) {
+                    this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregistorWithClose(event_fd);
+                } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregistorFileFd(event_fd);
-                    close(event_fd);
+                    dispatcher_.UnregistorWithClose(event_fd);
                 }
-                // cerr << dispatcher_.get_read_buffer(it->first) << endl;
             } else if (event.event == kFileEndOfRead) {
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                    if (ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                        this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                        dispatcher_.UnregistorFileFd(event_fd);
-                        cerr << "closing: " << event_fd << endl;
-                        close(event_fd);
-                    }
-                } else if (true) {
+                    this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregistorWithClose(event_fd);
+                } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregistorFileFd(event_fd);
-                    close(event_fd);
+                    dispatcher_.UnregistorWithClose(event_fd);
                 }
             } else if (event.event == kResponceWriteEnd_) {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //
                 ctxs_.erase(event.connection_fd);
-                dispatcher_.UnregistorConnectionFd(event_fd);
-                cerr << "closing: " << event_fd << endl;
-                close(event_fd);
+                dispatcher_.UnregistorWithClose(event_fd);
             } else if (event.event == kFileWriteEnd_) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
             } else if (event.event == kServerEventFail) {
                 // TODO(maitneel): Do it;
-                if (event_fd == event.connection_fd) {
-                    dispatcher_.UnregistorConnectionFd(event_fd);
-                } else if (event_fd == event.file_fd) {
+                if (event_fd == event.file_fd) {
                     if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {
                         this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
-                    dispatcher_.UnregistorFileFd(event_fd);
                 }
-                cerr << "closing: " << event_fd << endl;
-                close(event_fd);
+                dispatcher_.UnregistorWithClose(event_fd);
             }
         }
     }

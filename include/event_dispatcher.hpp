@@ -192,7 +192,9 @@ class ServerEventDispatcher {
     void RegistorFileFd(const int &file_fd, const int &connection_fd);
     void UnregistorConnectionFd(const int &connection_fd);
     void UnregistorFileFd(const int &file_fd);
+    // Not Recomended (終了したということを通知する手段があるので、通知された側が処理するべきだと考える) //
     void ScheduleCloseAfterWrite(const int &fd);
+    void UnregistorWithClose(const int &fd);
 
     std::multimap<int, ConnectionEvent> Wait(int timeout);
 
