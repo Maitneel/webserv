@@ -31,7 +31,8 @@ int ft_accept(int fd);
 //                                                                          //
 // ------------------------------------------------------------------------ //
 
-static int recived_signal = 0;
+// C++98においてatomicな型は存在しないっぽい(Cのatomic型もC11からしかなさそう)のでこの辺で妥協したい //
+static volatile int recived_signal = 0;
 static void signal_handler(int sigid) {
     cerr << "recive signal" << endl;
     recived_signal = sigid;
