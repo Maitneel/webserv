@@ -5,6 +5,7 @@
 #include <utility>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "form_data.hpp"
 
@@ -19,15 +20,16 @@ using std::endl;
 #define PARAMETER_DALIMITER " :\0x09"
 #define BUFFER_SIZE 1024
 
-static std::string get_cin_buffer(const size_t &length) {
+static std::string get_cin_buffer(int length) {
     std::string stdin_date;
     char buffer[BUFFER_SIZE];
-    while (stdin_date.length() < length) {
-        int read_ret = read(STDIN_FILENO, buffer, BUFFER_SIZE);
+    while (0 < length) {
+        int read_ret = read(STDIN_FILENO, buffer, std::min(length, BUFFER_SIZE));
         if (read_ret < 0) {
             throw std::runtime_error("read error");
         }
         stdin_date.append(buffer, read_ret);
+        length -= read_ret;
     }
     return stdin_date;
 }
@@ -150,7 +152,7 @@ std::string replace_crlf_to_lf(const std::string &str) {
     return replaced;
 }
 
-FormDataBody::FormDataBody(const size_t &length) : buffer_(get_cin_buffer(length)) {
+FormDataBody::FormDataBody(const int &length) : buffer_(get_cin_buffer(length)) {
     const std::string boundary = "--" + get_boundary();
     std::vector<std::string> splited_by_boundary = split_with_erase_delimiter(this->buffer_, boundary);
 
