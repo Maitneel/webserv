@@ -276,13 +276,9 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
         int temp_child_exit_code;
         if (current.is_cgi_ && 0 < waitpid(current.cgi_info_.pid, &temp_child_exit_code, WNOHANG)) {
             if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
-                // TODO(maitneel): check これつけるべきだと思うんだけど、なぜか動かなくなるからコメントアウト　//
-                // cerr << "inserting kFail   : " << cgi_info.fd << endl;
-                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
-            }
-            if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
-                cerr << "inserting readable: " <<  cgi_info.fd << endl;
+                // どっちのイベントがいいか正直微妙 //
                 events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kFileEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
+                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
             }
         }
     }
@@ -291,7 +287,7 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
 void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string) {
     CGIResponse cgi_res(cgi_responce_string);
     HTTPResponse res = cgi_res.make_http_response();
-    sleep(1);
+
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 
     // プロセス終了時の処理で再度レスポンスが生成されないようにするための処理 //
