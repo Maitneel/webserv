@@ -113,7 +113,7 @@ int create_inet_socket(int port) {
             continue;
         }
         freeaddrinfo(res);
-        if (fcntl(sock, F_SETFL, O_NONBLOCK)) {
+        if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {
             std::runtime_error("fcntl: failed");
         }
         return sock;
