@@ -196,7 +196,7 @@ int Server::GetHandler(int sock, const HTTPRequest& req) {
         return -2;
     }
 
-    int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK));
+    int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
     if (0 <= fd) {
         return fd;
     }
@@ -210,7 +210,7 @@ int ft_accept(int fd) {
     if (sock < 0) {
         throw std::runtime_error("accept: failed");
     }
-    if (fcntl(sock, F_SETFL, O_NONBLOCK)) {
+    if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {
         std::runtime_error("fcntl: failed");
     }
     return sock;

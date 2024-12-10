@@ -89,7 +89,7 @@ CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_scrip
     // TODO(maitneel): ここどっちがどっちかよくわかんない //
     const int to_script = sv[1];
     const int from_script = sv[0];
-    fcntl(from_script, F_SETFL, O_NONBLOCK);
+    fcntl(from_script, F_SETFL, O_NONBLOCK | FD_CLOEXEC);
     close(sv[UNIX_SOCKET_SCRIPT]);
     return CGIInfo(sv[UNIX_SOCKET_SERVER], child_pid);
 }
