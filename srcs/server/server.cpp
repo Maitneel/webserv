@@ -325,7 +325,7 @@ void Server::EventLoop() {
             }
             if (event.event == kUnknownEvent) {
                 // Nothing to do;
-            } else if (event.event == kReadableRequest || event.event == kReqeustEndOfRead) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
+            } else if (event.event == kReadableRequest || event.event == kRequestEndOfReadad) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
                 if (ctxs_.find(event_fd) == ctxs_.end()) {
                     ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
                 }

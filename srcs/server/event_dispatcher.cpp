@@ -232,7 +232,8 @@ std::multimap<int, FdEvent> FdEventDispatcher::MergeEvents(const std::multimap<i
         if (read_event.find(fd) == read_event.end() && write_events.find(fd) == write_events.end()) {
             events.insert(*it);
         }
-    }return events;
+    }
+    return events;
 }
 
 std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
@@ -526,7 +527,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
             event = kReadableRequest;
         } else if (fd_event == kEOF) {
             // TODO(maitneel): 上のと分離する方がいいかも //
-            event == kReqeustEndOfRead;
+            event = kRequestEndOfReadad;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
