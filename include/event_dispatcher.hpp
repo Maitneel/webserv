@@ -186,6 +186,7 @@ class ServerEventDispatcher {
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
     bool DoseNotAllChildrenHaveBuffer(const std::set<int> &children);
     void CloseScheduledFd();
+    void MergeDuplicateFd(std::multimap<int, FdEvent> *events);
 
  public:
     ServerEventDispatcher();

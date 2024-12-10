@@ -374,7 +374,9 @@ void Server::EventLoop() {
                 // Nothing to do (processed)
             } else if (event.event == kServerEventFail) {
                 // TODO(maitneel): Do it;
-                if (event_fd == event.file_fd) {
+                if (event_fd == event.connection_fd) {
+                    ctxs_.erase(event_fd);
+                } else if (event_fd == event.file_fd) {
                     if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {
                         this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
