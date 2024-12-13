@@ -158,9 +158,9 @@ class RelatedFds {
     const std::set<AnyFdType> &GetSocketChildren(const SocketFdType &fd);
     const std::set<FileFdType> &GetConnectionChildren(const ConnectionFdType &fd);
 
-    void RegistorSocketFd(const SocketFdType &socket_fd);
-    void RegistorConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd);
-    void RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd);
+    void RegisterSocketFd(const SocketFdType &socket_fd);
+    void RegisterConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd);
+    void RegisterFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd);
 
     void UnregisterSocketFd(const SocketFdType &socket_fd);
     void UnregisterConnectionFd(const ConnectionFdType &connection_fd);
@@ -182,7 +182,7 @@ class ServerEventDispatcher {
     RelatedFds registerd_fds_;
     std::set<int> scheduled_close_;
 
-    void RegistorNewConnection(const int &socket_fd);
+    void RegisterNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
     bool DoseNotAllChildrenHaveBuffer(const std::set<int> &children);
     void CloseScheduledFd();
@@ -191,8 +191,8 @@ class ServerEventDispatcher {
     ServerEventDispatcher();
     ~ServerEventDispatcher();
 
-    void RegistorSocketFd(const int &socket_fd);
-    void RegistorFileFd(const int &file_fd, const int &connection_fd);
+    void RegisterSocketFd(const int &socket_fd);
+    void RegisterFileFd(const int &file_fd, const int &connection_fd);
     void UnregisterConnectionFd(const int &connection_fd);
     void UnregisterFileFd(const int &file_fd);
     // Not Recomended (終了したということを通知する手段があるので、通知された側が処理するべきだと考える) //

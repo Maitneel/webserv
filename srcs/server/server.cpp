@@ -223,7 +223,7 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     context.cgi_info_ = call_cgi_script(req, cgi_path);
     context.is_cgi_ = true;
     const CGIInfo &cgi_info = context.cgi_info_;
-    dispatcher_.RegistorFileFd(cgi_info.fd, connection_fd);
+    dispatcher_.RegisterFileFd(cgi_info.fd, connection_fd);
     dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
     debug(cgi_info.fd);
     std::cerr << "cgi end" << std::endl;
@@ -254,7 +254,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         } else if (fd == -2) {
             res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
         } else if (0 <= fd) {
-            dispatcher_.RegistorFileFd(fd, connection_fd);
+            dispatcher_.RegisterFileFd(fd, connection_fd);
             return;
         }
     } else {
@@ -302,7 +302,7 @@ void Server::SendResponceFromFile(const int &connection_fd, const std::string &f
 
 void Server::EventLoop() {
     for (size_t i = 0; i < sockets_.size(); i++) {
-        dispatcher_.RegistorSocketFd(sockets_[i].GetSocketFd());
+        dispatcher_.RegisterSocketFd(sockets_[i].GetSocketFd());
     }
 
     while(true) {

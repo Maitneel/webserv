@@ -363,14 +363,14 @@ const std::set<FileFdType> &RelatedFds::GetConnectionChildren(const ConnectionFd
     return this->connection_childlen_.find(fd)->second;
 }
 
-void RelatedFds::RegistorSocketFd(const SocketFdType &socket_fd) {
+void RelatedFds::RegisterSocketFd(const SocketFdType &socket_fd) {
     this->registerd_fds_.insert(socket_fd);
     this->socket_fds_.insert(socket_fd);
     this->fd_type_.insert(std::make_pair(socket_fd, kSocket));
     this->socket_children_.insert(std::make_pair(socket_fd, std::set<AnyFdType>()));
 }
 
-void RelatedFds::RegistorConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd) {
+void RelatedFds::RegisterConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd) {
     this->registerd_fds_.insert(connection_fd);
     this->connection_fds_.insert(connection_fd);
     this->fd_type_.insert(std::make_pair(connection_fd, kConnection));
@@ -379,7 +379,7 @@ void RelatedFds::RegistorConnectionFd(const ConnectionFdType &connection_fd, con
     this->connection_childlen_.insert(std::make_pair(connection_fd, std::set<FileFdType>()));
 }
 
-void RelatedFds::RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd) {
+void RelatedFds::RegisterFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd) {
     const int socket_fd = this->GetPairentSocket(connection_fd);
     if (socket_fd == NON_EXIST_FD) {
         throw std::runtime_error("unregisterd socket fd");
@@ -602,21 +602,21 @@ void ServerEventDispatcher::CloseScheduledFd() {
     }
 }
 
-void ServerEventDispatcher::RegistorNewConnection(const int &socket_fd) {
+void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
     int connection_fd = ft_accept(socket_fd);
     this->fd_event_dispatcher_.Register(connection_fd, kConnection);
-    this->registerd_fds_.RegistorConnectionFd(connection_fd, socket_fd);
+    this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
 }
 
-void ServerEventDispatcher::RegistorSocketFd(const int &socket_fd) {
-    this->registerd_fds_.RegistorSocketFd(socket_fd);
+void ServerEventDispatcher::RegisterSocketFd(const int &socket_fd) {
+    this->registerd_fds_.RegisterSocketFd(socket_fd);
     this->fd_event_dispatcher_.Register(socket_fd, kSocket);
 }
 
-void ServerEventDispatcher::RegistorFileFd(const int &file_fd, const int &connection_fd) {
+void ServerEventDispatcher::RegisterFileFd(const int &file_fd, const int &connection_fd) {
     this->fd_event_dispatcher_.Register(file_fd, kFile);
     if (0 <= connection_fd) {
-        this->registerd_fds_.RegistorFileFd(file_fd, connection_fd);
+        this->registerd_fds_.RegisterFileFd(file_fd, connection_fd);
     }
 }
 
@@ -684,7 +684,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
             } else if (event == kEOF) {
                 connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kEOF)));
             } else if (event == kChanged) {
-                this->RegistorNewConnection(fd);
+                this->RegisterNewConnection(fd);
             } else if (event == kWriteEnd) {
                 if (this->scheduled_close_.find(fd) == this->scheduled_close_.end()) {
                     connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kWriteEnd)));
@@ -801,23 +801,23 @@ int main() {
 int main() {
     RelatedFds fds;
 
-    fds.RegistorSocketFd(100);
-    fds.RegistorConnectionFd(110, 100);
-    fds.RegistorFileFd(111, 110);
-    fds.RegistorFileFd(112, 110);
+    fds.RegisterSocketFd(100);
+    fds.RegisterConnectionFd(110, 100);
+    fds.RegisterFileFd(111, 110);
+    fds.RegisterFileFd(112, 110);
 
-    fds.RegistorConnectionFd(120, 100);
-    fds.RegistorFileFd(121, 120);
-    fds.RegistorFileFd(122, 120);
+    fds.RegisterConnectionFd(120, 100);
+    fds.RegisterFileFd(121, 120);
+    fds.RegisterFileFd(122, 120);
 
-    // fds.RegistorSocketFd(200);
-    // fds.RegistorConnectionFd(210, 200);
-    // fds.RegistorFileFd(211, 210);
-    // fds.RegistorFileFd(212, 210);
+    // fds.RegisterSocketFd(200);
+    // fds.RegisterConnectionFd(210, 200);
+    // fds.RegisterFileFd(211, 210);
+    // fds.RegisterFileFd(212, 210);
 
-    // fds.RegistorConnectionFd(220, 200);
-    // fds.RegistorFileFd(221, 220);
-    // fds.RegistorFileFd(222, 220);
+    // fds.RegisterConnectionFd(220, 200);
+    // fds.RegisterFileFd(221, 220);
+    // fds.RegisterFileFd(222, 220);
 
 
     fds.print();
