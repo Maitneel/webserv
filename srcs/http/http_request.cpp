@@ -322,11 +322,11 @@ void HTTPRequest::parse_request_line(const std::string &request_line) {
     }
 }
 
-size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffer) {
-    size_t registor_count = 0;
+size_t HTTPRequest::register_field(const std::vector<std::string> &splited_buffer) {
+    size_t register_count = 0;
     for (size_t i = 1; i < splited_buffer.size(); i++) {
         if (is_crlf(splited_buffer[i])) {
-            registor_count++;
+            register_count++;
             break;
         }
         if (!is_valid_http_header(splited_buffer[i])) {
@@ -345,10 +345,10 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
         } else {
             it->second.push_back(header_pair.second);
         }
-        registor_count++;
+        register_count++;
     }
     this->transform_headers();
-    return registor_count;
+    return register_count;
 }
 
 void HTTPRequest::valid_headers() {
@@ -378,7 +378,7 @@ void HTTPRequest::transform_headers() {
     }
 }
 
-void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
+void HTTPRequest::register_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
@@ -403,7 +403,7 @@ HTTPRequest::HTTPRequest() : is_simple_request(false), header_(), entity_body_()
 //     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
 //     this->parse_request_line(splited_buffer[0]);
 
-//     const size_t header_count = this->registor_field(splited_buffer);
+//     const size_t header_count = this->register_field(splited_buffer);
 //     this->valid_headers();
 // }
 
@@ -412,7 +412,7 @@ void HTTPRequest::parse_request_header(std::string header_str) {
     std::vector<std::string> splited_buffer = escaped_quote_split(header_str, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
-    const size_t header_count = this->registor_field(splited_buffer);
+    const size_t header_count = this->register_field(splited_buffer);
     this->valid_headers();
 }
 

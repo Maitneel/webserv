@@ -160,11 +160,11 @@ class RelatedFds {
 
     void RegistorSocketFd(const SocketFdType &socket_fd);
     void RegistorConnectionFd(const ConnectionFdType &connection_fd, const SocketFdType &socket_fd);
-    void RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd, SocketFdType socket_fd = -1);
+    void RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd);
 
-    void UnregistorSocketFd(const SocketFdType &socket_fd);
-    void UnregistorConnectionFd(const ConnectionFdType &connection_fd);
-    void UnregistorFileFd(const FileFdType &file_fd);
+    void UnregisterSocketFd(const SocketFdType &socket_fd);
+    void UnregisterConnectionFd(const ConnectionFdType &connection_fd);
+    void UnregisterFileFd(const FileFdType &file_fd);
 
     FdType GetType(const AnyFdType &fd) const;
     const std::set<AnyFdType> &GetChildrenFd(const int &fd);
@@ -172,6 +172,9 @@ class RelatedFds {
     // この関数auto使ってるのでC++98環境では動かない //
     // void print();  // for debug;
 };
+
+#define PROCESS_CHENGED_FD -1
+#define NON_EXIST_FD -1
 
 class ServerEventDispatcher {
  private:
@@ -190,11 +193,11 @@ class ServerEventDispatcher {
 
     void RegistorSocketFd(const int &socket_fd);
     void RegistorFileFd(const int &file_fd, const int &connection_fd);
-    void UnregistorConnectionFd(const int &connection_fd);
-    void UnregistorFileFd(const int &file_fd);
+    void UnregisterConnectionFd(const int &connection_fd);
+    void UnregisterFileFd(const int &file_fd);
     // Not Recomended (終了したということを通知する手段があるので、通知された側が処理するべきだと考える) //
     void ScheduleCloseAfterWrite(const int &fd);
-    void UnregistorWithClose(const int &fd);
+    void UnregisterWithClose(const int &fd);
 
     std::multimap<int, ConnectionEvent> Wait(int timeout);
 

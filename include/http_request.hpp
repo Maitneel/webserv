@@ -79,8 +79,8 @@ class HTTPRequest {
     std::string parse_request_uri(const std::string &request_line);
     std::string parse_protocol(const std::string &reqeust_line);
 
-    size_t registor_field(const std::vector<std::string> &splited_buffer);
-    void registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
+    size_t register_field(const std::vector<std::string> &splited_buffer);
+    void register_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
 
     void transform_headers();
     void transform_content_type();

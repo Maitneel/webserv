@@ -309,7 +309,7 @@ void Server::EventLoop() {
         std::multimap<int, ConnectionEvent> dis_events = dispatcher_.Wait(-1);
         std::multimap<int, ConnectionEvent>::const_iterator it;
 
-        for (it = dis_events.find(-1); it->first == -1; it++) {
+        for (it = dis_events.find(PROCESS_CHENGED_FD); it->first == PROCESS_CHENGED_FD; it++) {
             if (it->second.event == kChildProcessChanged) {
                 this->InsertEventOfWhenChildProcessEnded(&dis_events);
                 break;
@@ -350,24 +350,24 @@ void Server::EventLoop() {
                 // TODO(maitneel): Do it;
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                     this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregistorWithClose(event_fd);
+                    dispatcher_.UnregisterWithClose(event_fd);
                 } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregistorWithClose(event_fd);
+                    dispatcher_.UnregisterWithClose(event_fd);
                 }
             } else if (event.event == kFileEndOfRead) {
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                     this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregistorWithClose(event_fd);
+                    dispatcher_.UnregisterWithClose(event_fd);
                 } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregistorWithClose(event_fd);
+                    dispatcher_.UnregisterWithClose(event_fd);
                 }
             } else if (event.event == kResponceWriteEnd_) {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //
                 ctxs_.erase(event.connection_fd);
-                dispatcher_.UnregistorWithClose(event_fd);
+                dispatcher_.UnregisterWithClose(event_fd);
             } else if (event.event == kFileWriteEnd_) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kChildProcessChanged) {
@@ -379,7 +379,7 @@ void Server::EventLoop() {
                         this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
                 }
-                dispatcher_.UnregistorWithClose(event_fd);
+                dispatcher_.UnregisterWithClose(event_fd);
             }
         }
     }

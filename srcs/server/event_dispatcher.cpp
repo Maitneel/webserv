@@ -342,7 +342,7 @@ int RelatedFds::GetPairentSocket(const AnyFdType &fd) {
     if (this->pairent_socket_.find(fd) != this->pairent_socket_.end()) {
         return this->pairent_socket_.find(fd)->second;
     }
-    return -1;
+    return NON_EXIST_FD;
 }
 
 int RelatedFds::GetPairentConnection(const FileFdType &fd) {
@@ -352,7 +352,7 @@ int RelatedFds::GetPairentConnection(const FileFdType &fd) {
     if (this->pairent_connection_.find(fd) != this->pairent_connection_.end()) {
         return this->pairent_connection_.find(fd)->second;
     }
-    return -1;
+    return NON_EXIST_FD;
 }
 
 const std::set<AnyFdType> &RelatedFds::GetSocketChildren(const SocketFdType &fd) {
@@ -379,9 +379,10 @@ void RelatedFds::RegistorConnectionFd(const ConnectionFdType &connection_fd, con
     this->connection_childlen_.insert(std::make_pair(connection_fd, std::set<FileFdType>()));
 }
 
-void RelatedFds::RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd, SocketFdType socket_fd) {
-    if (socket_fd == -1) {
-        socket_fd = this->GetPairentSocket(connection_fd);
+void RelatedFds::RegistorFileFd(const FileFdType &file_fd, const ConnectionFdType &connection_fd) {
+    const int socket_fd = this->GetPairentSocket(connection_fd);
+    if (socket_fd == NON_EXIST_FD) {
+        throw std::runtime_error("unregisterd socket fd");
     }
 
     this->registerd_fds_.insert(file_fd);
@@ -393,22 +394,22 @@ void RelatedFds::RegistorFileFd(const FileFdType &file_fd, const ConnectionFdTyp
     this->connection_childlen_.at(connection_fd).insert(file_fd);
 }
 
-void RelatedFds::UnregistorSocketFd(const SocketFdType &socket_fd) {
+void RelatedFds::UnregisterSocketFd(const SocketFdType &socket_fd) {
     this->registerd_fds_.erase(socket_fd);
     this->socket_fds_.erase(socket_fd);
     this->fd_type_.erase(socket_fd);
     std::set<AnyFdType> children = this->socket_children_.at(socket_fd);
     for (std::set<AnyFdType>::iterator it = children.begin(); it != children.end(); it++) {
         if (this->connection_fds_.find(*it) != this->connection_fds_.end()) {
-            this->UnregistorConnectionFd(*it);
+            this->UnregisterConnectionFd(*it);
         } else if (this->file_fds_.find(*it) != this->file_fds_.end()) {
-            this->UnregistorFileFd(*it);
+            this->UnregisterFileFd(*it);
         }
     }
     this->socket_children_.erase(socket_fd);
 }
 
-void RelatedFds::UnregistorConnectionFd(const ConnectionFdType &connection_fd) {
+void RelatedFds::UnregisterConnectionFd(const ConnectionFdType &connection_fd) {
     const SocketFdType socket_fd = this->pairent_socket_.at(connection_fd);
 
     this->registerd_fds_.erase(connection_fd);
@@ -418,12 +419,12 @@ void RelatedFds::UnregistorConnectionFd(const ConnectionFdType &connection_fd) {
     this->socket_children_.at(socket_fd).erase(connection_fd);
     std::set<AnyFdType> children = this->connection_childlen_.at(connection_fd);
     for (std::set<AnyFdType>::iterator it = children.begin(); it != children.end(); it++) {
-        this->UnregistorFileFd(*it);
+        this->UnregisterFileFd(*it);
     }
     this->connection_childlen_.erase(connection_fd);
 }
 
-void RelatedFds::UnregistorFileFd(const FileFdType &file_fd) {
+void RelatedFds::UnregisterFileFd(const FileFdType &file_fd) {
     const SocketFdType socket_fd = this->pairent_socket_.at(file_fd);
     const ConnectionFdType connection_fd = this->pairent_connection_.at(file_fd);
 
@@ -515,7 +516,7 @@ ServerEventDispatcher::~ServerEventDispatcher() {
 ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, const FdEventType &fd_event) {
     int socket_fd = this->registerd_fds_.GetPairentSocket(fd);
     int connection_fd = this->registerd_fds_.GetPairentConnection(fd);
-    int file_fd = -1;
+    int file_fd = NON_EXIST_FD;
     ServerEventType event = kUnknownEvent;
 
     if (fd == connection_fd) {
@@ -589,12 +590,12 @@ void ServerEventDispatcher::CloseScheduledFd() {
         if (this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
             const FdType type = this->registerd_fds_.GetType(*it);
             if (type == kSocket) {
-                this->registerd_fds_.UnregistorSocketFd(*it);
+                this->registerd_fds_.UnregisterSocketFd(*it);
             } else if (type == kConnection) {
-                this->registerd_fds_.UnregistorConnectionFd(*it);
+                this->registerd_fds_.UnregisterConnectionFd(*it);
                 this->fd_event_dispatcher_.Unregister(*it);
             } else if (type == kFile) {
-                this->registerd_fds_.UnregistorFileFd(*it);
+                this->registerd_fds_.UnregisterFileFd(*it);
             }
             close(*it);
         }
@@ -619,41 +620,41 @@ void ServerEventDispatcher::RegistorFileFd(const int &file_fd, const int &connec
     }
 }
 
-void ServerEventDispatcher::UnregistorConnectionFd(const int &connection_fd) {
+void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
     if (this->registerd_fds_.GetType(connection_fd) != kConnection) {
         return;
     }
     const std::set<int> children = this->registerd_fds_.GetChildrenFd(connection_fd);
     for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
         this->fd_event_dispatcher_.Unregister(*it);
-        this->registerd_fds_.UnregistorFileFd(*it);
+        this->registerd_fds_.UnregisterFileFd(*it);
     }
     this->fd_event_dispatcher_.Unregister(connection_fd);
-    this->registerd_fds_.UnregistorConnectionFd(connection_fd);
+    this->registerd_fds_.UnregisterConnectionFd(connection_fd);
 }
 
-void ServerEventDispatcher::UnregistorFileFd(const int &file_fd) {
+void ServerEventDispatcher::UnregisterFileFd(const int &file_fd) {
     if (this->registerd_fds_.GetType(file_fd) != kFile) {
         return;
     }
     this->fd_event_dispatcher_.Unregister(file_fd);
-    this->registerd_fds_.UnregistorFileFd(file_fd);
+    this->registerd_fds_.UnregisterFileFd(file_fd);
 }
 
 void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
     this->scheduled_close_.insert(fd);
 }
 
-void ServerEventDispatcher::UnregistorWithClose(const int &fd) {
+void ServerEventDispatcher::UnregisterWithClose(const int &fd) {
     FdType type = registerd_fds_.GetType(fd);
 
     if (type == kUnknownFd) {
         return;
     } else if (type == kConnection) {
         // TODO(maitneel): Bug: 多分支配下のfdがcloseできていない　(F5 attack　すると使用しているfdが増加していく現象が確認できる)
-        this->UnregistorConnectionFd(fd);
+        this->UnregisterConnectionFd(fd);
     } else if (type == kFile) {
-        this->UnregistorFileFd(fd);
+        this->UnregisterFileFd(fd);
     }
     close(fd);
 }
@@ -694,7 +695,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
         }
     } while (connections.size() == 0);
     if (is_signal_recived) {
-        connections.insert(std::make_pair(-1, ConnectionEvent(kChildProcessChanged, -1, -1, -1)));
+        connections.insert(std::make_pair(PROCESS_CHENGED_FD, ConnectionEvent(kChildProcessChanged, NON_EXIST_FD, NON_EXIST_FD, NON_EXIST_FD)));
     }
     return connections;
 }
@@ -821,13 +822,13 @@ int main() {
 
     fds.print();
     std::cerr << "==========================================" << std::endl;
-    fds.UnregistorFileFd(121);
+    fds.UnregisterFileFd(121);
     fds.print();
     std::cerr << "==========================================" << std::endl;
-    fds.UnregistorConnectionFd(110);
+    fds.UnregisterConnectionFd(110);
     fds.print();
     std::cerr << "==========================================" << std::endl;
-    fds.UnregistorSocketFd(100);
+    fds.UnregisterSocketFd(100);
     fds.print();
 }
 

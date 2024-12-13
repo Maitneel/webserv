@@ -80,11 +80,12 @@ CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_scrip
         throw std::runtime_error("pipe failed");
     }
 
-    const pid_t child_pid = fork();
-    if (child_pid == 0) {
+    const pid_t pid = fork();
+    if (pid == 0) {
         close(sv[UNIX_SOCKET_SERVER]);
         child_process(request, cgi_script_path, sv[UNIX_SOCKET_SCRIPT]);
     }
+    const pid_t &child_pid = pid;
     // TODO(maitneel): ここどっちがどっちかよくわかんない //
     const int to_script = sv[1];
     const int from_script = sv[0];
