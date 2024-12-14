@@ -254,6 +254,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         } else if (fd == -2) {
             res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
         } else if (0 <= fd) {
+            ctx.file_fd_ = fd;
             dispatcher_.RegisterFileFd(fd, connection_fd);
             return;
         }
@@ -261,10 +262,6 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
     }
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
-    dispatcher_.ScheduleCloseAfterWrite(connection_fd);
-
-    // keep-alive のことを考えるならeraseするべきではないかもしれない //
-    ctxs_.erase(connection_fd);
 }
 
 void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
@@ -284,18 +281,40 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
     }
 }
 
+void Server::CloseConnection(const int connection_fd) {
+    const HTTPContext &context = ctxs_.at(connection_fd);
+    if (context.file_fd_ != NON_EXIST_FD) {
+        dispatcher_.UnregisterFileFd(context.file_fd_);
+        close(context.file_fd_);
+    }
+    if (context.is_cgi_) {
+        dispatcher_.UnregisterFileFd(context.cgi_info_.fd);
+        close(context.cgi_info_.fd);
+    }
+    dispatcher_.UnregisterConnectionFd(connection_fd);
+    close(connection_fd);
+
+    ctxs_.erase(connection_fd);
+}
+
 void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string) {
+    if (ctxs_.at(connection_fd).sent_responce) {
+        return;
+    }
+    ctxs_.at(connection_fd).sent_responce = true;
     CGIResponse cgi_res(cgi_responce_string);
     HTTPResponse res = cgi_res.make_http_response();
 
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
-
-    // プロセス終了時の処理で再度レスポンスが生成されないようにするための処理 //
-    this->ctxs_.at(connection_fd).cgi_info_.fd = -1;
 }
 
 void Server::SendResponceFromFile(const int &connection_fd, const std::string &file_content) {
     // TODO(maitneel): content-typeをどうにかする //
+    if (ctxs_.at(connection_fd).sent_responce) {
+        return;
+    }
+    ctxs_.at(connection_fd).sent_responce = true;
+
     HTTPResponse res(HTTPResponse::kOK, "/", file_content);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
@@ -319,16 +338,17 @@ void Server::EventLoop() {
             const int &event_fd = it->first;
             const ConnectionEvent &event = it->second;
 
-            cerr << "[fd, event]: " << event_fd << ", " << event.event << endl;
-            if (event_fd == -1) {
+            cerr << "[fd, event]: " << event_fd << ", " << event.event << ", " << ctxs_.at(event.connection_fd).GetHTTPRequest().get_request_uri() << endl;
+
+            if (event_fd == PROCESS_CHENGED_FD) {
                 continue;
+            }
+            if (ctxs_.find(event.connection_fd) == ctxs_.end()) {
+                ctxs_.insert(std::make_pair(event.connection_fd, HTTPContext(event.connection_fd)));
             }
             if (event.event == kUnknownEvent) {
                 // Nothing to do;
             } else if (event.event == kReadableRequest || event.event == kRequestEndOfReadad) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
-                if (ctxs_.find(event_fd) == ctxs_.end()) {
-                    ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
-                }
                 HTTPContext& ctx = ctxs_.at(event_fd);
 
                 // TODO(maitneel): 辻褄合わせをどうにかする //
@@ -350,24 +370,24 @@ void Server::EventLoop() {
                 // TODO(maitneel): Do it;
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                     this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregisterWithClose(event_fd);
+                    dispatcher_.UnregisterFileFd(event_fd);
                 } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregisterWithClose(event_fd);
+                    dispatcher_.UnregisterFileFd(event_fd);
                 }
             } else if (event.event == kFileEndOfRead) {
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                     this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregisterWithClose(event_fd);
+                    dispatcher_.UnregisterFileFd(event_fd);
                 } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregisterWithClose(event_fd);
+                    dispatcher_.UnregisterFileFd(event_fd);
                 }
             } else if (event.event == kResponceWriteEnd_) {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //
-                ctxs_.erase(event.connection_fd);
-                dispatcher_.UnregisterWithClose(event_fd);
+                // cerr << "resend: " << event_fd << endl;
+                this->CloseConnection(event.connection_fd);
             } else if (event.event == kFileWriteEnd_) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kChildProcessChanged) {
@@ -375,13 +395,13 @@ void Server::EventLoop() {
             } else if (event.event == kServerEventFail) {
                 // TODO(maitneel): Do it;
                 if (event_fd == event.connection_fd) {
-                    ctxs_.erase(event_fd);
+                    this->CloseConnection(event.connection_fd);
                 } else if (event_fd == event.file_fd) {
                     if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {
                         this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
+                    dispatcher_.UnregisterFileFd(event_fd);
                 }
-                dispatcher_.UnregisterWithClose(event_fd);
             }
         }
     }

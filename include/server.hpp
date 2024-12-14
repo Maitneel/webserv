@@ -37,6 +37,7 @@ class Server {
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
     void SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string);
     void SendResponceFromFile(const int &connection_fd, const std::string &file_content);
+    void CloseConnection(const int connection_fd);
 
  public:
     explicit Server(std::vector<ServerConfig> confs);

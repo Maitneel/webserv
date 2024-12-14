@@ -15,6 +15,8 @@ class HTTPContext {
  public:
     CGIInfo cgi_info_;
     bool is_cgi_;
+    int file_fd_;
+    bool sent_responce;
 
     explicit HTTPContext(int fd);
     ~HTTPContext();
