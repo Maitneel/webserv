@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <cctype>
 #include <climits>
+#include <stdint.h>
 
 // 基本的な動作は stdclib の atoi と同じだが、　int の範囲外の値を変換しようとした際に exception を投げる //
 int safe_atoi(std::string str) {
@@ -36,6 +37,30 @@ int safe_atoi(std::string str) {
     return result;
 }
 
+size_t safe_hex_to_sizet(const std::string &str) {
+    size_t front = 0;
+    size_t n = 0;
+    for (front = 0; front < str.length(); front++) {
+        char current = toupper(str.at(front));
+        if (!(isdigit(current) || ('A' <= current && current <= 'F'))) {
+            break;
+        }
+        if (SIZE_MAX / 0x10 < n) {
+            throw std::overflow_error("safe_hex_to_sizet: overflow");
+        }
+        n *= 0x10;
+        if (isdigit(current)) {
+            n += current - '0';
+        } else {
+            n += 10 + current - 'A';
+        }
+    }
+    if (front == 0) {
+        throw std::runtime_error("safe_hex_to_sizet: not hex number");
+    }
+    return n;
+}
+
 // #include <iostream>
 // #include <string>
 // #include <vector>
@@ -52,4 +77,18 @@ int safe_atoi(std::string str) {
 //             std::cerr << e.what() << endl;
 //         }
 //     }
+// }
+
+// #include <iostream>
+// #include <iomanip>
+// using namespace std;
+// int main(int argc, char **argv) {
+//     for (int i = 1; i < argc; i++) {
+//         try {
+//             cout << setw(20) << argv[i] << ": " << safe_hex_to_sizet(argv[i]) << endl;
+//         } catch (std::exception &e) {
+//             cerr << e.what() << endl;
+//         }
+//     }
+//     cerr << SIZE_MAX << endl;
 // }

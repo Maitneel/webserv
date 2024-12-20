@@ -8,6 +8,7 @@ std::vector<std::string> split(const std::string &src, const std::string &delimi
 std::vector<std::string> escaped_quote_split(const std::string &src, const std::string &delimiter);
 std::vector<std::string> split_with_remove(const std::string &src, const std::string &delimiter);
 int safe_atoi(std::string str);
+size_t safe_hex_to_sizet(const std::string &str);
 std::string get_formated_date();
 void to_lower(std::string *str);
 void to_upper(std::string *str);
