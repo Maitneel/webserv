@@ -14,11 +14,11 @@ class ChunkDecoder {
     const bool &IsDecodeComplete();
 
     ChunkDecoder();
-    ChunkDecoder(const std::string &buffer);
+    explicit ChunkDecoder(const std::string &buffer);
 
     class InvalidFormat : public std::exception {
      public:
-        InvalidFormat() {};
+        InvalidFormat() {}
         const char *what() const throw() {
             return "ChunkDecoder: Invalid Format";
         }
@@ -32,7 +32,7 @@ class ChunkDecoder {
         }
     };
 
- private: 
+ private:
     bool find_last_chank_;
     bool find_last_crlf_;
     std::string decoded_data_;
@@ -54,4 +54,4 @@ std::string encode_chunk(const std::string &data);
 std::string encode_last_data_chunk_with_trailer(const std::string &data);
 
 
-#endif // INCLUDE_CHUNKED_HPP_
+#endif  // INCLUDE_CHUNKED_HPP_
