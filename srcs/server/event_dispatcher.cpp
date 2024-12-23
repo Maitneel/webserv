@@ -523,7 +523,6 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableRequest;
         } else if (fd_event == kEOF) {
-            // TODO(maitneel): 上のと分離する方がいいかも //
             event = kRequestEndOfReadad;
         } else if (fd_event == kChanged) {
             // Nothing to do;
@@ -673,6 +672,7 @@ void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
     this->scheduled_close_.insert(fd);
 }
 
+// TODO(maitneel): 削除する //
 void ServerEventDispatcher::UnregisterWithClose(const int &fd) {
     FdType type = registerd_fds_.GetType(fd);
 
