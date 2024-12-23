@@ -19,33 +19,45 @@ const bool &ChunkDecoder::IsDecodeComplete() {
     return find_last_crlf_;
 }
 
+void ChunkDecoder::RemovePrevCRLF() {
+    if (2 <= chunked_data_.length() && chunked_data_.at(0) == '\r' && chunked_data_.at(1) == '\n') {
+        chunked_data_.erase(0, strlen("\r\n"));
+    }
+}
+
+bool ChunkDecoder::IsIncludeSizeLine() {
+    return (chunked_data_.find("\r\n") != std::string::npos);
+}
+
+void ChunkDecoder::ParseSizeLine() {
+    try {
+        chunked_length_ = safe_hex_to_sizet(chunked_data_);
+        remaining_length_ = chunked_length_;
+        if (chunked_length_ == 0) {
+            find_last_chank_ = true;
+            if (chunked_data_.find("\r\n\r\n") != std::string::npos) {
+                find_last_crlf_ = true;
+            }
+            return;
+        }
+        chunked_data_.erase(0, chunked_data_.find("\r\n") + strlen("\r\n"));
+    } catch (std::overflow_error &e) {
+        throw ChunkDecoder::ChunkSizeTooLarge();
+    } catch (std::runtime_error &e) {
+        throw ChunkDecoder::InvalidFormat();
+    }
+}
+
 void ChunkDecoder::DecodeChunk() {
     do {
         if (remaining_length_ == 0) {
-            try {
-                if (2 <= chunked_data_.length() && chunked_data_.at(0) == '\r' && chunked_data_.at(1) == '\n') {
-                    chunked_data_.erase(0, strlen("\r\n"));
-                }
-                if (chunked_data_.find("\r\n") == std::string::npos) {
-                    break;
-                }
-                chunked_length_ = safe_hex_to_sizet(chunked_data_);
-                remaining_length_ = chunked_length_;
-                if (chunked_length_ == 0) {
-                    find_last_chank_ = true;
-                    if (chunked_data_.find("\r\n\r\n") != std::string::npos) {
-                        find_last_crlf_ = true;
-                    }
-                    break;
-                }
-                if (chunked_data_.find("\r\n") == std::string::npos) {
-                    break;
-                }
-                chunked_data_.erase(0, chunked_data_.find("\r\n") + strlen("\r\n"));
-            } catch (std::overflow_error &e) {
-                throw ChunkDecoder::ChunkSizeTooLarge();
-            } catch (std::runtime_error &e) {
-                throw ChunkDecoder::InvalidFormat();
+            this->RemovePrevCRLF();
+            if (!this->IsIncludeSizeLine()) {
+                break;
+            }
+            this->ParseSizeLine();
+            if (find_last_chank_) {
+                break;
             }
         }
         decoded_data_ += chunked_data_.substr(0, remaining_length_);
