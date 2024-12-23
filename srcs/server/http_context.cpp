@@ -26,14 +26,17 @@ void HTTPContext::ParseRequestHeader() {
     std::string header_str = buffer_.substr(0, buffer_.find("\r\n\r\n") + strlen(CRLF));
 
     request_.parse_request_header(header_str);
-    buffer_ = buffer_.substr(buffer_.find("\r\n\r\n") + strlen("\r\n\r\n"));
+    body_.SetHeader(request_);
+    body_.AddBuffer(buffer_.substr(buffer_.find("\r\n\r\n") + strlen("\r\n\r\n")));
+    buffer_ = "";
     parsed_header_ = true;
 }
 
 void HTTPContext::ParseRequestBody() {
     // TODO(maitneel): 直接触れないようにしたほうがいいかもしれない //
-    request_.entity_body_ = buffer_.substr(0, request_.content_length_);
-    buffer_ = buffer_.substr(request_.content_length_);
+    request_.entity_body_ = body_.GetBody();
+    // TODO(maitneel): 適切な長さになるよにする(keep-aliveが動かない) //
+    // buffer_ = buffer_.substr(request_.content_length_);
 }
 
 HTTPRequest& HTTPContext::GetHTTPRequest() {
@@ -41,5 +44,9 @@ HTTPRequest& HTTPContext::GetHTTPRequest() {
 }
 
 void HTTPContext::AppendBuffer(std::string str) {
-    buffer_ += str;
+    if (!parsed_header_) {
+        buffer_ += str;
+    } else {
+        body_.AddBuffer(str);
+    }
 }

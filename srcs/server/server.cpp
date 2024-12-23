@@ -364,7 +364,7 @@ void Server::EventLoop() {
                         ctx.ParseRequestHeader();
                     }
                 }
-                if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
+                if (ctx.IsParsedHeader() && ctx.body_.IsComplated()) {
                     ctx.ParseRequestBody();
                     this->routing(event_fd, it->second.socket_fd);
                 }
