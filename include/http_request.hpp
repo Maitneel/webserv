@@ -9,6 +9,8 @@
 #include <utility>
 #include <ostream>
 
+#include "chunked.hpp"
+
 #define http_0_9 "HTTP/0.9"
 #define HTTP_1_0 "HTTP/1.0"
 #define HTTP_1_1 "HTTP/1.1"
@@ -135,6 +137,25 @@ class HTTPRequest {
             explicit InvalidHeader(HTTPHeaderExceptType except_type_src);
             const char *what() const throw();
     };
+};
+
+class HTTPRequestBody {
+ public:
+    HTTPRequestBody();
+    ~HTTPRequestBody();
+
+    void SetHeader(const HTTPRequest &req);
+    void AddBuffer(const std::string &buffer, size_t *used_buffer_size = NULL);
+    bool IsComplated();
+
+    std::string GetBody();
+
+ private:
+    std::string plain_body_;
+    ChunkDecoder chunked_body_;
+
+    bool is_chunked_;
+    size_t content_length_;
 };
 
 #endif  // INCLUDE_HTTP_REQUEST_HPP_
