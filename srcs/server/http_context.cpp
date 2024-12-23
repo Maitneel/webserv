@@ -39,7 +39,7 @@ void HTTPContext::ParseRequestBody() {
     // buffer_ = buffer_.substr(request_.content_length_);
 }
 
-HTTPRequest& HTTPContext::GetHTTPRequest() {
+const HTTPRequest& HTTPContext::GetHTTPRequest() {
     return request_;
 }
 

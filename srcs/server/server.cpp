@@ -232,7 +232,7 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
 
 void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
-    HTTPRequest &req = ctx.GetHTTPRequest();
+    const HTTPRequest &req = ctx.GetHTTPRequest();
     req.print_info();
 
     std::string method = req.get_method();
