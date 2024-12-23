@@ -41,6 +41,10 @@ class ChunkDecoder {
     size_t remaining_length_;
 
     void DecodeChunk();
+
+    void RemovePrevCRLF();
+    bool IsIncludeSizeLine();
+    void ParseSizeLine();
 };
 
 // -------------------------- encode -------------------------- //
