@@ -123,6 +123,7 @@ FdEvent::FdEvent(const int &fd_arg, const FdEventType &event_arg) : fd_(fd_arg),
 const std::string FdEventDispatcher::empty_string_ = "";
 
 FdEventDispatcher::FdEventDispatcher() {
+    signal(SIGCHLD, signal_handler);
 }
 
 FdEventDispatcher::~FdEventDispatcher() {
@@ -242,10 +243,6 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::multimap<int, FdEvent> handled_write_fd;
     std::multimap<int, FdEvent> handled_error_fd;
 
-    // TODO(maitneel): 運が悪いとsignal関係で死ぬ //
-    // TODO(maitneel): どこで設定するべきか考える //
-    signal(SIGCHLD, signal_handler);
-    // try {
     if (recived_signal != 0) {
         recived_signal = 0;
         throw SignalDelivered(SIGCHLD);
@@ -258,22 +255,15 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
                 throw SignalDelivered(SIGCHLD);
             }
             if (poll_ret < 0) {
-                // signal(SIGCHLD, SIG_IGN);
                 throw std::runtime_error("poll: failed");
             }
             if (poll_ret == 0) {
-                // signal(SIGCHLD, SIG_IGN);
                 return std::multimap<int, FdEvent> ();
             }
             handled_write_fd = this->WriteBuffer();
             handled_readable_fd = this->ReadBuffer();
             handled_error_fd = this->GetErrorFds();
         }
-        // signal(SIGCHLD, SIG_IGN);
-    // } catch (const SignalDelivered &e) {
-        // signal(SIGCHLD, SIG_IGN);
-    //     throw e;
-    // }
     return this->MergeEvents(handled_readable_fd, handled_write_fd, handled_error_fd);
 }
 
