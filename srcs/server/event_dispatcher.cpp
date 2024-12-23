@@ -551,54 +551,6 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
     return ConnectionEvent(event, socket_fd, connection_fd, file_fd);
 }
 
-bool ServerEventDispatcher::DoseNotAllChildrenHaveBuffer(const std::set<int> &children) {
-    for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
-        if (!this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void ServerEventDispatcher::CloseScheduledFd() {
-    std::set<int> closeable_fd;
-    std::set<int> scheduled_close_copy = this->scheduled_close_;
-
-    for (std::set<int>::iterator it = scheduled_close_copy.begin(); it != scheduled_close_copy.end(); it++) {
-        try {
-            const FdType type = this->registerd_fds_.GetType(*it);
-
-            std::set<int> children;
-            if (type == kSocket) {
-                this->registerd_fds_.GetSocketChildren(*it);
-            } else if (type == kConnection) {
-                this->registerd_fds_.GetConnectionChildren(*it);
-            }
-            children.insert(*it);
-            if (this->DoseNotAllChildrenHaveBuffer(children)) {
-                closeable_fd.insert(children.begin(), children.end());
-                this->scheduled_close_.erase(*it);
-            }
-        } catch (...) {
-        }
-    }
-
-    for (std::set<int>::iterator it = closeable_fd.begin(); it != closeable_fd.end(); it++) {
-        if (this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
-            const FdType type = this->registerd_fds_.GetType(*it);
-            if (type == kSocket) {
-                this->registerd_fds_.UnregisterSocketFd(*it);
-            } else if (type == kConnection) {
-                this->registerd_fds_.UnregisterConnectionFd(*it);
-                this->fd_event_dispatcher_.Unregister(*it);
-            } else if (type == kFile) {
-                this->registerd_fds_.UnregisterFileFd(*it);
-            }
-            close(*it);
-        }
-    }
-}
-
 void ServerEventDispatcher::MergeDuplicateFd(std::multimap<int, FdEvent> *events) {
     for (std::multimap<int, FdEvent>::iterator it = events->begin(); it != events->end(); it++) {
         const int &fd = it->first;
@@ -668,11 +620,6 @@ void ServerEventDispatcher::UnregisterFileFd(const int &file_fd) {
     this->registerd_fds_.UnregisterFileFd(file_fd);
 }
 
-void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
-    this->scheduled_close_.insert(fd);
-}
-
-// TODO(maitneel): 削除する //
 void ServerEventDispatcher::UnregisterWithClose(const int &fd) {
     FdType type = registerd_fds_.GetType(fd);
 
@@ -695,7 +642,6 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
     std::multimap<int, ConnectionEvent> connections;
     bool is_signal_recived = false;
     do {
-        this->CloseScheduledFd();
         std::multimap<int, FdEvent> fd_events;
         try {
             fd_events = this->fd_event_dispatcher_.Wait(timeout);

@@ -27,6 +27,6 @@ class HTTPContext {
     void ParseRequestHeader();
     void ParseRequestBody();
     // TODO(maitneel): const で返すようにする //
-    const HTTPRequest& GetHTTPRequest();
+    HTTPRequest& GetHTTPRequest();
     void AppendBuffer(std::string str);
 };

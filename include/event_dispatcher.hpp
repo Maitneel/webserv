@@ -183,8 +183,6 @@ class ServerEventDispatcher {
 
     void RegisterNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
-    bool DoseNotAllChildrenHaveBuffer(const std::set<int> &children);
-    void CloseScheduledFd();
     void MergeDuplicateFd(std::multimap<int, FdEvent> *events);
 
  public:
@@ -195,8 +193,6 @@ class ServerEventDispatcher {
     void RegisterFileFd(const int &file_fd, const int &connection_fd);
     void UnregisterConnectionFd(const int &connection_fd);
     void UnregisterFileFd(const int &file_fd);
-    // Not Recomended (終了したということを通知する手段があるので、通知された側が処理するべきだと考える) //
-    void ScheduleCloseAfterWrite(const int &fd);
     void UnregisterWithClose(const int &fd);
 
     std::multimap<int, ConnectionEvent> Wait(int timeout);
