@@ -7,6 +7,7 @@
 #include <string>
 #include <cstdlib>
 #include <utility>
+#include <algorithm>
 
 #include "http_request.hpp"
 #include "http_validation.hpp"
