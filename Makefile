@@ -21,7 +21,6 @@ SRCS		=	main.cpp \
 				${HTTP_DIR}http_header.cpp \
 				${HTTP_DIR}chunk_decoder.cpp \
 				${HTTP_DIR}chunk_encoder.cpp \
-				${UTILS_DIR}split.cpp \
 				${SERVER_DIR}poll_selector.cpp \
 				${SERVER_DIR}server.cpp \
 				${SERVER_DIR}http_context.cpp \
