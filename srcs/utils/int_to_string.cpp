@@ -24,3 +24,15 @@ std::string size_t_to_string(size_t n) {
     reverse(s.begin(), s.end());
     return s;
 }
+
+const std::string hex_str = "0123456789ABCDEF";
+
+std::string size_t_to_hex_string(size_t n) {
+    std::string s;
+    while (n) {
+        s += hex_str[n % 16];
+        n /= 16;
+    }
+    reverse(s.begin(), s.end());
+    return s;
+}
