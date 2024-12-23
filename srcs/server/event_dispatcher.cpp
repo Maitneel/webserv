@@ -528,7 +528,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
-            event = kResponceWriteEnd_;
+            event = kResponceWriteEnd;
         } else if (fd_event == kFdEventFail) {
             event = kServerEventFail;
         }
@@ -543,7 +543,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
-            event = kFileWriteEnd_;
+            event = kFileWriteEnd;
         } else if (fd_event == kFdEventFail) {
             event = kServerEventFail;
         }

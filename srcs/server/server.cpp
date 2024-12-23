@@ -387,12 +387,12 @@ void Server::EventLoop() {
                     this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
                 }
-            } else if (event.event == kResponceWriteEnd_) {
+            } else if (event.event == kResponceWriteEnd) {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //
                 // cerr << "resend: " << event_fd << endl;
                 this->CloseConnection(event.connection_fd);
-            } else if (event.event == kFileWriteEnd_) {
+            } else if (event.event == kFileWriteEnd) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)

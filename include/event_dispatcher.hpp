@@ -97,15 +97,14 @@ class FdEventDispatcher {
     bool IsEmptyWritebleBuffer(const int &fd);
 };
 
-// TODO(Maitneel): 命名規則の確認
 typedef enum ServerEventTypeEnum {
     kUnknownEvent,                 // 0
     kReadableRequest,              // 1
-    kRequestEndOfReadad,             // 2
+    kRequestEndOfReadad,           // 2
     kReadableFile,                 // 3
     kFileEndOfRead,                // 4
-    kResponceWriteEnd_,            // 5
-    kFileWriteEnd_,                // 6
+    kResponceWriteEnd,             // 5
+    kFileWriteEnd,                 // 6
     kChildProcessChanged,          // 7
     kServerEventFail               // 8
 } ServerEventType;
