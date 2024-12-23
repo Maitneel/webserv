@@ -146,6 +146,9 @@ class RelatedFds {
 
     std::map<AnyFdType, FdType> fd_type_;
 
+    // 関数が返す用の変数 
+    const static std::set<AnyFdType> empty_any_fd_type_set_;
+
  public:
     RelatedFds();
     ~RelatedFds();

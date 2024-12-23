@@ -7,12 +7,15 @@
 #include "cgi_valid.hpp"
 #include "extend_stdlib.hpp"
 
+#define LAST_STRING ""
+
 // ここlint通らないけど、このまま行きたい気がする //
 const std::string defined_meta_val_by_rfc_array[] = {
     "auth-scheme",
     "content-type",
     "content-length",
-    "host"
+    "host",
+    LAST_STRING
 };
 
 std::string make_env_format(const std::string &s, const std::string & t)  {
@@ -69,6 +72,8 @@ static void add_gateway_interface_to_env(std::vector<std::string> *env) {
 
 static void add_path_info_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
     // TODO(maitneel): 実装しないかも //
+    (void)(req);
+    (void)(env);
 }
 
 static void add_query_string_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
@@ -88,6 +93,8 @@ static void add_query_string_to_env(const HTTPRequest &req, std::vector<std::str
 
 static void add_remote_addr_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
     // TODO(maitneel): client の IP address を入れるがわからないので後でする //
+    (void)(req);
+    (void)(env);
 }
 
 // REMOTE_HOST は~めんどくさいから~わからないからやらないでいいかなー //
@@ -101,6 +108,8 @@ static void add_method_to_env(const HTTPRequest &req, std::vector<std::string> *
 
 static void add_script_name_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
     // TODO(maitneel): なんかMUSTって書いてあるけどよくわかんないからあとで　　//
+    (void)(req);
+    (void)(env);
 }
 
 static void add_server_name_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
@@ -109,6 +118,8 @@ static void add_server_name_to_env(const HTTPRequest &req, std::vector<std::stri
 
 static void add_server_port_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
     // TODO(maitneel): port 持てるようにしないと実装できねぇ〜(MUST) //
+    (void)(req);
+    (void)(env);
 }
 
 
@@ -121,8 +132,7 @@ static void add_server_protocol_to_env(const HTTPRequest &req, std::vector<std::
 
 
 bool is_include(const std::string &target, const std::string list[]) {
-    size_t list_size = sizeof(list) / sizeof(const std::string);
-    for (size_t i = 0; i < list_size; i++) {
+    for (size_t i = 0; list[i] != LAST_STRING; i++) {
         if (target == list[i]) {
             return true;
         }

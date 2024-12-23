@@ -6,7 +6,7 @@
 enum HTTPMethod {
     GET = 0,
     POST,
-    DELETE,
+    DELETE
 };
 
 class LocastionConfig {

@@ -317,6 +317,8 @@ ConnectionEvent::ConnectionEvent(
 ) : event(event_arg), socket_fd(socket_fd_arg), connection_fd(connection_fd_arg), file_fd(file_fd_arg) {
 }
 
+const std::set<AnyFdType> RelatedFds::empty_any_fd_type_set_;
+
 RelatedFds::RelatedFds() {
 }
 
@@ -442,8 +444,7 @@ const std::set<AnyFdType> &RelatedFds::GetChildrenFd(const int &fd) {
     } else if (type == kConnection) {
         return this->connection_childlen_.find(fd)->second;
     }
-    // TODO(maitneel): どうにかする //
-    return std::set<AnyFdType>();
+    return empty_any_fd_type_set_;
 }
 
 /*

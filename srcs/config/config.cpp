@@ -34,5 +34,7 @@ std::vector<ServerConfig> parse_config(std::string path) {
         configs.push_back(server_config);
     }
 
+
+    (void)(path);
     return configs;
 }

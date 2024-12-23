@@ -34,7 +34,7 @@ typedef enum HTTPHeaderExceptTypeEnum {
     kReferer,
     kUserAgent,
     kHost,
-    kConvertFail,
+    kConvertFail
 } HTTPHeaderExceptType;
 
 class MIMEType {

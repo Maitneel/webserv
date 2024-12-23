@@ -42,6 +42,7 @@ namespace rfc3875 {
 
 bool is_meta_valiable_value(const std::string &s) {
     // TODO(maitneel): やる //
+    (void)(s);
     return true;
 }
 
