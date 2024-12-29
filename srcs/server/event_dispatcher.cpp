@@ -228,11 +228,9 @@ std::multimap<int, FdEvent> FdEventDispatcher::MergeEvents(const std::multimap<i
         events.insert(*it);
     }
     for (std::multimap<int, FdEvent>::const_iterator it = error_events.begin(); it != error_events.end(); it++) {
-        const int &fd = it->first;
-        if (read_event.find(fd) == read_event.end() && write_events.find(fd) == write_events.end()) {
-            events.insert(*it);
-        }
-    }return events;
+        events.insert(*it);
+    }
+    return events;
 }
 
 std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
@@ -526,7 +524,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
             event = kReadableRequest;
         } else if (fd_event == kEOF) {
             // TODO(maitneel): 上のと分離する方がいいかも //
-            event == kReqeustEndOfRead;
+            event = kRequestEndOfReadad;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
@@ -602,6 +600,36 @@ void ServerEventDispatcher::CloseScheduledFd() {
     }
 }
 
+void ServerEventDispatcher::MergeDuplicateFd(std::multimap<int, FdEvent> *events) {
+    for (std::multimap<int, FdEvent>::iterator it = events->begin(); it != events->end(); it++) {
+        const int &fd = it->first;
+        if (events->count(fd) == 1) {
+            continue;
+        }
+
+        std::multimap<int, FdEvent>::iterator read_event = events->end();
+        std::multimap<int, FdEvent>::iterator error_event = events->end();
+        for (std::multimap<int, FdEvent>::iterator dup_fd_it = it; dup_fd_it->first == fd; dup_fd_it++) {
+            int event = dup_fd_it->second.event_;
+            if (event == kHaveReadableBuffer || event == kEOF) {
+                read_event = dup_fd_it;
+            } else if (event == kFdEventFail) {
+                error_event = dup_fd_it;
+            }
+        }
+        if (read_event != events->end() && error_event != events->end()) {
+            const FdType &type = this->registerd_fds_.GetType(fd);
+            if (type == kFile) {
+                events->erase(error_event);
+            } else {
+                events->erase(read_event);
+            }
+        }
+        it = events->upper_bound(fd);
+        it--;
+    }
+}
+
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
     int connection_fd = ft_accept(socket_fd);
     this->fd_event_dispatcher_.Register(connection_fd, kConnection);
@@ -652,6 +680,10 @@ void ServerEventDispatcher::UnregisterWithClose(const int &fd) {
         return;
     } else if (type == kConnection) {
         // TODO(maitneel): Bug: 多分支配下のfdがcloseできていない　(F5 attack　すると使用しているfdが増加していく現象が確認できる)
+        std::set<int> children_fds = registerd_fds_.GetConnectionChildren(fd);
+        for (std::set<int>::iterator it = children_fds.begin(); it != children_fds.end(); it++) {
+            this->UnregisterWithClose(*it);
+        }
         this->UnregisterConnectionFd(fd);
     } else if (type == kFile) {
         this->UnregisterFileFd(fd);
@@ -674,6 +706,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
         if (fd_events.size() == 0) {
             return connections;
         }
+        this->MergeDuplicateFd(&fd_events);
         for (std::multimap<int, FdEvent>::iterator it = fd_events.begin(); it != fd_events.end(); it++) {
             const int &fd = it->second.fd_;
             const FdEventType &event = it->second.event_;

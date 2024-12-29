@@ -101,7 +101,7 @@ class FdEventDispatcher {
 typedef enum ServerEventTypeEnum {
     kUnknownEvent,                 // 0
     kReadableRequest,              // 1
-    kReqeustEndOfRead,             // 2
+    kRequestEndOfReadad,             // 2
     kReadableFile,                 // 3
     kFileEndOfRead,                // 4
     kResponceWriteEnd_,            // 5
@@ -186,6 +186,7 @@ class ServerEventDispatcher {
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
     bool DoseNotAllChildrenHaveBuffer(const std::set<int> &children);
     void CloseScheduledFd();
+    void MergeDuplicateFd(std::multimap<int, FdEvent> *events);
 
  public:
     ServerEventDispatcher();
