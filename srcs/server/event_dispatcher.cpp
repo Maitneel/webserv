@@ -518,7 +518,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
-            event = kResponceWriteEnd;
+            event = kresponseWriteEnd;
         } else if (fd_event == kFdEventFail) {
             event = kServerEventFail;
         }

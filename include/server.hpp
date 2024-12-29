@@ -35,8 +35,8 @@ class Server {
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path);
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
-    void SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string);
-    void SendResponceFromFile(const int &connection_fd, const std::string &file_content);
+    void SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string);
+    void SendresponseFromFile(const int &connection_fd, const std::string &file_content);
     void CloseConnection(const int connection_fd);
 
  public:

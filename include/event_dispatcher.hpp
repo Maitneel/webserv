@@ -103,7 +103,7 @@ typedef enum ServerEventTypeEnum {
     kRequestEndOfReadad,           // 2
     kReadableFile,                 // 3
     kFileEndOfRead,                // 4
-    kResponceWriteEnd,             // 5
+    kresponseWriteEnd,             // 5
     kFileWriteEnd,                 // 6
     kChildProcessChanged,          // 7
     kServerEventFail               // 8
