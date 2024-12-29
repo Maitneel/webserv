@@ -7,7 +7,7 @@
 
 // /*
 int main() {
-    std::vector<ServerConfig> server_confs = parse_config("");
+    std::map<std::string, ServerConfig> server_confs = parse_config("");
 
     Server server(server_confs);
 

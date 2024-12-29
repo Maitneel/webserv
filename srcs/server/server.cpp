@@ -121,13 +121,13 @@ int create_inet_socket(int port) {
     return -1;
 }
 
-Server::Server(std::vector<ServerConfig> confs) {
-    std::vector<ServerConfig>::iterator it;
+Server::Server(std::map<std::string, ServerConfig> confs) {
+    std::map<std::string, ServerConfig>::iterator it;
     for (it = confs.begin(); it != confs.end(); it++) {
-        int sock = create_inet_socket(it->port);
+        int sock = create_inet_socket(it->second.port_);
         if (sock < 0)
             throw std::runtime_error("can not create tcp socket.");
-        sockets_.push_back(Socket(sock, *it));
+        sockets_.push_back(Socket(sock, it->second));  // 謎 //
     }
 }
 
@@ -183,7 +183,7 @@ bool IsDir(const std::string& path) {
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
 int Server::GetHandler(int sock, const HTTPRequest& req) {
     ServerConfig conf = this->GetConfigByFd(sock);
-    std::string path = conf.document_root + req.get_request_uri();
+    std::string path = conf.document_root_ + req.get_request_uri();
 
     if (IsDir(path.c_str())) {
         // TODO(taksaito): autoindex か、 index をみるようにする
