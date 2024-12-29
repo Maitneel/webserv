@@ -42,6 +42,7 @@ void HTTPRequest::valid_allow(const std::string &value) {
 
 void HTTPRequest::valid_authorization(const std::string &value) {
     // TODO(maitneel)
+    (void)(value);
 }
 
 void HTTPRequest::valid_content_encoding(const std::string &value) {
@@ -413,7 +414,7 @@ void HTTPRequest::parse_request_header(std::string header_str) {
     std::vector<std::string> splited_buffer = escaped_quote_split(header_str, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
-    const size_t header_count = this->register_field(splited_buffer);
+    this->register_field(splited_buffer);
     this->valid_headers();
 }
 
@@ -440,8 +441,6 @@ void HTTPRequest::print_info() const {
 }
 
 void HTTPRequest::print_info(std::ostream &stream) const {
-    const size_t width = 25;
-
     stream << '[' << get_formated_date() << "] '" << this->get_method() << "' '" << this->get_request_uri() << "' '" << this->get_protocol() << "'" << std::endl;
     stream << "    header : {" << std::endl;
     for (std::map<std::string, std::vector<std::string> >::const_iterator i = this->header_.begin(); i != this->header_.end(); i++) {

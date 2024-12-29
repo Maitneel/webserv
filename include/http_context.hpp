@@ -16,7 +16,7 @@ class HTTPContext {
     CGIInfo cgi_info_;
     bool is_cgi_;
     int file_fd_;
-    bool sent_responce_;
+    bool sent_response_;
     HTTPRequestBody body_;
 
     explicit HTTPContext(int fd);
@@ -26,7 +26,6 @@ class HTTPContext {
     bool IsParsedHeader() const;
     void ParseRequestHeader();
     void ParseRequestBody();
-    // TODO(maitneel): const で返すようにする //
-    HTTPRequest& GetHTTPRequest();
+    const HTTPRequest &GetHTTPRequest();
     void AppendBuffer(std::string str);
 };

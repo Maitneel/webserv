@@ -232,7 +232,7 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
 
 void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
-    HTTPRequest &req = ctx.GetHTTPRequest();
+    const HTTPRequest &req = ctx.GetHTTPRequest();
     req.print_info();
 
     std::string method = req.get_method();
@@ -297,23 +297,23 @@ void Server::CloseConnection(const int connection_fd) {
     ctxs_.erase(connection_fd);
 }
 
-void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string) {
-    if (ctxs_.at(connection_fd).sent_responce_) {
+void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string) {
+    if (ctxs_.at(connection_fd).sent_response_) {
         return;
     }
-    ctxs_.at(connection_fd).sent_responce_ = true;
-    CGIResponse cgi_res(cgi_responce_string);
+    ctxs_.at(connection_fd).sent_response_ = true;
+    CGIResponse cgi_res(cgi_response_string);
     HTTPResponse res = cgi_res.make_http_response();
 
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
-void Server::SendResponceFromFile(const int &connection_fd, const std::string &file_content) {
+void Server::SendresponseFromFile(const int &connection_fd, const std::string &file_content) {
     // TODO(maitneel): content-typeをどうにかする //
-    if (ctxs_.at(connection_fd).sent_responce_) {
+    if (ctxs_.at(connection_fd).sent_response_) {
         return;
     }
-    ctxs_.at(connection_fd).sent_responce_ = true;
+    ctxs_.at(connection_fd).sent_response_ = true;
 
     HTTPResponse res(HTTPResponse::kOK, "/", file_content);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
@@ -373,26 +373,26 @@ void Server::EventLoop() {
             } else if (event.event == kFileEndOfRead) {
                 // TODO(maitneel): Do it;
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                    this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
                 } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
-                    this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    this->SendresponseFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
                 }
             } else if (event.event == kFileEndOfRead) {
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                    this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
                 } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
-                    this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    this->SendresponseFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
                 }
-            } else if (event.event == kResponceWriteEnd_) {
+            } else if (event.event == kresponseWriteEnd) {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //
                 // cerr << "resend: " << event_fd << endl;
                 this->CloseConnection(event.connection_fd);
-            } else if (event.event == kFileWriteEnd_) {
+            } else if (event.event == kFileWriteEnd) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
@@ -402,7 +402,7 @@ void Server::EventLoop() {
                     this->CloseConnection(event.connection_fd);
                 } else if (event_fd == event.file_fd) {
                     if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {
-                        this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                        this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
                     dispatcher_.UnregisterFileFd(event_fd);
                 }

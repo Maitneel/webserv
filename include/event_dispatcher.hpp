@@ -97,15 +97,14 @@ class FdEventDispatcher {
     bool IsEmptyWritebleBuffer(const int &fd);
 };
 
-// TODO(Maitneel): 命名規則の確認
 typedef enum ServerEventTypeEnum {
     kUnknownEvent,                 // 0
     kReadableRequest,              // 1
-    kRequestEndOfReadad,             // 2
+    kRequestEndOfReadad,           // 2
     kReadableFile,                 // 3
     kFileEndOfRead,                // 4
-    kResponceWriteEnd_,            // 5
-    kFileWriteEnd_,                // 6
+    kresponseWriteEnd,             // 5
+    kFileWriteEnd,                 // 6
     kChildProcessChanged,          // 7
     kServerEventFail               // 8
 } ServerEventType;
@@ -147,6 +146,9 @@ class RelatedFds {
 
     std::map<AnyFdType, FdType> fd_type_;
 
+    // 関数が返す用の変数 //
+    static const std::set<AnyFdType> empty_any_fd_type_set_;
+
  public:
     RelatedFds();
     ~RelatedFds();
@@ -184,8 +186,6 @@ class ServerEventDispatcher {
 
     void RegisterNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
-    bool DoseNotAllChildrenHaveBuffer(const std::set<int> &children);
-    void CloseScheduledFd();
     void MergeDuplicateFd(std::multimap<int, FdEvent> *events);
 
  public:
@@ -196,8 +196,6 @@ class ServerEventDispatcher {
     void RegisterFileFd(const int &file_fd, const int &connection_fd);
     void UnregisterConnectionFd(const int &connection_fd);
     void UnregisterFileFd(const int &file_fd);
-    // Not Recomended (終了したということを通知する手段があるので、通知された側が処理するべきだと考える) //
-    void ScheduleCloseAfterWrite(const int &fd);
     void UnregisterWithClose(const int &fd);
 
     std::multimap<int, ConnectionEvent> Wait(int timeout);

@@ -123,6 +123,7 @@ FdEvent::FdEvent(const int &fd_arg, const FdEventType &event_arg) : fd_(fd_arg),
 const std::string FdEventDispatcher::empty_string_ = "";
 
 FdEventDispatcher::FdEventDispatcher() {
+    signal(SIGCHLD, signal_handler);
 }
 
 FdEventDispatcher::~FdEventDispatcher() {
@@ -242,10 +243,6 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
     std::multimap<int, FdEvent> handled_write_fd;
     std::multimap<int, FdEvent> handled_error_fd;
 
-    // TODO(maitneel): 運が悪いとsignal関係で死ぬ //
-    // TODO(maitneel): どこで設定するべきか考える //
-    signal(SIGCHLD, signal_handler);
-    // try {
     if (recived_signal != 0) {
         recived_signal = 0;
         throw SignalDelivered(SIGCHLD);
@@ -258,22 +255,15 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
                 throw SignalDelivered(SIGCHLD);
             }
             if (poll_ret < 0) {
-                // signal(SIGCHLD, SIG_IGN);
                 throw std::runtime_error("poll: failed");
             }
             if (poll_ret == 0) {
-                // signal(SIGCHLD, SIG_IGN);
                 return std::multimap<int, FdEvent> ();
             }
             handled_write_fd = this->WriteBuffer();
             handled_readable_fd = this->ReadBuffer();
             handled_error_fd = this->GetErrorFds();
         }
-        // signal(SIGCHLD, SIG_IGN);
-    // } catch (const SignalDelivered &e) {
-        // signal(SIGCHLD, SIG_IGN);
-    //     throw e;
-    // }
     return this->MergeEvents(handled_readable_fd, handled_write_fd, handled_error_fd);
 }
 
@@ -326,6 +316,8 @@ ConnectionEvent::ConnectionEvent(
     const int &file_fd_arg
 ) : event(event_arg), socket_fd(socket_fd_arg), connection_fd(connection_fd_arg), file_fd(file_fd_arg) {
 }
+
+const std::set<AnyFdType> RelatedFds::empty_any_fd_type_set_;
 
 RelatedFds::RelatedFds() {
 }
@@ -452,8 +444,7 @@ const std::set<AnyFdType> &RelatedFds::GetChildrenFd(const int &fd) {
     } else if (type == kConnection) {
         return this->connection_childlen_.find(fd)->second;
     }
-    // TODO(maitneel): どうにかする //
-    return std::set<AnyFdType>();
+    return empty_any_fd_type_set_;
 }
 
 /*
@@ -523,12 +514,11 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableRequest;
         } else if (fd_event == kEOF) {
-            // TODO(maitneel): 上のと分離する方がいいかも //
             event = kRequestEndOfReadad;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
-            event = kResponceWriteEnd_;
+            event = kresponseWriteEnd;
         } else if (fd_event == kFdEventFail) {
             event = kServerEventFail;
         }
@@ -543,61 +533,13 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
-            event = kFileWriteEnd_;
+            event = kFileWriteEnd;
         } else if (fd_event == kFdEventFail) {
             event = kServerEventFail;
         }
     }
 
     return ConnectionEvent(event, socket_fd, connection_fd, file_fd);
-}
-
-bool ServerEventDispatcher::DoseNotAllChildrenHaveBuffer(const std::set<int> &children) {
-    for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
-        if (!this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void ServerEventDispatcher::CloseScheduledFd() {
-    std::set<int> closeable_fd;
-    std::set<int> scheduled_close_copy = this->scheduled_close_;
-
-    for (std::set<int>::iterator it = scheduled_close_copy.begin(); it != scheduled_close_copy.end(); it++) {
-        try {
-            const FdType type = this->registerd_fds_.GetType(*it);
-
-            std::set<int> children;
-            if (type == kSocket) {
-                this->registerd_fds_.GetSocketChildren(*it);
-            } else if (type == kConnection) {
-                this->registerd_fds_.GetConnectionChildren(*it);
-            }
-            children.insert(*it);
-            if (this->DoseNotAllChildrenHaveBuffer(children)) {
-                closeable_fd.insert(children.begin(), children.end());
-                this->scheduled_close_.erase(*it);
-            }
-        } catch (...) {
-        }
-    }
-
-    for (std::set<int>::iterator it = closeable_fd.begin(); it != closeable_fd.end(); it++) {
-        if (this->fd_event_dispatcher_.IsEmptyWritebleBuffer(*it)) {
-            const FdType type = this->registerd_fds_.GetType(*it);
-            if (type == kSocket) {
-                this->registerd_fds_.UnregisterSocketFd(*it);
-            } else if (type == kConnection) {
-                this->registerd_fds_.UnregisterConnectionFd(*it);
-                this->fd_event_dispatcher_.Unregister(*it);
-            } else if (type == kFile) {
-                this->registerd_fds_.UnregisterFileFd(*it);
-            }
-            close(*it);
-        }
-    }
 }
 
 void ServerEventDispatcher::MergeDuplicateFd(std::multimap<int, FdEvent> *events) {
@@ -669,10 +611,6 @@ void ServerEventDispatcher::UnregisterFileFd(const int &file_fd) {
     this->registerd_fds_.UnregisterFileFd(file_fd);
 }
 
-void ServerEventDispatcher::ScheduleCloseAfterWrite(const int &fd) {
-    this->scheduled_close_.insert(fd);
-}
-
 void ServerEventDispatcher::UnregisterWithClose(const int &fd) {
     FdType type = registerd_fds_.GetType(fd);
 
@@ -695,7 +633,6 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
     std::multimap<int, ConnectionEvent> connections;
     bool is_signal_recived = false;
     do {
-        this->CloseScheduledFd();
         std::multimap<int, FdEvent> fd_events;
         try {
             fd_events = this->fd_event_dispatcher_.Wait(timeout);

@@ -3,7 +3,7 @@
 #include "http_context.hpp"
 #include "http_validation.hpp"
 
-HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), is_cgi_(false), file_fd_(-1), sent_responce_(false) {
+HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), is_cgi_(false), file_fd_(-1), sent_response_(false) {
 }
 
 
@@ -39,7 +39,7 @@ void HTTPContext::ParseRequestBody() {
     // buffer_ = buffer_.substr(request_.content_length_);
 }
 
-HTTPRequest& HTTPContext::GetHTTPRequest() {
+const HTTPRequest& HTTPContext::GetHTTPRequest() {
     return request_;
 }
 

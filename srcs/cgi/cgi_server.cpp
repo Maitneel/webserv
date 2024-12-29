@@ -43,35 +43,6 @@ void child_process(const HTTPRequest &request, const std::string &cgi_script_pat
     exit(127);
 }
 
-
-// void write_body_to_script(const HTTPRequest &request, const int &fd) {
-//     const std::string body = request.entity_body_;
-//     int remining_date = request.entity_body_.length();
-//     // TODO(maitneel): bug: 全て書き込めなかった場合に最初から書き込み直している　//
-//     // あとノンブロッキングじゃない //
-//     do {
-//         int write_ret = write(fd, body.c_str(), remining_date);
-//         if (write_ret < 0) {
-//             throw std::runtime_error("write");
-//         }
-//         remining_date -= write_ret;
-//     } while (remining_date);
-// }
-
-// std::string read_cgi_responce(const int &fd) {
-//     // TODO(maitneel): CGIの結果の読み込み //
-//     // RFC3875 では何種類かresponceが定義されているが、とりま、document responceしか考慮しない //
-//     std::string document_responce;
-//     char buffer[BUFFER_SIZE];
-//     bzero(buffer, BUFFER_SIZE);
-//     // ここのread, 0帰ってきたら終了でほんとにいいのかわからない //
-//     while (0 < read(fd, buffer, BUFFER_SIZE)) {
-//         document_responce += buffer;
-//         bzero(buffer, BUFFER_SIZE);
-//     }
-//     return document_responce;
-// }
-
 CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path) {
     int sv[2];
     int socketret = socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
@@ -86,8 +57,6 @@ CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_scrip
         child_process(request, cgi_script_path, sv[UNIX_SOCKET_SCRIPT]);
     }
     const pid_t &child_pid = pid;
-    // TODO(maitneel): ここどっちがどっちかよくわかんない //
-    const int to_script = sv[1];
     const int from_script = sv[0];
     fcntl(from_script, F_SETFL, O_NONBLOCK | FD_CLOEXEC);
     close(sv[UNIX_SOCKET_SCRIPT]);
