@@ -7,6 +7,7 @@
 #include <string>
 #include <cstdlib>
 #include <utility>
+#include <algorithm>
 
 #include "http_request.hpp"
 #include "http_validation.hpp"
@@ -554,6 +555,65 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
     }
 }
 
+
+
+// ----------------------------------------------- //
+//                 HTTPRequestBody                 //
+// ----------------------------------------------- //
+
+HTTPRequestBody::HTTPRequestBody() : plain_body_(), chunked_body_(), is_chunked_(false), content_length_(0) {
+}
+
+HTTPRequestBody::~HTTPRequestBody() {
+}
+
+void HTTPRequestBody::SetHeader(const HTTPRequest &req) {
+    std::map<std::string, std::vector<std::string> >::const_iterator header_transfer = req.header_.find("transfer-encoding");
+    if (header_transfer != req.header_.end()) {
+        const std::vector<std::string> &transfer_value = header_transfer->second;
+        for (size_t i = 0; i < transfer_value.size(); i++) {
+            if (transfer_value[i] == "chunked") {
+                is_chunked_ = true;
+                break;
+            }
+        }
+    }
+    if (!is_chunked_) {
+        content_length_ = req.content_length_;
+    }
+}
+
+void HTTPRequestBody::AddBuffer(const std::string &buffer, size_t *used_buffer_size) {
+    if (is_chunked_) {
+        // TODO(maitneel): 可能であればused_buffer_sizeを詰めれるようにする //
+        if (used_buffer_size != NULL) {
+            // とりあえず-1を入れておく(特に意味はない) //
+            *used_buffer_size = -1;
+        }
+        chunked_body_.AddBuffer(buffer);
+    } else {
+        if (used_buffer_size != NULL) {
+            *used_buffer_size = std::min(content_length_ - plain_body_.length(), buffer.length());
+        }
+        plain_body_ += buffer.substr(0, std::min(content_length_ - plain_body_.length(), buffer.length()));
+    }
+}
+
+bool HTTPRequestBody::IsComplated() {
+    if (is_chunked_) {
+        return chunked_body_.IsDecodeComplete();
+    } else {
+        return (plain_body_.length() == content_length_);
+    }
+}
+
+std::string HTTPRequestBody::GetBody() {
+    if (is_chunked_) {
+        return chunked_body_.GetDecodedData();
+    } else {
+        return plain_body_;
+    }
+}
 
 /*
 int main() {
