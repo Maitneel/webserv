@@ -298,10 +298,10 @@ void Server::CloseConnection(const int connection_fd) {
 }
 
 void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string) {
-    if (ctxs_.at(connection_fd).sent_responce) {
+    if (ctxs_.at(connection_fd).sent_responce_) {
         return;
     }
-    ctxs_.at(connection_fd).sent_responce = true;
+    ctxs_.at(connection_fd).sent_responce_ = true;
     CGIResponse cgi_res(cgi_responce_string);
     HTTPResponse res = cgi_res.make_http_response();
 
@@ -310,10 +310,10 @@ void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::st
 
 void Server::SendResponceFromFile(const int &connection_fd, const std::string &file_content) {
     // TODO(maitneel): content-typeをどうにかする //
-    if (ctxs_.at(connection_fd).sent_responce) {
+    if (ctxs_.at(connection_fd).sent_responce_) {
         return;
     }
-    ctxs_.at(connection_fd).sent_responce = true;
+    ctxs_.at(connection_fd).sent_responce_ = true;
 
     HTTPResponse res(HTTPResponse::kOK, "/", file_content);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
