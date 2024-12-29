@@ -4,18 +4,21 @@
 #include <string>
 
 #include "http_request.hpp"
+#include "cgi.hpp"
 
 class HTTPContext {
  private:
-    const int socket_fd_;
+    const int connection_fd_;
     std::string buffer_;
-    pid_t cgi_pid_;
     HTTPRequest request_;
     bool parsed_header_;
  public:
+    CGIInfo cgi_info_;
+    bool is_cgi_;
+
     explicit HTTPContext(int fd);
     ~HTTPContext();
-    int GetSocketFD() const;
+    int GetConnectionFD() const;
     const std::string& GetBuffer() const;
     bool IsParsedHeader() const;
     void ParseRequestHeader();

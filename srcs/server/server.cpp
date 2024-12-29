@@ -1,6 +1,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
@@ -27,6 +28,8 @@
 #include "cgi.hpp"
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
+using std::cerr;
+using std::endl;
 
 std::string int_to_str(int n) {
     std::stringstream ss;
@@ -177,7 +180,8 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
-HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
+// TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
+int Server::GetHandler(int sock, const HTTPRequest& req) {
     ServerConfig conf = this->GetConfigByFd(sock);
     std::string path = conf.document_root + req.get_request_uri();
 
@@ -189,16 +193,14 @@ HTTPResponse Server::GetHandler(int sock, const HTTPRequest& req) {
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        return HTTPResponse(HTTPResponse::kNotFound, "text/html", "Not Found");
+        return -2;
     }
 
-    std::string content;
-    try {
-        content = GetContent(path);
-    } catch (std::invalid_argument& e) {
-        return HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+    int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK));
+    if (0 <= fd) {
+        return fd;
     }
-    return HTTPResponse(HTTPResponse::kOK, GetContentType(path), content);
+    return -1;
 }
 
 int ft_accept(int fd) {
@@ -215,42 +217,123 @@ int ft_accept(int fd) {
 }
 
 
-//  雑of雑なので作り直さないといけないと思う //
-HTTPResponse create_cgi_responce(const HTTPRequest &req, const std::string &cgi_path) {
+void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path) {
     std::cerr << "call cgi" << std::endl;
-    CGIResponse cgi_res(call_cgi_script(req, cgi_path));
+    HTTPContext &context = ctxs_.at(connection_fd);
+    context.cgi_info_ = call_cgi_script(req, cgi_path);
+    context.is_cgi_ = true;
+    const CGIInfo &cgi_info = context.cgi_info_;
+    dispatcher_.RegisterFileFd(cgi_info.fd, connection_fd);
+    dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    debug(cgi_info.fd);
     std::cerr << "cgi end" << std::endl;
-    return cgi_res.make_http_response();
 }
 
-void Server::AcceptRequest(int fd) {
-    int accepted_fd = ft_accept(fd);
-    selector_.Register(accepted_fd, kEventRead);
-    ctxs_.insert(std::make_pair(accepted_fd, HTTPContext(fd)));
+
+void Server::routing(const int &connection_fd, const int &socket_fd) {
+    HTTPContext& ctx = ctxs_.at(connection_fd);
+    HTTPRequest &req = ctx.GetHTTPRequest();
+    req.print_info();
+
+    std::string method = req.get_method();
+
+    HTTPResponse res;
+    if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
+        CallCGI(connection_fd, req, "./cgi_script/date/date.cgi");
+        return;
+    } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
+        CallCGI(connection_fd, req, "./cgi_script/echo/echo.cgi");
+        return;
+    } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
+        CallCGI(connection_fd, req, "./cgi_script/message_board/message_board.cgi");
+        return;
+    } else if (method == "GET") {
+        int fd = this->GetHandler(socket_fd, req);
+        if (fd == -1) {
+            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+        } else if (fd == -2) {
+            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
+        } else if (0 <= fd) {
+            dispatcher_.RegisterFileFd(fd, connection_fd);
+            return;
+        }
+    } else {
+        res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+    }
+    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+    dispatcher_.ScheduleCloseAfterWrite(connection_fd);
+
+    // keep-alive のことを考えるならeraseするべきではないかもしれない //
+    ctxs_.erase(connection_fd);
+}
+
+void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
+    for (std::map<int, HTTPContext>::iterator it = ctxs_.begin(); it != ctxs_.end(); it++) {
+        HTTPContext &current = it->second;
+        CGIInfo &cgi_info = current.cgi_info_;
+        cgi_info.is_proccess_end = true;
+
+        int temp_child_exit_code;
+        if (current.is_cgi_ && 0 < waitpid(current.cgi_info_.pid, &temp_child_exit_code, WNOHANG)) {
+            if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
+                // どっちのイベントがいいか正直微妙 //
+                events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kFileEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
+                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
+            }
+        }
+    }
+}
+
+void Server::SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string) {
+    CGIResponse cgi_res(cgi_responce_string);
+    HTTPResponse res = cgi_res.make_http_response();
+
+    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+
+    // プロセス終了時の処理で再度レスポンスが生成されないようにするための処理 //
+    this->ctxs_.at(connection_fd).cgi_info_.fd = -1;
+}
+
+void Server::SendResponceFromFile(const int &connection_fd, const std::string &file_content) {
+    // TODO(maitneel): content-typeをどうにかする //
+    HTTPResponse res(HTTPResponse::kOK, "/", file_content);
+    dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
 void Server::EventLoop() {
     for (size_t i = 0; i < sockets_.size(); i++) {
-        selector_.Register(sockets_[i].GetSocketFd(), kEventRead);
+        dispatcher_.RegisterSocketFd(sockets_[i].GetSocketFd());
     }
 
     while(true) {
-        std::vector<FDEvent> events;
-        events = selector_.Select(100);
+        std::multimap<int, ConnectionEvent> dis_events = dispatcher_.Wait(-1);
+        std::multimap<int, ConnectionEvent>::const_iterator it;
 
-        std::vector<FDEvent>::const_iterator it;
-        for (it = events.begin(); it != events.end(); it++) {
-            if (this->IsIncludeFd(it->fd) && it->event == kEventRead) {
-                try {
-                    this->AcceptRequest(it->fd);
-                } catch (std::exception& e) {
-                    std::cerr << e.what() << std::endl;
-                    continue;
+        for (it = dis_events.find(PROCESS_CHENGED_FD); it->first == PROCESS_CHENGED_FD; it++) {
+            if (it->second.event == kChildProcessChanged) {
+                this->InsertEventOfWhenChildProcessEnded(&dis_events);
+                break;
+            }
+        }
+        for (it = dis_events.begin(); it != dis_events.end(); it++) {
+            const int &event_fd = it->first;
+            const ConnectionEvent &event = it->second;
+
+            cerr << "[fd, event]: " << event_fd << ", " << event.event << endl;
+            if (event_fd == -1) {
+                continue;
+            }
+            if (event.event == kUnknownEvent) {
+                // Nothing to do;
+            } else if (event.event == kReadableRequest || event.event == kReqeustEndOfRead) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
+                if (ctxs_.find(event_fd) == ctxs_.end()) {
+                    ctxs_.insert(std::make_pair(event_fd, HTTPContext(event_fd)));
                 }
-            } else if (it->event == kEventRead) {
-                HTTPContext& ctx = ctxs_.at(it->fd);
-                ctx.AppendBuffer(read_request(it->fd));
-                std::cerr << ctx.GetBuffer() << std::endl;
+                HTTPContext& ctx = ctxs_.at(event_fd);
+
+                // TODO(maitneel): 辻褄合わせをどうにかする //
+                ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
+                dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
 
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
@@ -259,35 +342,44 @@ void Server::EventLoop() {
                 }
                 if (ctx.IsParsedHeader() && ctx.GetHTTPRequest().content_length_ <= ctx.GetBuffer().length()) {
                     ctx.ParseRequestBody();
-                    selector_.Register(it->fd, kEventWrite);
+                    this->routing(event_fd, it->second.socket_fd);
                 }
-            } else if (it->event == kEventWrite) {
-                HTTPContext& ctx = ctxs_.at(it->fd);
-                HTTPRequest &req = ctx.GetHTTPRequest();
-                req.print_info();
-
-                std::string method = req.get_method();
-
-                HTTPResponse res;
-                if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-                    res = create_cgi_responce(req, "./cgi_script/date/date.cgi");
-                } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
-                    res = create_cgi_responce(req, "./cgi_script/echo/echo.cgi");
-                } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
-                    res = create_cgi_responce(req, "./cgi_script/message_board/message_board.cgi");
-                } else if (method == "GET") {
-                    res = this->GetHandler(ctx.GetSocketFD(), req);
-                } else {
-                    res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+            } else if (event.event == kReadableFile) {
+                // TODO(maitneel): Do it;
+            } else if (event.event == kFileEndOfRead) {
+                // TODO(maitneel): Do it;
+                if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
+                    this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregisterWithClose(event_fd);
+                } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
+                    this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregisterWithClose(event_fd);
                 }
-                response_to_client(it->fd, res);
-                selector_.Unregister(it->fd);
-                close(it->fd);
-                // keep-alive のことを考えるならeraseするべきではないかもしれない //
-                ctxs_.erase(it->fd);
-            } else if (it->event == kEvnetError) {
-                ctxs_.erase(it->fd);
-                close(it->fd);
+            } else if (event.event == kFileEndOfRead) {
+                if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
+                    this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregisterWithClose(event_fd);
+                } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
+                    this->SendResponceFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    dispatcher_.UnregisterWithClose(event_fd);
+                }
+            } else if (event.event == kResponceWriteEnd_) {
+                // TODO(maitneel): Do it (これだけでいいのか？？？);
+                // fdのclose忘れが出てきたらここが原因 //
+                ctxs_.erase(event.connection_fd);
+                dispatcher_.UnregisterWithClose(event_fd);
+            } else if (event.event == kFileWriteEnd_) {
+                // TODO(maitneel): Do it;
+            } else if (event.event == kChildProcessChanged) {
+                // Nothing to do (processed)
+            } else if (event.event == kServerEventFail) {
+                // TODO(maitneel): Do it;
+                if (event_fd == event.file_fd) {
+                    if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {
+                        this->SendResponceFromCGIResponce(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    }
+                }
+                dispatcher_.UnregisterWithClose(event_fd);
             }
         }
     }

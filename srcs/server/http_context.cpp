@@ -3,15 +3,15 @@
 #include "http_context.hpp"
 #include "http_validation.hpp"
 
-HTTPContext::HTTPContext(int fd) : socket_fd_(fd), parsed_header_(false) {
+HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), is_cgi_(false) {
 }
 
 
 HTTPContext::~HTTPContext() {
 }
 
-int HTTPContext::GetSocketFD() const {
-    return socket_fd_;
+int HTTPContext::GetConnectionFD() const {
+    return connection_fd_;
 }
 
 const std::string& HTTPContext::GetBuffer() const {
@@ -25,8 +25,7 @@ bool HTTPContext::IsParsedHeader() const {
 void HTTPContext::ParseRequestHeader() {
     std::string header_str = buffer_.substr(0, buffer_.find("\r\n\r\n") + strlen(CRLF));
 
-    // TODO(maitneel): 新規でインスタンスを作らないようにする //
-    request_ = HTTPRequest(header_str);
+    request_.parse_request_header(header_str);
     buffer_ = buffer_.substr(buffer_.find("\r\n\r\n") + strlen("\r\n\r\n"));
     parsed_header_ = true;
 }

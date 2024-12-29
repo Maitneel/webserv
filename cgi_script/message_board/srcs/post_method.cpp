@@ -60,7 +60,7 @@ void update_message_db(SimpleDB *message_db, const FormDataBody &body, const std
 void post_method(const std::multimap<std::string, std::string> &cookie) {
     SimpleDB message_db(MESSAGE_DB_PATH);
     SimpleDB auth_db(AUTH_DB_PATH);
-    FormDataBody body;
+    FormDataBody body(std::atoi(getenv("CONTENT_LENGTH")));
     std::string cookie_header;
     std::string user_id;
 

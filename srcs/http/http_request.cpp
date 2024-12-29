@@ -248,10 +248,6 @@ void HTTPRequest::valid_host(const std::string &value) {
     }
 }
 
-HTTPRequest::HTTPRequest(const int fd) {
-    // TODO(maitneel):
-}
-
 void HTTPRequest::add_valid_funcs() {
     // こいつらなんかいい感じに初期化しリストとかで初期化したい(やり方がわからなかった)　//
     if (this->protocol == http_0_9 || this->protocol == HTTP_1_0) {
@@ -326,11 +322,11 @@ void HTTPRequest::parse_request_line(const std::string &request_line) {
     }
 }
 
-size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffer) {
-    size_t registor_count = 0;
+size_t HTTPRequest::register_field(const std::vector<std::string> &splited_buffer) {
+    size_t register_count = 0;
     for (size_t i = 1; i < splited_buffer.size(); i++) {
         if (is_crlf(splited_buffer[i])) {
-            registor_count++;
+            register_count++;
             break;
         }
         if (!is_valid_http_header(splited_buffer[i])) {
@@ -349,10 +345,10 @@ size_t HTTPRequest::registor_field(const std::vector<std::string> &splited_buffe
         } else {
             it->second.push_back(header_pair.second);
         }
-        registor_count++;
+        register_count++;
     }
     this->transform_headers();
-    return registor_count;
+    return register_count;
 }
 
 void HTTPRequest::valid_headers() {
@@ -382,7 +378,7 @@ void HTTPRequest::transform_headers() {
     }
 }
 
-void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
+void HTTPRequest::register_entity_body(const std::vector<std::string> &splited_buffer, const size_t front) {
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
@@ -399,15 +395,24 @@ void HTTPRequest::registor_entity_body(const std::vector<std::string> &splited_b
     this->transform_headers();
 }
 
-HTTPRequest::HTTPRequest() {
+HTTPRequest::HTTPRequest() : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
 }
 
-HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
-    remove_front_crlf(&buffer);
-    std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
+// HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+//     remove_front_crlf(&buffer);
+//     std::vector<std::string> splited_buffer = escaped_quote_split(buffer, CRLF);
+//     this->parse_request_line(splited_buffer[0]);
+
+//     const size_t header_count = this->register_field(splited_buffer);
+//     this->valid_headers();
+// }
+
+void HTTPRequest::parse_request_header(std::string header_str) {
+    remove_front_crlf(&header_str);
+    std::vector<std::string> splited_buffer = escaped_quote_split(header_str, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
-    const size_t header_count = this->registor_field(splited_buffer);
+    const size_t header_count = this->register_field(splited_buffer);
     this->valid_headers();
 }
 
@@ -429,16 +434,16 @@ const std::string &HTTPRequest::get_protocol() const {
 }
 
 // print func
-void HTTPRequest::print_info() {
+void HTTPRequest::print_info() const {
     this->print_info(std::cout);
 }
 
-void HTTPRequest::print_info(std::ostream &stream) {
+void HTTPRequest::print_info(std::ostream &stream) const {
     const size_t width = 25;
 
     stream << '[' << get_formated_date() << "] '" << this->get_method() << "' '" << this->get_request_uri() << "' '" << this->get_protocol() << "'" << std::endl;
     stream << "    header : {" << std::endl;
-    for (std::map<std::string, std::vector<std::string> >::iterator i = this->header_.begin(); i != this->header_.end(); i++) {
+    for (std::map<std::string, std::vector<std::string> >::const_iterator i = this->header_.begin(); i != this->header_.end(); i++) {
         stream << "        " << std::setw(20) << std::left << i->first << ": ";
         for (size_t j = 0; j < i->second.size(); j++) {
             stream << "'"<< i->second[j] << "', ";

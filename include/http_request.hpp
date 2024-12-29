@@ -79,8 +79,8 @@ class HTTPRequest {
     std::string parse_request_uri(const std::string &request_line);
     std::string parse_protocol(const std::string &reqeust_line);
 
-    size_t registor_field(const std::vector<std::string> &splited_buffer);
-    void registor_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
+    size_t register_field(const std::vector<std::string> &splited_buffer);
+    void register_entity_body(const std::vector<std::string> &splited_buffer, const size_t front);
 
     void transform_headers();
     void transform_content_type();
@@ -106,8 +106,7 @@ class HTTPRequest {
     std::vector<std::string> user_agent_;
 
     explicit HTTPRequest();
-    explicit HTTPRequest(const int fd);
-    explicit HTTPRequest(std::string buffer);
+    void parse_request_header(std::string header_str);
     ~HTTPRequest();
 
     // getter
@@ -116,8 +115,8 @@ class HTTPRequest {
     const std::string &get_protocol() const;
 
     // print funcs
-    void print_info();
-    void print_info(std::ostream &stream);
+    void print_info() const;
+    void print_info(std::ostream &stream) const;
 
     // exception class
     class InvalidRequest :  public  std::exception {

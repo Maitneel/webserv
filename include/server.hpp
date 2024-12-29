@@ -10,6 +10,7 @@
 #include "http_response.hpp"
 #include "http_context.hpp"
 #include "poll_selector.hpp"
+#include "event_dispatcher.hpp"
 
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
@@ -27,15 +28,22 @@ class Socket {
 
 class Server {
  private:
-    PollSelector selector_;
+    ServerEventDispatcher dispatcher_;
     std::vector<Socket> sockets_;
     std::map<int, HTTPContext> ctxs_;
-    void AcceptRequest(int fd);
+
+    void routing(const int &connection_fd, const int &socket_fd);
+    void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path);
+    void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
+    void SendResponceFromCGIResponce(const int &connection_fd, const std::string &cgi_responce_string);
+    void SendResponceFromFile(const int &connection_fd, const std::string &file_content);
+
  public:
     explicit Server(std::vector<ServerConfig> confs);
     ~Server();
     ServerConfig GetConfigByFd(int fd);
-    HTTPResponse GetHandler(int fd, const HTTPRequest& req);
+    // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
+    int GetHandler(int fd, const HTTPRequest& req);
     void EventLoop();
     bool IsIncludeFd(int fd);
     void AppendBuffer(std::string str);

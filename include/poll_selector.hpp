@@ -4,6 +4,9 @@
 #include <vector>
 #include "selector.hpp"
 
+SelectorEvent ConvertSelectorEvent(short event);
+short ConvertPollEvent(SelectorEvent event);
+
 class PollSelector: public Selector {
  public:
     PollSelector();

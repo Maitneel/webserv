@@ -18,6 +18,7 @@ int get_content_length(char **env) {
 int main(int argc, char **argv, char **env) {
 
     std::cout << "Content-Type:text/html" << "\n"; 
+    std::cout << "\n";
 
     std::cout << "<!DOCTYPE html>" << "\n";
     std::cout << "<html lang=\"en\">" << "\n";

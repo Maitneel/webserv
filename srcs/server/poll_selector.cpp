@@ -7,7 +7,7 @@ PollSelector::PollSelector() {}
 
 PollSelector::~PollSelector() {}
 
-static short ConvertPollEvent(SelectorEvent event) {
+short ConvertPollEvent(SelectorEvent event) {
     switch (event) {
         case kEventRead:
             return POLLIN;
@@ -20,7 +20,7 @@ static short ConvertPollEvent(SelectorEvent event) {
     }
 }
 
-static SelectorEvent ConvertSelectorEvent(short event) {
+SelectorEvent ConvertSelectorEvent(short event) {
     switch (event) {
         case POLLIN:
             return kEventRead;

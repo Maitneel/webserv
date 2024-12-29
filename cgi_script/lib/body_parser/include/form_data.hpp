@@ -19,7 +19,7 @@ class FormDataBody {
     std::map<std::string, std::string> body_; // name, body;
  public:
     std::map<std::string, FormDataParameters> parameters_; // name, parameters;
-    FormDataBody();
+    FormDataBody(const int &length);
     ~FormDataBody();
 
     const std::string &get_body(const std::string &name) const;

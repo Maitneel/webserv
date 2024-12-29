@@ -1,9 +1,11 @@
+#include <unistd.h>
 #include <string>
 #include <vector>
 #include <map>
 #include <utility>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "form_data.hpp"
 
@@ -16,11 +18,20 @@ using std::endl;
 // ---------------- utility function -------------------
 
 #define PARAMETER_DALIMITER " :\0x09"
+#define BUFFER_SIZE 1024
 
-static std::string get_cin_buffer() {
-    std::stringstream ss;
-    ss << std::cin.rdbuf();
-    return ss.str();
+static std::string get_cin_buffer(int length) {
+    std::string stdin_date;
+    char buffer[BUFFER_SIZE];
+    while (0 < length) {
+        int read_ret = read(STDIN_FILENO, buffer, std::min(length, BUFFER_SIZE));
+        if (read_ret < 0) {
+            throw std::runtime_error("read error");
+        }
+        stdin_date.append(buffer, read_ret);
+        length -= read_ret;
+    }
+    return stdin_date;
 }
 
 static std::string get_boundary() {
@@ -141,7 +152,7 @@ std::string replace_crlf_to_lf(const std::string &str) {
     return replaced;
 }
 
-FormDataBody::FormDataBody() : buffer_(get_cin_buffer()) {
+FormDataBody::FormDataBody(const int &length) : buffer_(get_cin_buffer(length)) {
     const std::string boundary = "--" + get_boundary();
     std::vector<std::string> splited_by_boundary = split_with_erase_delimiter(this->buffer_, boundary);
 
