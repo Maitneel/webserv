@@ -3,7 +3,7 @@
 #include "http_context.hpp"
 #include "http_validation.hpp"
 
-HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), is_cgi_(false), file_fd_(-1), sent_responce(false) {
+HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), is_cgi_(false), file_fd_(-1), sent_responce_(false) {
 }
 
 
