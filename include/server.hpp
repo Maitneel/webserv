@@ -15,21 +15,25 @@
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
 
-class Socket {
+class SocketList {
+ public:
+    SocketList();
+    ~SocketList();
+
+    void AddSocket(const int &port, const int &fd);
+    int GetPort(const int &fd);
+    int GetFd(const int &port);
+
  private:
-    int          socket_fd;
-    ServerConfig config;
- public :
-    Socket(int socket_fd, ServerConfig config);
-    ~Socket();
-    int   GetSocketFd();
-    const ServerConfig& GetConfig();
+    std::map<int, int> port_fd_pair_;
+    std::map<int, int> fd_port_pair_;
 };
 
 class Server {
  private:
     ServerEventDispatcher dispatcher_;
-    std::vector<Socket> sockets_;
+    SocketList socket_list_;
+    std::map<std::pair<int, std::string>, ServerConfig> sockets_;  // map<pair<port, hostname>, config>> 若干キモい //
     std::map<int, HTTPContext> ctxs_;
 
     void routing(const int &connection_fd, const int &socket_fd);
@@ -39,15 +43,15 @@ class Server {
     void SendresponseFromFile(const int &connection_fd, const std::string &file_content);
     void CloseConnection(const int connection_fd);
 
+    const ServerConfig &GetConfig(const int &port, const std::string &host_name);
+
  public:
     explicit Server(std::map<ServerConfigKey, ServerConfig> confs);
     ~Server();
-    ServerConfig GetConfigByFd(int fd);
+    // ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
     int GetHandler(int fd, const HTTPRequest& req);
     void EventLoop();
-    bool IsIncludeFd(int fd);
-    void AppendBuffer(std::string str);
 };
 
 #endif  // INCLUDE_SERVER_HPP_

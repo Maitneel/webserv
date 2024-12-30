@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <vector>
 #include <map>
+#include <set>
 #include <utility>
 
 #include "server.hpp"
@@ -126,40 +127,49 @@ Server::Server(std::map<ServerConfigKey, ServerConfig> confs) {
 
     std::set<int> created_port;
     for (it = confs.begin(); it != confs.end(); it++) {
-        int port = it->second.port_;
-        debug(port);
+        ServerConfig &config = it->second;
+        int port = config.port_;
         if (created_port.find(port) == created_port.end()) {
             int sock = create_inet_socket(port);
-            if (sock < 0)
+            if (sock < 0) {
                 throw std::runtime_error("can not create tcp socket.");
-            sockets_.push_back(Socket(sock, it->second));  // 謎 //
+            }
             created_port.insert(port);
+            socket_list_.AddSocket(port, sock);
         }
+        sockets_.insert(std::make_pair(std::make_pair(port, config.server_name_), config));
     }
 }
 
 Server::~Server() {}
 
-Socket::Socket(int socket_fd, ServerConfig config): socket_fd(socket_fd), config(config) {}
-
-Socket::~Socket() {}
-
-int Socket::GetSocketFd() {
-    return this->socket_fd;
+SocketList::SocketList() {
 }
 
-const ServerConfig& Socket::GetConfig() {
-    return this->config;
+SocketList::~SocketList() {
 }
 
+void SocketList::AddSocket(const int &port, const int &fd) {
+    port_fd_pair_.insert(std::make_pair(port, fd));
+    fd_port_pair_.insert(std::make_pair(fd, port));
+}
 
-ServerConfig Server::GetConfigByFd(int fd) {
-    std::vector<Socket>::iterator it;
-    for (it = sockets_.begin(); it != sockets_.end(); it++) {
-        if (it->GetSocketFd() == fd)
-            return it->GetConfig();
+int SocketList::GetPort(const int &fd) {
+    const std::map<int, int>::const_iterator it = fd_port_pair_.find(fd);
+
+    if (it != fd_port_pair_.end()) {
+        return it->second;
     }
-    throw std::invalid_argument("invalid fd");
+    return NON_EXIST_FD;
+}
+
+int SocketList::GetFd(const int &port) {
+    const std::map<int, int>::const_iterator it = port_fd_pair_.find(port);
+
+    if (it != port_fd_pair_.end()) {
+        return it->second;
+    }
+    return NON_EXIST_FD;
 }
 
 std::string GetContentType(const std::string path) {
@@ -187,9 +197,19 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
+static std::string get_host_name(const std::string &host_header_value, const int &port) {
+    std::string port_string = ":";
+    port_string += int_to_str(port);
+    const std::string::size_type port_front = host_header_value.find(port_string);
+    return (host_header_value.substr(0, port_front));
+}
+
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
 int Server::GetHandler(int sock, const HTTPRequest& req) {
-    ServerConfig conf = this->GetConfigByFd(sock);
+    // ServerConfig conf = this->GetConfigByFd(sock);
+    const int port = socket_list_.GetPort(sock);
+    const std::string host_name = get_host_name(req.header_.at("host").at(0), port);  // こいつやばい //
+    const ServerConfig &conf = this->GetConfig(port, host_name);
     std::string path = conf.document_root_ + req.get_request_uri();
 
     if (IsDir(path.c_str())) {
@@ -255,7 +275,14 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         CallCGI(connection_fd, req, "./cgi_script/message_board/message_board.cgi");
         return;
     } else if (method == "GET") {
-        int fd = this->GetHandler(socket_fd, req);
+        int fd;
+        try {
+            fd = this->GetHandler(socket_fd, req);
+        } catch (std::runtime_error &e) {
+            // TODO(maitneel): 例外をいい感じのやつにする //
+            fd = -3;
+            res = HTTPResponse(HTTPResponse::kNotFound, "text/html", "NotFound");
+        }
         if (fd == -1) {
             res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
         } else if (fd == -2) {
@@ -326,9 +353,20 @@ void Server::SendresponseFromFile(const int &connection_fd, const std::string &f
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
+const ServerConfig &Server::GetConfig(const int &port, const std::string &host_name) {
+    std::pair<int, std::string> config_key(port, host_name);
+    std::map<std::pair<int, std::string>, ServerConfig>::iterator config_it = sockets_.find(config_key);
+    if (config_it != sockets_.end()) {
+        return config_it->second;
+    } else {
+        // TODO(maitneel): 例外をいいかんじのやつにする //
+        throw std::runtime_error("no exist config");
+    }
+}
+
 void Server::EventLoop() {
-    for (size_t i = 0; i < sockets_.size(); i++) {
-        dispatcher_.RegisterSocketFd(sockets_[i].GetSocketFd());
+    for (std::map<std::pair<int, std::string>, ServerConfig>::const_iterator it = sockets_.begin(); it != sockets_.end(); it++) {
+        dispatcher_.RegisterSocketFd(socket_list_.GetFd(it->second.port_));
     }
 
     while(true) {
@@ -416,12 +454,4 @@ void Server::EventLoop() {
             }
         }
     }
-}
-
-bool Server::IsIncludeFd(int fd) {
-    for (size_t i = 0; i < sockets_.size(); i++) {
-        if (sockets_[i].GetSocketFd() == fd)
-            return true;
-    }
-    return false;
 }
