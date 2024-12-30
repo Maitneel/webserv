@@ -24,7 +24,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
         ServerConfig server_config;
         server_config.location_configs_.insert(std::make_pair(location_conf.name_, location_conf));
         server_config.port_ = 8080;
-        server_config.server_name_ = "localshot";
+        server_config.server_name_ = "localhost";
         server_config.document_root_ = "./docs";
 
         configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
@@ -37,7 +37,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
         ServerConfig server_config;
         server_config.location_configs_.insert(std::make_pair(location_conf.name_, location_conf));
         server_config.port_ = 8001;
-        server_config.server_name_ = "localshot";
+        server_config.server_name_ = "localhost";
         server_config.document_root_ = "./docs";
 
         configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
@@ -88,7 +88,7 @@ std::multimap<std::string, ServerConfig> hard_coding_config() {
         ServerConfig server_config;
         server_config.location_configs_ = hard_coding_loc_config();
         server_config.port_ = 8080;
-        server_config.server_name_ = "localshot";
+        server_config.server_name_ = "localhost";
         server_config.document_root_ = "./docs";
 
         configs.insert(std::make_pair(server_config.server_name_, server_config));
@@ -97,7 +97,7 @@ std::multimap<std::string, ServerConfig> hard_coding_config() {
         ServerConfig server_config;
         server_config.location_configs_ = hard_coding_loc_config();
         server_config.port_ = 8001;
-        server_config.server_name_ = "localshot";
+        server_config.server_name_ = "localhost";
         server_config.document_root_ = "./docs";
 
         configs.insert(std::make_pair(server_config.server_name_, server_config));
