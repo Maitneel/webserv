@@ -123,11 +123,18 @@ int create_inet_socket(int port) {
 
 Server::Server(std::map<ServerConfigKey, ServerConfig> confs) {
     std::map<ServerConfigKey, ServerConfig>::iterator it;
+
+    std::set<int> created_port;
     for (it = confs.begin(); it != confs.end(); it++) {
-        int sock = create_inet_socket(it->second.port_);
-        if (sock < 0)
-            throw std::runtime_error("can not create tcp socket.");
-        sockets_.push_back(Socket(sock, it->second));  // 謎 //
+        int port = it->second.port_;
+        debug(port);
+        if (created_port.find(port) == created_port.end()) {
+            int sock = create_inet_socket(port);
+            if (sock < 0)
+                throw std::runtime_error("can not create tcp socket.");
+            sockets_.push_back(Socket(sock, it->second));  // 謎 //
+            created_port.insert(port);
+        }
     }
 }
 

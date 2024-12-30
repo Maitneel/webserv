@@ -19,7 +19,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
     {
         LocastionConfig location_conf;
         location_conf.document_root_ = "./docs";
-        location_conf.methods_.push_back("GET");
+        location_conf.methods_.push_back("""GET");
 
         ServerConfig server_config;
         server_config.location_configs_.insert(std::make_pair(location_conf.name_, location_conf));
@@ -46,3 +46,74 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
     (void)(path);
     return configs;
 }
+
+
+std::pair<std::string, LocastionConfig> gen_loc_conf(
+    std::string name,
+    std::string doc_root,
+    bool auto_index,
+    std::string cgi_path
+) {
+    LocastionConfig conf;
+
+    conf.name_ = name;
+
+    conf.methods_.push_back("GET");
+    conf.methods_.push_back("POST");
+    conf.methods_.push_back("DELETE");
+
+    conf.document_root_ = doc_root;
+    conf.autoindex_ = auto_index;
+    conf.cgi_path_ = cgi_path;
+
+    // conf.max_body_size_ // Not Implement for NUW
+    // conf.redirect_  // Not Implement for NUW
+
+    return std::make_pair(name, conf);
+}
+
+std::map<std::string, LocastionConfig> hard_coding_loc_config() {
+    std::map<std::string, LocastionConfig> conf_map;
+    conf_map.insert(gen_loc_conf("/", "./docs", true, ""));
+    conf_map.insert(gen_loc_conf("/cgi/date.cgi", "", false, "./cgi_script/echo/echo.cgi"));
+    conf_map.insert(gen_loc_conf("/cgi/echo.cgi", "", false, "./cgi_script/echo/echo.cgi"));
+    conf_map.insert(gen_loc_conf("/cgi/message_board", "", false, "./cgi_script/message_board/message_board.cgi"));
+
+    return conf_map;
+}
+
+std::multimap<std::string, ServerConfig> hard_coding_config() {
+    std::multimap<std::string, ServerConfig> configs;
+    {
+        ServerConfig server_config;
+        server_config.location_configs_ = hard_coding_loc_config();
+        server_config.port_ = 8080;
+        server_config.server_name_ = "localshot";
+        server_config.document_root_ = "./docs";
+
+        configs.insert(std::make_pair(server_config.server_name_, server_config));
+    }
+    {
+        ServerConfig server_config;
+        server_config.location_configs_ = hard_coding_loc_config();
+        server_config.port_ = 8001;
+        server_config.server_name_ = "localshot";
+        server_config.document_root_ = "./docs";
+
+        configs.insert(std::make_pair(server_config.server_name_, server_config));
+    }
+    {
+        ServerConfig server_config;
+        server_config.location_configs_ = hard_coding_loc_config();
+        server_config.port_ = 8080;
+        server_config.server_name_ = "127.0.0.1";
+        server_config.document_root_ = "./docs";
+
+        configs.insert(std::make_pair(server_config.server_name_, server_config));
+    }
+
+    return configs;
+}
+
+
+
