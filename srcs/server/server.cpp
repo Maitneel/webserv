@@ -276,10 +276,12 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
 
     std::string method = req.get_method();
 
-    std::map<std::string, LocastionConfig>::const_iterator it = config.location_configs_.find(req_uri);
-    if (it != config.location_configs_.end()) {
+    for (std::map<std::string, LocastionConfig>::const_iterator it = config.location_configs_.begin(); it != config.location_configs_.end(); it++) {
         LocastionConfig loc_conf = it->second;
         cerr << "routing: '" << loc_conf.name_ << "', '" << req_uri.substr(0, loc_conf.name_.length()) << "', '" << loc_conf.cgi_path_ << "'" << endl;
+        if (loc_conf.name_ != req_uri.substr(0, loc_conf.name_.length())) {
+            continue;
+        }
         if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
             this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
             return;
@@ -290,7 +292,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         } else if (method == "GET") {
             this->GetHandler(&ctx, loc_conf.document_root_, config, connection_fd);
             return;
-        }
+            }
     }
 
     if (method == "GET") {
