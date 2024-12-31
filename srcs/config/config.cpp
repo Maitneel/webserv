@@ -19,7 +19,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
     {
         LocastionConfig location_conf;
         location_conf.document_root_ = "./docs";
-        location_conf.methods_.push_back("""GET");
+        location_conf.methods_.insert("GET");
 
         ServerConfig server_config;
         server_config.location_configs_.insert(std::make_pair(location_conf.name_, location_conf));
@@ -32,7 +32,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
     {
         LocastionConfig location_conf;
         location_conf.document_root_ = "./docs";
-        location_conf.methods_.push_back("GET");
+        location_conf.methods_.insert("GET");
 
         ServerConfig server_config;
         server_config.location_configs_.insert(std::make_pair(location_conf.name_, location_conf));
@@ -58,9 +58,9 @@ std::pair<std::string, LocastionConfig> gen_loc_conf(
 
     conf.name_ = name;
 
-    conf.methods_.push_back("GET");
-    conf.methods_.push_back("POST");
-    conf.methods_.push_back("DELETE");
+    conf.methods_.insert("GET");
+    conf.methods_.insert("POST");
+    conf.methods_.insert("DELETE");
 
     conf.document_root_ = doc_root;
     conf.autoindex_ = auto_index;

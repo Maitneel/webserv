@@ -205,12 +205,8 @@ static std::string get_host_name(const std::string &host_header_value, const int
 }
 
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
-int Server::GetHandler(int sock, const HTTPRequest& req) {
-    // ServerConfig conf = this->GetConfigByFd(sock);
-    const int port = socket_list_.GetPort(sock);
-    const std::string host_name = get_host_name(req.header_.at("host").at(0), port);  // こいつやばい //
-    const ServerConfig &conf = this->GetConfig(port, host_name);
-    std::string path = conf.document_root_ + req.get_request_uri();
+void Server::GetHandler(HTTPContext *context, const std::string &document_root, const ServerConfig &config,  const int &connection_fd) {
+    std::string path = document_root + context->GetHTTPRequest().get_request_uri();
 
     if (IsDir(path.c_str())) {
         // TODO(taksaito): autoindex か、 index をみるようにする
@@ -220,14 +216,18 @@ int Server::GetHandler(int sock, const HTTPRequest& req) {
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        return -2;
+        this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
+        return;
     }
 
     int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
     if (0 <= fd) {
-        return fd;
+        context->file_fd_ = fd;
+        dispatcher_.RegisterFileFd(fd, connection_fd);
+        return;
     }
-    return -1;
+    this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
+    return;
 }
 
 int ft_accept(int fd) {
@@ -260,42 +260,44 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
 void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
+    const int port = socket_list_.GetPort(socket_fd);
     req.print_info();
+    // TODO(maitneel): 若干バグると思う //
+    const std::string host_name = get_host_name(req.header_.find("host")->second[0], port);
+    // TODO(maitneel): origin-form以外に対応できていない //
+    const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
+    ServerConfig config; 
+    try {
+        config = this->GetConfig(port, host_name);
+    } catch (std::runtime_error &e) {
+        this->SendErrorResponce(HTTPResponse::kNotFound, config, connection_fd);
+        return;
+    }
 
     std::string method = req.get_method();
 
-    HTTPResponse res;
-    if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-        CallCGI(connection_fd, req, "./cgi_script/date/date.cgi");
-        return;
-    } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
-        CallCGI(connection_fd, req, "./cgi_script/echo/echo.cgi");
-        return;
-    } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
-        CallCGI(connection_fd, req, "./cgi_script/message_board/message_board.cgi");
-        return;
-    } else if (method == "GET") {
-        int fd;
-        try {
-            fd = this->GetHandler(socket_fd, req);
-        } catch (std::runtime_error &e) {
-            // TODO(maitneel): 例外をいい感じのやつにする //
-            fd = -3;
-            res = HTTPResponse(HTTPResponse::kNotFound, "text/html", "NotFound");
-        }
-        if (fd == -1) {
-            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
-        } else if (fd == -2) {
-            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
-        } else if (0 <= fd) {
-            ctx.file_fd_ = fd;
-            dispatcher_.RegisterFileFd(fd, connection_fd);
+    std::map<std::string, LocastionConfig>::const_iterator it = config.location_configs_.find(req_uri);
+    if (it != config.location_configs_.end()) {
+        LocastionConfig loc_conf = it->second;
+        cerr << "routing: '" << loc_conf.name_ << "', '" << req_uri.substr(0, loc_conf.name_.length()) << "', '" << loc_conf.cgi_path_ << "'" << endl;
+        if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
+            this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
             return;
         }
-    } else {
-        res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+        if (loc_conf.cgi_path_ != "") {
+            this->CallCGI(connection_fd, req, loc_conf.cgi_path_);
+            return;
+        } else if (method == "GET") {
+            this->GetHandler(&ctx, loc_conf.document_root_, config, connection_fd);
+            return;
+        }
     }
-    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+
+    if (method == "GET") {
+        this->GetHandler(&ctx, config.document_root_, config, connection_fd);
+    } else {
+        SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
+    }
 }
 
 void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
@@ -351,6 +353,35 @@ void Server::SendresponseFromFile(const int &connection_fd, const std::string &f
 
     HTTPResponse res(HTTPResponse::kOK, "/", file_content);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
+}
+
+void Server::SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd) {
+    // TODO(maitneel): エラーページを返すようにする //
+    std::string error_message;
+
+    if (stat == HTTPResponse::kBadRequest) {
+        error_message = "BadRequest";
+    }
+    if (stat == HTTPResponse::kForbidden) {
+        error_message = "Forbidden";
+    }
+    if (stat == HTTPResponse::kNotFound) {
+        error_message = "NotFound";
+    }
+    if (stat == HTTPResponse::kMethodNotAllowed) {
+        error_message = "MethodNotAllowed";
+    }
+    if (stat == HTTPResponse::kInternalServerErrror) {
+        error_message = "InternalServerErrror";
+    }
+    if (stat == HTTPResponse::kNotImplemented) {
+        error_message = "NotImplemented";
+    }
+
+    HTTPResponse res(stat, "text/html", error_message);
+    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+
+    (void)(config);
 }
 
 const ServerConfig &Server::GetConfig(const int &port, const std::string &host_name) {

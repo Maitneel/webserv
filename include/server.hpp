@@ -41,6 +41,7 @@ class Server {
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
     void SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string);
     void SendresponseFromFile(const int &connection_fd, const std::string &file_content);
+    void SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd);
     void CloseConnection(const int connection_fd);
 
     const ServerConfig &GetConfig(const int &port, const std::string &host_name);
@@ -50,7 +51,7 @@ class Server {
     ~Server();
     // ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
-    int GetHandler(int fd, const HTTPRequest& req);
+    void GetHandler(HTTPContext *context, const std::string &document_root, const ServerConfig &config,  const int &connection_fd);
     void EventLoop();
 };
 

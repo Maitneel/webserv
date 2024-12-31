@@ -42,3 +42,5 @@ class HTTPResponse {
     void AddHeader(const std::string &name, const std::string &value);
     std::string toString() const;
 };
+
+HTTPResponse::StatusCode convert_status_code_to_enum(const int &code);

@@ -3,12 +3,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 class LocastionConfig {
  public :
     std::string             name_;  // url、 pathみたいな //
     std::string             document_root_;
-    std::vector<std::string> methods_;
+    std::set<std::string>   methods_;
     bool                    autoindex_;
     std::string             cgi_path_;
     size_t                  max_body_size_;
