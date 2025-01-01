@@ -6,11 +6,12 @@
 #include "http_request.hpp"
 #include "event_dispatcher.hpp"
 
-std::multimap<std::string, ServerConfig> hard_coding_config();
+std::map<ServerConfigKey, ServerConfig> hard_coding_config();
 
 // /*
 int main() {
-    std::map<ServerConfigKey, ServerConfig> server_confs = parse_config("");
+    // std::map<ServerConfigKey, ServerConfig> server_confs = parse_config("");
+    std::map<ServerConfigKey, ServerConfig> server_confs = hard_coding_config();
 
     Server server(server_confs);
 

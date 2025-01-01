@@ -6,8 +6,8 @@
 #include "config.hpp"
 
 bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs) {
-    if (lhs.port_ < rhs.port_) {
-        return true;
+    if (lhs.port_ != rhs.port_) {
+        return (lhs.port_ < rhs.port_);
     }
     return (lhs.server_name_ < rhs.server_name_);
 }
@@ -81,8 +81,8 @@ std::map<std::string, LocastionConfig> hard_coding_loc_config() {
     return conf_map;
 }
 
-std::multimap<std::string, ServerConfig> hard_coding_config() {
-    std::multimap<std::string, ServerConfig> configs;
+std::map<ServerConfigKey, ServerConfig> hard_coding_config() {
+    std::map<ServerConfigKey, ServerConfig> configs;
     {
         ServerConfig server_config;
         server_config.location_configs_ = hard_coding_loc_config();
@@ -90,7 +90,7 @@ std::multimap<std::string, ServerConfig> hard_coding_config() {
         server_config.server_name_ = "localhost";
         server_config.document_root_ = "./docs";
 
-        configs.insert(std::make_pair(server_config.server_name_, server_config));
+        configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
     {
         ServerConfig server_config;
@@ -99,7 +99,7 @@ std::multimap<std::string, ServerConfig> hard_coding_config() {
         server_config.server_name_ = "localhost";
         server_config.document_root_ = "./docs";
 
-        configs.insert(std::make_pair(server_config.server_name_, server_config));
+        configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
     {
         ServerConfig server_config;
@@ -108,7 +108,7 @@ std::multimap<std::string, ServerConfig> hard_coding_config() {
         server_config.server_name_ = "127.0.0.1";
         server_config.document_root_ = "./docs";
 
-        configs.insert(std::make_pair(server_config.server_name_, server_config));
+        configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
 
     return configs;
