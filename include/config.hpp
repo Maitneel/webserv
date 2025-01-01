@@ -29,6 +29,7 @@ class ServerConfig {
     std::string document_root_;
     int         port_;
     std::map<std::string, LocastionConfig> location_configs_;  // <url, config> //
+    std::map<int, std::string> error_page_path_;
 };
 
 std::map<ServerConfigKey, ServerConfig> parse_config(std::string path);  // <virtual-name, config> //
