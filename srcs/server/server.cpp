@@ -266,6 +266,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     const std::string host_name = get_host_name(req.header_.find("host")->second[0], port);
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
+    std::string location = req_uri;
     ServerConfig config;
     try {
         config = this->GetConfig(port, host_name);
@@ -275,13 +276,27 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     }
 
     std::string method = req.get_method();
+    if (location.length() == 0 || location.at(location.length() - 1) != '/') {
+        location += "/";
+    }
 
-    for (std::map<std::string, LocastionConfig>::const_iterator it = config.location_configs_.begin(); it != config.location_configs_.end(); it++) {
-        LocastionConfig loc_conf = it->second;
-        cerr << "routing: '" << loc_conf.name_ << "', '" << req_uri.substr(0, loc_conf.name_.length()) << "', '" << loc_conf.cgi_path_ << "'" << endl;
-        if (loc_conf.name_ != req_uri.substr(0, loc_conf.name_.length())) {
-            continue;
+    std::string::size_type location_length = location.rfind('/');
+    std::map<std::string, LocastionConfig>::iterator location_config_it = config.location_configs_.end();
+    while (location_length != std::string::npos) {
+        location_config_it = config.location_configs_.find(location.substr(0, location_length + 1));
+        cerr << "loc_conf: " << location.substr(0, location_length + 1) << endl;
+        if (location_config_it != config.location_configs_.end()) {
+            break;
         }
+        if (location_length == 0) {
+            break;
+        }
+        location_length = location.rfind('/', location_length - 1);
+    }
+
+    if (location_config_it != config.location_configs_.end()) {
+        LocastionConfig loc_conf = location_config_it->second;
+        cerr << "routing: '" << loc_conf.name_ << "', '" << req_uri.substr(0, loc_conf.name_.length()) << "', '" << loc_conf.cgi_path_ << "'" << endl;
         if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
             this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
             return;
@@ -292,13 +307,13 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         } else if (method == "GET") {
             this->GetHandler(&ctx, loc_conf.document_root_, config, connection_fd);
             return;
-            }
-    }
-
-    if (method == "GET") {
-        this->GetHandler(&ctx, config.document_root_, config, connection_fd);
+        }
     } else {
-        SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
+        if (method == "GET") {
+            this->GetHandler(&ctx, config.document_root_, config, connection_fd);
+        } else {
+            SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
+        }
     }
 }
 

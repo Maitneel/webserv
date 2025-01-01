@@ -74,9 +74,9 @@ std::pair<std::string, LocastionConfig> gen_loc_conf(
 std::map<std::string, LocastionConfig> hard_coding_loc_config() {
     std::map<std::string, LocastionConfig> conf_map;
     conf_map.insert(gen_loc_conf("/", "./docs", true, ""));
-    conf_map.insert(gen_loc_conf("/cgi/date.cgi", "", false, "./cgi_script/date/date.cgi"));
-    conf_map.insert(gen_loc_conf("/cgi/echo.cgi", "", false, "./cgi_script/echo/echo.cgi"));
-    conf_map.insert(gen_loc_conf("/cgi/message_board", "", false, "./cgi_script/message_board/message_board.cgi"));
+    conf_map.insert(gen_loc_conf("/cgi/date.cgi/", "", false, "./cgi_script/date/date.cgi"));
+    conf_map.insert(gen_loc_conf("/cgi/echo.cgi/", "", false, "./cgi_script/echo/echo.cgi"));
+    conf_map.insert(gen_loc_conf("/cgi/message_board/", "", false, "./cgi_script/message_board/message_board.cgi"));
 
     return conf_map;
 }
