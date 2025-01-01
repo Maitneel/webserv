@@ -20,8 +20,7 @@ struct ServerConfigKey {
     const int port_;
     const std::string server_name_;
 
-    ServerConfigKey(const int &port, const std::string &name) : port_(port), server_name_(name) {};
-
+    ServerConfigKey(const int &port, const std::string &name) : port_(port), server_name_(name) {}
 };
 
 class ServerConfig {
