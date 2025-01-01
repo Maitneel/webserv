@@ -137,8 +137,8 @@ Server::Server(std::map<ServerConfigKey, ServerConfig> confs) {
             created_port.insert(port);
             socket_list_.AddSocket(port, sock);
         }
-        sockets_.insert(std::make_pair(std::make_pair(port, config.server_name_), config));
     }
+    this->config_ = confs;
 }
 
 Server::~Server() {}
@@ -387,9 +387,9 @@ void Server::SendErrorResponce(const int &stat, const ServerConfig config, const
 }
 
 const ServerConfig &Server::GetConfig(const int &port, const std::string &host_name) {
-    std::pair<int, std::string> config_key(port, host_name);
-    std::map<std::pair<int, std::string>, ServerConfig>::iterator config_it = sockets_.find(config_key);
-    if (config_it != sockets_.end()) {
+    ServerConfigKey config_key(port, host_name);
+    std::map<ServerConfigKey, ServerConfig>::iterator config_it = config_.find(config_key);
+    if (config_it != config_.end()) {
         return config_it->second;
     } else {
         // TODO(maitneel): 例外をいいかんじのやつにする //
@@ -398,7 +398,7 @@ const ServerConfig &Server::GetConfig(const int &port, const std::string &host_n
 }
 
 void Server::EventLoop() {
-    for (std::map<std::pair<int, std::string>, ServerConfig>::const_iterator it = sockets_.begin(); it != sockets_.end(); it++) {
+    for (std::map<ServerConfigKey, ServerConfig>::const_iterator it = config_.begin(); it != config_.end(); it++) {
         dispatcher_.RegisterSocketFd(socket_list_.GetFd(it->second.port_));
     }
 

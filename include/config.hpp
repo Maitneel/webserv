@@ -24,6 +24,8 @@ struct ServerConfigKey {
     ServerConfigKey(const int &port, const std::string &name) : port_(port), server_name_(name) {}
 };
 
+bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs);
+
 class ServerConfig {
  public :
     std::string server_name_;

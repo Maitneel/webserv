@@ -33,7 +33,7 @@ class Server {
  private:
     ServerEventDispatcher dispatcher_;
     SocketList socket_list_;
-    std::map<std::pair<int, std::string>, ServerConfig> sockets_;  // map<pair<port, hostname>, config>> 若干キモい //
+    std::map<ServerConfigKey, ServerConfig> config_;
     std::map<int, HTTPContext> ctxs_;
 
     void routing(const int &connection_fd, const int &socket_fd);
