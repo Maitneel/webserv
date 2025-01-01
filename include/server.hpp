@@ -36,6 +36,7 @@ class Server {
     std::map<ServerConfigKey, ServerConfig> config_;
     std::map<int, HTTPContext> ctxs_;
 
+    void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocastionConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path);
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);

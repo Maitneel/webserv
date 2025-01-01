@@ -258,6 +258,23 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     std::cerr << "cgi end" << std::endl;
 }
 
+void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocastionConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
+    const HTTPRequest &req = ctx->GetHTTPRequest();
+    const std::string method = req.get_method();
+    if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
+        this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, server_config, connection_fd);
+        return;
+    }
+    if (loc_conf.cgi_path_ != "") {
+        this->CallCGI(connection_fd, req, loc_conf.cgi_path_);
+        return;
+    } else if (method == "GET") {
+        this->GetHandler(ctx, req_uri, server_config, loc_conf);
+        return;
+    } else {
+        SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+    }
+}
 
 void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
@@ -296,24 +313,9 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     }
 
     if (location_config_it != config.location_configs_.end()) {
-        LocastionConfig loc_conf = location_config_it->second;
-        if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
-            this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
-            return;
-        }
-        if (loc_conf.cgi_path_ != "") {
-            this->CallCGI(connection_fd, req, loc_conf.cgi_path_);
-            return;
-        } else if (method == "GET") {
-            this->GetHandler(&ctx, req_uri.substr(location_length), config, loc_conf);
-            return;
-        }
+        this->RoutingByLocationConfig(&ctx, config, location_config_it->second, req_uri.substr(location_length), connection_fd);
     } else {
-        if (method == "GET") {
-            this->GetHandler(&ctx, req_uri, config, config.common_config_);
-        } else {
-            SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
-        }
+        this->RoutingByLocationConfig(&ctx, config, location_config_it->second, req_uri, connection_fd);
     }
 }
 
