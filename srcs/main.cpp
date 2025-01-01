@@ -8,7 +8,7 @@
 
 // /*
 int main() {
-    std::map<std::string, ServerConfig> server_confs = parse_config("");
+    std::map<ServerConfigKey, ServerConfig> server_confs = parse_config("");
 
     Server server(server_confs);
 

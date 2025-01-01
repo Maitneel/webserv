@@ -40,7 +40,7 @@ class Server {
     void CloseConnection(const int connection_fd);
 
  public:
-    explicit Server(std::map<std::string, ServerConfig> confs);
+    explicit Server(std::map<ServerConfigKey, ServerConfig> confs);
     ~Server();
     ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //

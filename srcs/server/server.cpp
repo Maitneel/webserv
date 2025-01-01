@@ -121,8 +121,8 @@ int create_inet_socket(int port) {
     return -1;
 }
 
-Server::Server(std::map<std::string, ServerConfig> confs) {
-    std::map<std::string, ServerConfig>::iterator it;
+Server::Server(std::map<ServerConfigKey, ServerConfig> confs) {
+    std::map<ServerConfigKey, ServerConfig>::iterator it;
     for (it = confs.begin(); it != confs.end(); it++) {
         int sock = create_inet_socket(it->second.port_);
         if (sock < 0)
