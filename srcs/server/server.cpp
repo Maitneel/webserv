@@ -205,8 +205,10 @@ static std::string get_host_name(const std::string &host_header_value, const int
 }
 
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
-void Server::GetHandler(HTTPContext *context, const std::string &document_root, const ServerConfig &config,  const int &connection_fd) {
-    std::string path = document_root + context->GetHTTPRequest().get_request_uri();
+void Server::GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocastionConfig &location_config) {
+    const std::string &document_root = location_config.document_root_;
+    std::string path = document_root + req_path;
+    const int &connection_fd = context->GetConnectionFD();
 
     if (IsDir(path.c_str())) {
         // TODO(taksaito): autoindex か、 index をみるようにする
@@ -216,7 +218,7 @@ void Server::GetHandler(HTTPContext *context, const std::string &document_root, 
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
+        this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
         return;
     }
 
@@ -226,7 +228,7 @@ void Server::GetHandler(HTTPContext *context, const std::string &document_root, 
         dispatcher_.RegisterFileFd(fd, connection_fd);
         return;
     }
-    this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
+    this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
     return;
 }
 
@@ -284,7 +286,6 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     std::map<std::string, LocastionConfig>::iterator location_config_it = config.location_configs_.end();
     while (location_length != std::string::npos) {
         location_config_it = config.location_configs_.find(location.substr(0, location_length + 1));
-        cerr << "loc_conf: " << location.substr(0, location_length + 1) << endl;
         if (location_config_it != config.location_configs_.end()) {
             break;
         }
@@ -296,7 +297,6 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
 
     if (location_config_it != config.location_configs_.end()) {
         LocastionConfig loc_conf = location_config_it->second;
-        cerr << "routing: '" << loc_conf.name_ << "', '" << req_uri.substr(0, loc_conf.name_.length()) << "', '" << loc_conf.cgi_path_ << "'" << endl;
         if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
             this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
             return;
@@ -305,12 +305,12 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
             this->CallCGI(connection_fd, req, loc_conf.cgi_path_);
             return;
         } else if (method == "GET") {
-            this->GetHandler(&ctx, loc_conf.document_root_, config, connection_fd);
+            this->GetHandler(&ctx, req_uri.substr(location_length), config, loc_conf);
             return;
         }
     } else {
         if (method == "GET") {
-            this->GetHandler(&ctx, config.document_root_, config, connection_fd);
+            this->GetHandler(&ctx, req_uri, config, config.common_config_);
         } else {
             SendErrorResponce(HTTPResponse::kMethodNotAllowed, config, connection_fd);
         }
