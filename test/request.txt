@@ -1,0 +1,5 @@
+GET /../Makefile HTTP/1.1
+Host: unknowhost:8080
+User-Agent: curl/7.79.1
+Accept: */*
+
