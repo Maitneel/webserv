@@ -23,6 +23,7 @@
 
 #include "server.hpp"
 #include "poll_selector.hpp"
+#include "http_exception.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
 #include "cgi_response.hpp"
@@ -449,6 +450,9 @@ void Server::EventLoop() {
                 // Nothing to do;
             } else if (event.event == kReadableRequest || event.event == kRequestEndOfReadad) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
                 HTTPContext& ctx = ctxs_.at(event_fd);
+                if (ctx.did_error_occur_) {
+                    continue;
+                }
 
                 // TODO(maitneel): 辻褄合わせをどうにかする //
                 ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
@@ -456,7 +460,14 @@ void Server::EventLoop() {
 
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
-                        ctx.ParseRequestHeader();
+                        try {
+                            ctx.ParseRequestHeader();
+                        } catch (const MustToReturnStatus &e) {
+                            // TODO（maitneel): default のエラーを返すよにする //
+                            ctx.did_error_occur_ = true;
+                            const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                            this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
+                        }
                     }
                 }
                 if (ctx.IsParsedHeader() && ctx.body_.IsComplated()) {
