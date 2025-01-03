@@ -467,6 +467,11 @@ void Server::EventLoop() {
                             ctx.did_error_occur_ = true;
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
+                        } catch (std::exception &e) {
+                            // TODO(maitneel): ほんとは InvalidHeader　と InvalidRequestだけでいい
+                            ctx.did_error_occur_ = true;
+                            const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                            this->SendErrorResponce(400, server_config, event.connection_fd);
                         }
                     }
                 }
