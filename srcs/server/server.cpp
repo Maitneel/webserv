@@ -463,7 +463,7 @@ void Server::EventLoop() {
                         try {
                             ctx.ParseRequestHeader();
                         } catch (const MustToReturnStatus &e) {
-                            // TODO（maitneel): default のエラーを返すよにする //
+                            // TODO(maitneel): default のエラーを返すよにする //
                             ctx.did_error_occur_ = true;
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);

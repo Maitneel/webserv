@@ -5,7 +5,7 @@
 
 class MustToReturnStatus : std::exception {
  public:
-    MustToReturnStatus(const int &status_code);
+    explicit MustToReturnStatus(const int &status_code);
     const char *what() const throw();
 
     const int &GetStatusCode() const throw();

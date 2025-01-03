@@ -3,7 +3,7 @@
 #include "http_exception.hpp"
 #include "extend_stdlib.hpp"
 
-MustToReturnStatus::MustToReturnStatus(const int &status_code) : status_code_(status_code) {  
+MustToReturnStatus::MustToReturnStatus(const int &status_code) : status_code_(status_code) {
 }
 
 const char *MustToReturnStatus::what() const throw() {
