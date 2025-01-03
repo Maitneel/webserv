@@ -53,6 +53,8 @@ class HTTPRequest {
     std::string method;
     std::string request_uri;
     std::string protocol;
+    std::string host_name_;
+    int port_;
 
     // request header
 
@@ -108,13 +110,14 @@ class HTTPRequest {
     std::vector<std::string> user_agent_;
 
     explicit HTTPRequest();
-    void parse_request_header(std::string header_str);
+    void parse_request_header(std::string header_str, const int &port);
     ~HTTPRequest();
 
     // getter
     const std::string &get_method() const;
     const std::string &get_request_uri() const;
     const std::string &get_protocol() const;
+    const std::string &get_host_name() const;
 
     // print funcs
     void print_info() const;

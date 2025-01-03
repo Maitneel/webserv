@@ -25,7 +25,7 @@ class HTTPContext {
     int GetConnectionFD() const;
     const std::string& GetBuffer() const;
     bool IsParsedHeader() const;
-    void ParseRequestHeader();
+    void ParseRequestHeader(const int &port);
     void ParseRequestBody();
     const HTTPRequest &GetHTTPRequest();
     void AppendBuffer(std::string str);

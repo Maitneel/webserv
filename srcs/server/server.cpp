@@ -282,8 +282,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
     req.print_info();
-    // TODO(maitneel): 若干バグると思う //
-    const std::string host_name = get_host_name(req.header_.find("host")->second[0], port);
+    std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
     std::string location = req_uri;
@@ -461,7 +460,7 @@ void Server::EventLoop() {
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         try {
-                            ctx.ParseRequestHeader();
+                            ctx.ParseRequestHeader(socket_list_.GetPort(event.socket_fd));
                         } catch (const MustToReturnStatus &e) {
                             // TODO(maitneel): default のエラーを返すよにする //
                             ctx.did_error_occur_ = true;

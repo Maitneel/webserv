@@ -241,15 +241,20 @@ void HTTPRequest::valid_user_agent(const std::string &value) {
 void HTTPRequest::valid_host_in_http1_1(const std::string &value) {
     std::string::size_type last_colon_index = value.rfind(':', value.length());
     std::string host_name = value.substr(0, last_colon_index);
+    std::string port_number;
+    if (host_name.length() + 1 < value.length()) {
+        port_number = value.substr(host_name.length() + 1);
+    }
     if (last_colon_index != std::string::npos) {
         if (!is_port(value.substr(last_colon_index + 1))) {
             host_name = value;
         }
     }
     std::map<std::string, std::vector<std::string> >::const_iterator host_header_it = this->header_.find("host");
-    if ((!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) || (host_header_it != this->header_.end() && host_header_it->second.size() != 1)) {
+    if ((!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) || !(port_number == "" || port_number == int_to_string(port_)) || (host_header_it != this->header_.end() && host_header_it->second.size() != 1) ) {
         throw MustToReturnStatus(400);
     }
+    this->host_name_ = host_name;
 }
 
 void HTTPRequest::add_valid_funcs() {
@@ -411,8 +416,9 @@ HTTPRequest::HTTPRequest() : is_simple_request(false), header_(), entity_body_()
 //     this->valid_headers();
 // }
 
-void HTTPRequest::parse_request_header(std::string header_str) {
+void HTTPRequest::parse_request_header(std::string header_str, const int &port) {
     remove_front_crlf(&header_str);
+    this->port_ = port;
     std::vector<std::string> splited_buffer = escaped_quote_split(header_str, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
@@ -435,6 +441,10 @@ const std::string &HTTPRequest::get_request_uri() const {
 
 const std::string &HTTPRequest::get_protocol() const {
     return this->protocol;
+}
+
+const std::string &HTTPRequest::get_host_name() const {
+    return this->host_name_;
 }
 
 // print func
