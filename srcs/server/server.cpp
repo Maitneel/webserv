@@ -461,7 +461,7 @@ void Server::EventLoop() {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         try {
                             ctx.ParseRequestHeader(socket_list_.GetPort(event.socket_fd));
-                        } catch (const MustToReturnStatus &e) {
+                        } catch (const MustReturnHTTPStatus &e) {
                             // TODO(maitneel): default のエラーを返すよにする //
                             ctx.did_error_occur_ = true;
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;

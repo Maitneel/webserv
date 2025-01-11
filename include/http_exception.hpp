@@ -3,9 +3,9 @@
 
 #include <exception>
 
-class MustToReturnStatus : std::exception {
+class MustReturnHTTPStatus : std::exception {
  public:
-    explicit MustToReturnStatus(const int &status_code);
+    explicit MustReturnHTTPStatus(const int &status_code);
     const char *what() const throw();
 
     const int &GetStatusCode() const throw();

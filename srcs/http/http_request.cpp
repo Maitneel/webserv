@@ -252,7 +252,7 @@ void HTTPRequest::valid_host_in_http1_1(const std::string &value) {
     }
     std::map<std::string, std::vector<std::string> >::const_iterator host_header_it = this->header_.find("host");
     if ((!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) || !(port_number == "" || port_number == int_to_string(port_)) || (host_header_it != this->header_.end() && host_header_it->second.size() != 1) ) {
-        throw MustToReturnStatus(400);
+        throw MustReturnHTTPStatus(400);
     }
     this->host_name_ = host_name;
 }
@@ -392,13 +392,13 @@ void HTTPRequest::register_entity_body(const std::vector<std::string> &splited_b
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
-            throw MustToReturnStatus(411);
+            throw MustReturnHTTPStatus(411);
         }
         try {
             this->entity_body_ = splited_buffer[front].substr(0, this->content_length_);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
-            throw MustToReturnStatus(500);
+            throw MustReturnHTTPStatus(500);
         }
     }
     this->transform_headers();
