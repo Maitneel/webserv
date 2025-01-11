@@ -15,39 +15,45 @@
 #define MAX_BACKLOG 5
 #define BUFFER_SIZE 1024
 
-class Socket {
+class SocketList {
+ public:
+    SocketList();
+    ~SocketList();
+
+    void AddSocket(const int &port, const int &fd);
+    int GetPort(const int &fd);
+    int GetFd(const int &port);
+
  private:
-    int          socket_fd;
-    ServerConfig config;
- public :
-    Socket(int socket_fd, ServerConfig config);
-    ~Socket();
-    int   GetSocketFd();
-    const ServerConfig& GetConfig();
+    std::map<int, int> port_fd_pair_;
+    std::map<int, int> fd_port_pair_;
 };
 
 class Server {
  private:
     ServerEventDispatcher dispatcher_;
-    std::vector<Socket> sockets_;
+    SocketList socket_list_;
+    std::map<ServerConfigKey, ServerConfig> config_;
     std::map<int, HTTPContext> ctxs_;
 
+    void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocastionConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path);
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
     void SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string);
     void SendresponseFromFile(const int &connection_fd, const std::string &file_content);
+    void SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd);
     void CloseConnection(const int connection_fd);
+
+    const ServerConfig &GetConfig(const int &port, const std::string &host_name);
 
  public:
     explicit Server(std::map<ServerConfigKey, ServerConfig> confs);
     ~Server();
-    ServerConfig GetConfigByFd(int fd);
+    // ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
-    int GetHandler(int fd, const HTTPRequest& req);
+    void GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocastionConfig &location_config);
     void EventLoop();
-    bool IsIncludeFd(int fd);
-    void AppendBuffer(std::string str);
 };
 
 #endif  // INCLUDE_SERVER_HPP_

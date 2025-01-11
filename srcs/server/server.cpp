@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <vector>
 #include <map>
+#include <set>
 #include <utility>
 
 #include "server.hpp"
@@ -123,36 +124,52 @@ int create_inet_socket(int port) {
 
 Server::Server(std::map<ServerConfigKey, ServerConfig> confs) {
     std::map<ServerConfigKey, ServerConfig>::iterator it;
+
+    std::set<int> created_port;
     for (it = confs.begin(); it != confs.end(); it++) {
-        int sock = create_inet_socket(it->second.port_);
-        if (sock < 0)
-            throw std::runtime_error("can not create tcp socket.");
-        sockets_.push_back(Socket(sock, it->second));  // 謎 //
+        ServerConfig &config = it->second;
+        int port = config.port_;
+        if (created_port.find(port) == created_port.end()) {
+            int sock = create_inet_socket(port);
+            if (sock < 0) {
+                throw std::runtime_error("can not create tcp socket.");
+            }
+            created_port.insert(port);
+            socket_list_.AddSocket(port, sock);
+        }
     }
+    this->config_ = confs;
 }
 
 Server::~Server() {}
 
-Socket::Socket(int socket_fd, ServerConfig config): socket_fd(socket_fd), config(config) {}
-
-Socket::~Socket() {}
-
-int Socket::GetSocketFd() {
-    return this->socket_fd;
+SocketList::SocketList() {
 }
 
-const ServerConfig& Socket::GetConfig() {
-    return this->config;
+SocketList::~SocketList() {
 }
 
+void SocketList::AddSocket(const int &port, const int &fd) {
+    port_fd_pair_.insert(std::make_pair(port, fd));
+    fd_port_pair_.insert(std::make_pair(fd, port));
+}
 
-ServerConfig Server::GetConfigByFd(int fd) {
-    std::vector<Socket>::iterator it;
-    for (it = sockets_.begin(); it != sockets_.end(); it++) {
-        if (it->GetSocketFd() == fd)
-            return it->GetConfig();
+int SocketList::GetPort(const int &fd) {
+    const std::map<int, int>::const_iterator it = fd_port_pair_.find(fd);
+
+    if (it != fd_port_pair_.end()) {
+        return it->second;
     }
-    throw std::invalid_argument("invalid fd");
+    return NON_EXIST_FD;
+}
+
+int SocketList::GetFd(const int &port) {
+    const std::map<int, int>::const_iterator it = port_fd_pair_.find(port);
+
+    if (it != port_fd_pair_.end()) {
+        return it->second;
+    }
+    return NON_EXIST_FD;
 }
 
 std::string GetContentType(const std::string path) {
@@ -180,10 +197,18 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
+static std::string get_host_name(const std::string &host_header_value, const int &port) {
+    std::string port_string = ":";
+    port_string += int_to_str(port);
+    const std::string::size_type port_front = host_header_value.find(port_string);
+    return (host_header_value.substr(0, port_front));
+}
+
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
-int Server::GetHandler(int sock, const HTTPRequest& req) {
-    ServerConfig conf = this->GetConfigByFd(sock);
-    std::string path = conf.document_root_ + req.get_request_uri();
+void Server::GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocastionConfig &location_config) {
+    const std::string &document_root = location_config.document_root_;
+    std::string path = document_root + req_path;
+    const int &connection_fd = context->GetConnectionFD();
 
     if (IsDir(path.c_str())) {
         // TODO(taksaito): autoindex か、 index をみるようにする
@@ -193,14 +218,18 @@ int Server::GetHandler(int sock, const HTTPRequest& req) {
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        return -2;
+        this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+        return;
     }
 
     int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
     if (0 <= fd) {
-        return fd;
+        context->file_fd_ = fd;
+        dispatcher_.RegisterFileFd(fd, connection_fd);
+        return;
     }
-    return -1;
+    this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+    return;
 }
 
 int ft_accept(int fd) {
@@ -229,39 +258,65 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     std::cerr << "cgi end" << std::endl;
 }
 
+void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocastionConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
+    const HTTPRequest &req = ctx->GetHTTPRequest();
+    const std::string method = req.get_method();
+    if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
+        this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, server_config, connection_fd);
+        return;
+    }
+    if (loc_conf.cgi_path_ != "") {
+        this->CallCGI(connection_fd, req, loc_conf.cgi_path_);
+        return;
+    } else if (method == "GET") {
+        this->GetHandler(ctx, req_uri, server_config, loc_conf);
+        return;
+    } else {
+        SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+    }
+}
 
 void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
+    const int port = socket_list_.GetPort(socket_fd);
     req.print_info();
+    // TODO(maitneel): 若干バグると思う //
+    const std::string host_name = get_host_name(req.header_.find("host")->second[0], port);
+    // TODO(maitneel): origin-form以外に対応できていない //
+    const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
+    std::string location = req_uri;
+    ServerConfig config;
+    try {
+        config = this->GetConfig(port, host_name);
+    } catch (std::runtime_error &e) {
+        this->SendErrorResponce(HTTPResponse::kNotFound, config, connection_fd);
+        return;
+    }
 
     std::string method = req.get_method();
-
-    HTTPResponse res;
-    if (req.get_request_uri() == "/cgi/date.cgi" && method == "GET") {
-        CallCGI(connection_fd, req, "./cgi_script/date/date.cgi");
-        return;
-    } else if (req.get_request_uri().substr(0, req.get_request_uri().find("?")) == "/cgi/echo.cgi") {
-        CallCGI(connection_fd, req, "./cgi_script/echo/echo.cgi");
-        return;
-    } else if (req.get_request_uri().find("/cgi/message_board") != std::string::npos) {
-        CallCGI(connection_fd, req, "./cgi_script/message_board/message_board.cgi");
-        return;
-    } else if (method == "GET") {
-        int fd = this->GetHandler(socket_fd, req);
-        if (fd == -1) {
-            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
-        } else if (fd == -2) {
-            res = HTTPResponse(HTTPResponse::kForbidden, "text/html", "Forbidden");
-        } else if (0 <= fd) {
-            ctx.file_fd_ = fd;
-            dispatcher_.RegisterFileFd(fd, connection_fd);
-            return;
-        }
-    } else {
-        res = HTTPResponse(HTTPResponse::kNotImplemented, "text/html", "Not Implemented");
+    if (location.length() == 0 || location.at(location.length() - 1) != '/') {
+        location += "/";
     }
-    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+
+    std::string::size_type location_length = location.rfind('/');
+    std::map<std::string, LocastionConfig>::iterator location_config_it = config.location_configs_.end();
+    while (location_length != std::string::npos) {
+        location_config_it = config.location_configs_.find(location.substr(0, location_length + 1));
+        if (location_config_it != config.location_configs_.end()) {
+            break;
+        }
+        if (location_length == 0) {
+            break;
+        }
+        location_length = location.rfind('/', location_length - 1);
+    }
+
+    if (location_config_it != config.location_configs_.end()) {
+        this->RoutingByLocationConfig(&ctx, config, location_config_it->second, req_uri.substr(location_length), connection_fd);
+    } else {
+        this->RoutingByLocationConfig(&ctx, config, location_config_it->second, req_uri, connection_fd);
+    }
 }
 
 void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
@@ -319,9 +374,49 @@ void Server::SendresponseFromFile(const int &connection_fd, const std::string &f
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
+void Server::SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd) {
+    // TODO(maitneel): エラーページを返すようにする //
+    std::string error_message;
+
+    if (stat == HTTPResponse::kBadRequest) {
+        error_message = "BadRequest";
+    }
+    if (stat == HTTPResponse::kForbidden) {
+        error_message = "Forbidden";
+    }
+    if (stat == HTTPResponse::kNotFound) {
+        error_message = "NotFound";
+    }
+    if (stat == HTTPResponse::kMethodNotAllowed) {
+        error_message = "MethodNotAllowed";
+    }
+    if (stat == HTTPResponse::kInternalServerErrror) {
+        error_message = "InternalServerErrror";
+    }
+    if (stat == HTTPResponse::kNotImplemented) {
+        error_message = "NotImplemented";
+    }
+
+    HTTPResponse res(stat, "text/html", error_message);
+    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+
+    (void)(config);
+}
+
+const ServerConfig &Server::GetConfig(const int &port, const std::string &host_name) {
+    ServerConfigKey config_key(port, host_name);
+    std::map<ServerConfigKey, ServerConfig>::iterator config_it = config_.find(config_key);
+    if (config_it != config_.end()) {
+        return config_it->second;
+    } else {
+        // TODO(maitneel): 例外をいいかんじのやつにする //
+        throw std::runtime_error("no exist config");
+    }
+}
+
 void Server::EventLoop() {
-    for (size_t i = 0; i < sockets_.size(); i++) {
-        dispatcher_.RegisterSocketFd(sockets_[i].GetSocketFd());
+    for (std::map<ServerConfigKey, ServerConfig>::const_iterator it = config_.begin(); it != config_.end(); it++) {
+        dispatcher_.RegisterSocketFd(socket_list_.GetFd(it->second.port_));
     }
 
     while(true) {
@@ -409,12 +504,4 @@ void Server::EventLoop() {
             }
         }
     }
-}
-
-bool Server::IsIncludeFd(int fd) {
-    for (size_t i = 0; i < sockets_.size(); i++) {
-        if (sockets_[i].GetSocketFd() == fd)
-            return true;
-    }
-    return false;
 }
