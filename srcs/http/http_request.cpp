@@ -11,6 +11,7 @@
 
 #include "http_request.hpp"
 #include "http_validation.hpp"
+#include "http_exception.hpp"
 #include "get_http_keyword.hpp"
 #include "http_header.hpp"
 #include "extend_stdlib.hpp"
@@ -237,17 +238,23 @@ void HTTPRequest::valid_user_agent(const std::string &value) {
     }
 }
 
-void HTTPRequest::valid_host(const std::string &value) {
+void HTTPRequest::valid_host_in_http1_1(const std::string &value) {
     std::string::size_type last_colon_index = value.rfind(':', value.length());
     std::string host_name = value.substr(0, last_colon_index);
+    std::string port_number;
+    if (host_name.length() + 1 < value.length()) {
+        port_number = value.substr(host_name.length() + 1);
+    }
     if (last_colon_index != std::string::npos) {
         if (!is_port(value.substr(last_colon_index + 1))) {
             host_name = value;
         }
     }
-    if (!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) {
-        throw InvalidHeader(kHost);
+    std::map<std::string, std::vector<std::string> >::const_iterator host_header_it = this->header_.find("host");
+    if ((!is_ip_literal(host_name) && !is_ipv4address(host_name) && !is_reg_name(host_name)) || !(port_number == "" || port_number == int_to_string(port_)) || (host_header_it != this->header_.end() && host_header_it->second.size() != 1) ) {
+        throw MustReturnHTTPStatus(400);
     }
+    this->host_name_ = host_name;
 }
 
 void HTTPRequest::add_valid_funcs() {
@@ -267,7 +274,7 @@ void HTTPRequest::add_valid_funcs() {
     } else if (this->protocol == HTTP_1_1) {
         validation_func_pair.push_back(std::make_pair("content-length", &HTTPRequest::valid_content_length));
         validation_func_pair.push_back(std::make_pair("content-type", &HTTPRequest::valid_content_type));
-        validation_func_pair.push_back(std::make_pair("host", &HTTPRequest::valid_host));
+        validation_func_pair.push_back(std::make_pair("host", &HTTPRequest::valid_host_in_http1_1));
     }
 }
 
@@ -335,12 +342,13 @@ size_t HTTPRequest::register_field(const std::vector<std::string> &splited_buffe
             throw InvalidRequest(kHTTPHeader);
         }
         std::pair<std::string, std::string> header_pair = make_header_pair(splited_buffer[i]);
-        if (this->protocol == HTTP_1_1) {
+        // if (this->protocol == HTTP_1_1) {
             // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
             // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
             // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
+            // TODO(maitneel): ここtrimしていいのかよくわかんない
             header_pair.second = trim_string(header_pair.second, " \0x09");
-        }
+        // }
         std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(header_pair.first);
         if (it == this->header_.end()) {
             this->header_.insert(make_pair(header_pair.first, std::vector<std::string>(1, header_pair.second)));
@@ -384,14 +392,13 @@ void HTTPRequest::register_entity_body(const std::vector<std::string> &splited_b
     // この後のヘッダーの処理 RFC1945 の例だとコロンの後にスペースが入ってるけどこれ消していいのかわかんねぇ //
     if (front < splited_buffer.size()) {
         if (this->header_.find("content-length") == this->header_.end()) {
-            // TODO(status-code): response with 411 length require
-            throw InvalidRequest(kHTTPHeader);
+            throw MustReturnHTTPStatus(411);
         }
         try {
             this->entity_body_ = splited_buffer[front].substr(0, this->content_length_);
         } catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
-            // throw いんたーなるさーばーえらー的なやつ //
+            throw MustReturnHTTPStatus(500);
         }
     }
     this->transform_headers();
@@ -409,8 +416,9 @@ HTTPRequest::HTTPRequest() : is_simple_request(false), header_(), entity_body_()
 //     this->valid_headers();
 // }
 
-void HTTPRequest::parse_request_header(std::string header_str) {
+void HTTPRequest::parse_request_header(std::string header_str, const int &port) {
     remove_front_crlf(&header_str);
+    this->port_ = port;
     std::vector<std::string> splited_buffer = escaped_quote_split(header_str, CRLF);
     this->parse_request_line(splited_buffer[0]);
 
@@ -433,6 +441,10 @@ const std::string &HTTPRequest::get_request_uri() const {
 
 const std::string &HTTPRequest::get_protocol() const {
     return this->protocol;
+}
+
+const std::string &HTTPRequest::get_host_name() const {
+    return this->host_name_;
 }
 
 // print func

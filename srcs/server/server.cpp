@@ -23,6 +23,7 @@
 
 #include "server.hpp"
 #include "poll_selector.hpp"
+#include "http_exception.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
 #include "cgi_response.hpp"
@@ -281,8 +282,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
     req.print_info();
-    // TODO(maitneel): 若干バグると思う //
-    const std::string host_name = get_host_name(req.header_.find("host")->second[0], port);
+    std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
     std::string location = req_uri;
@@ -449,6 +449,9 @@ void Server::EventLoop() {
                 // Nothing to do;
             } else if (event.event == kReadableRequest || event.event == kRequestEndOfReadad) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
                 HTTPContext& ctx = ctxs_.at(event_fd);
+                if (ctx.error_occured_) {
+                    continue;
+                }
 
                 // TODO(maitneel): 辻褄合わせをどうにかする //
                 ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
@@ -456,7 +459,19 @@ void Server::EventLoop() {
 
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
-                        ctx.ParseRequestHeader();
+                        try {
+                            ctx.ParseRequestHeader(socket_list_.GetPort(event.socket_fd));
+                        } catch (const MustReturnHTTPStatus &e) {
+                            // TODO(maitneel): default のエラーを返すよにする //
+                            ctx.error_occured_ = true;
+                            const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                            this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
+                        } catch (std::exception &e) {
+                            // TODO(maitneel): ほんとは InvalidHeader　と InvalidRequestだけでいい
+                            ctx.error_occured_ = true;
+                            const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                            this->SendErrorResponce(400, server_config, event.connection_fd);
+                        }
                     }
                 }
                 if (ctx.IsParsedHeader() && ctx.body_.IsComplated()) {
