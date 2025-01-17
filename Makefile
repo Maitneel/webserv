@@ -26,6 +26,7 @@ SRCS		=	main.cpp \
 				${SERVER_DIR}server.cpp \
 				${SERVER_DIR}http_context.cpp \
 				${SERVER_DIR}event_dispatcher.cpp \
+				${SERVER_DIR}generate_autoindex.cpp \
 				${CONFIG_DIR}config.cpp \
 				${UTILS_DIR}split.cpp \
 				${UTILS_DIR}safe_to_integer.cpp \
