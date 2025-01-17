@@ -42,38 +42,11 @@ bool operator<(const FileStat &lhs, const FileStat &rhs) {
     return (lhs.name < rhs.name);
 }
 
-static std::string gen_index(const std::string &dir_name, const std::string &req_path) {
-    DIR *dir = opendir(dir_name.c_str());
-    if (dir == NULL) {
-        throw MustReturnHTTPStatus(500);
-    }
-
-    std::set<FileStat> dir_info;
-    struct dirent *file_element;
-    while ((file_element = readdir(dir)) != NULL) {
-        std::string file_name = file_element->d_name;
-        // TODO(maitneel): dir_nameは常に'/'で終わるべきなので本来"/"を追加する必要はない //
-        std::string file_path = dir_name + "/" + file_name;
-        struct stat file_info;
-        cerr << file_path << endl;
-        if (file_name.at(0) == '.') {
-            continue;
-        }
-        if (stat(file_path.c_str(), &file_info) != 0) {
-            cerr << "throw: " << file_path << endl;
-            throw MustReturnHTTPStatus(500);
-        }
-        if ((file_info.st_mode & S_IFDIR)) {
-            file_name += '/';
-            dir_info.insert(FileStat(file_name, req_path + file_name, file_info.st_size, true));
-        } else {
-            dir_info.insert(FileStat(file_name, req_path + file_name, file_info.st_size, false));
-        }
-    }
+static std::string gen_html_text(const std::set<FileStat> &dir_info, const std::string &req_path) {
     std::stringstream data;
     data << "<h1>Index of " << req_path << "</h1>\n<hr>\n<pre>\n";
     data << "<a href=\"" << req_path << "\">" << "../" << "</a>\n";
-    for (std::set<FileStat>::iterator it = dir_info.begin(); it != dir_info.end(); it++) {
+    for (std::set<FileStat>::const_iterator it = dir_info.begin(); it != dir_info.end(); it++) {
         std::string file_name = it->name;
         if (AUTOINDEX_WIDTH < file_name.length()) {
             file_name = file_name.substr(0, AUTOINDEX_WIDTH - 3);
@@ -89,6 +62,38 @@ static std::string gen_index(const std::string &dir_name, const std::string &req
     data << "</pre><hr>";
 
     return data.str();
+}
+
+static FileStat create_filestat(const struct dirent *file_element, const std::string &dir_name, const std::string &req_path) {
+    std::string file_name = file_element->d_name;
+    // TODO(maitneel): dir_nameは常に'/'で終わるべきなので本来"/"を追加する必要はない //
+    std::string file_path = dir_name + "/" + file_name;
+    struct stat file_info;
+    if (stat(file_path.c_str(), &file_info) != 0) {
+        throw MustReturnHTTPStatus(500);
+    }
+    if ((file_info.st_mode & S_IFDIR)) {
+        file_name += '/';
+        return (FileStat(file_name, req_path + file_name, file_info.st_size, true));
+    } else {
+        return (FileStat(file_name, req_path + file_name, file_info.st_size, false));
+    }
+}
+
+static std::string gen_index(const std::string &dir_name, const std::string &req_path) {
+    DIR *dir = opendir(dir_name.c_str());
+    if (dir == NULL) {
+        throw MustReturnHTTPStatus(500);
+    }
+
+    std::set<FileStat> dir_info;
+    struct dirent *file_element;
+    while ((file_element = readdir(dir)) != NULL) {
+        if (file_element->d_name[0] != '.') {
+            dir_info.insert(create_filestat(file_element, dir_name, req_path));
+        }
+    }
+    return gen_html_text(dir_info, req_path);
 }
 
 static std::string gen_body(const std::string &dir_name, const std::string &req_path) {
