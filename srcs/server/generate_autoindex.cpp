@@ -11,10 +11,6 @@
 
 #define AUTOINDEX_WIDTH 50
 
-#include <iostream>
-using std::cerr;
-using std::endl;
-
 static std::string gen_header(const std::string &req_path) {
     std::string header;
     header += "<!DOCTYPE html>";
