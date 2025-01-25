@@ -214,12 +214,26 @@ void Server::GetHandler(HTTPContext *context, const std::string &req_path, const
     if (IsDir(path.c_str())) {
         // TODO(taksaito): autoindex か、 index をみるようにする
         // 現在は一旦、index.html をみるように処理
+        if (location_config.autoindex_) {
+            try {
+                HTTPResponse res(HTTPResponse::kOK, "text/html", generate_autoindex_file(path, req_path));
+                dispatcher_.add_writen_buffer(connection_fd, res.toString());
+            } catch (MustReturnHTTPStatus &e) {
+                this->SendErrorResponce(convert_status_code_to_enum(e.GetStatusCode()), server_config, connection_fd);
+            }
+            return;
+        }
+
         path += "/index.html";
     }
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
         this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+        return;
+    }
+    if (access(path.c_str(), R_OK) == -1) {
+        this->SendErrorResponce(HTTPResponse::kForbidden, server_config, connection_fd);
         return;
     }
 

@@ -56,4 +56,6 @@ class Server {
     void EventLoop();
 };
 
+std::string generate_autoindex_file(const std::string &dir_name, const std::string &req_path);
+
 #endif  // INCLUDE_SERVER_HPP_
