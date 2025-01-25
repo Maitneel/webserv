@@ -39,25 +39,25 @@ bool operator<(const FileStat &lhs, const FileStat &rhs) {
 }
 
 static std::string gen_html_text(const std::set<FileStat> &dir_info, const std::string &req_path) {
-    std::stringstream data;
-    data << "<h1>Index of " << req_path << "</h1>\n<hr>\n<pre>\n";
-    data << "<a href=\"" << req_path << "\">" << "../" << "</a>\n";
+    std::stringstream html_string;
+    html_string << "<h1>Index of " << req_path << "</h1>\n<hr>\n<pre>\n";
+    html_string << "<a href=\"" << req_path << "\">" << "../" << "</a>\n";
     for (std::set<FileStat>::const_iterator it = dir_info.begin(); it != dir_info.end(); it++) {
         std::string file_name = it->name;
         if (AUTOINDEX_WIDTH < file_name.length()) {
             file_name = file_name.substr(0, AUTOINDEX_WIDTH - 3);
             file_name += "..>";
         }
-        data << "<a href=\"" << it->path << "\">" << file_name << "</a>" << std::setw(AUTOINDEX_WIDTH - file_name.length()) << "" << ' ';
+        html_string << "<a href=\"" << it->path << "\">" << file_name << "</a>" << std::setw(AUTOINDEX_WIDTH - file_name.length()) << "" << ' ';
         if (it->is_dir) {
-            data << "-" << "\n";
+            html_string << "-" << "\n";
         } else {
-            data << it->size << "\n";
+            html_string << it->size << "\n";
         }
     }
-    data << "</pre><hr>";
+    html_string << "</pre><hr>";
 
-    return data.str();
+    return html_string.str();
 }
 
 static FileStat create_filestat(const struct dirent *file_element, const std::string &dir_name, const std::string &req_path) {
@@ -106,8 +106,8 @@ std::string generate_autoindex_file(const std::string &dir_name, const std::stri
         throw MustReturnHTTPStatus(403);
     }
 
-    std::string data;
-    data += gen_header(req_path);
-    data += gen_body(dir_name, req_path);
-    return data;
+    std::string html_string;
+    html_string += gen_header(req_path);
+    html_string += gen_body(dir_name, req_path);
+    return html_string;
 }
