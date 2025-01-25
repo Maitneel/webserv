@@ -287,6 +287,11 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
     std::string location = req_uri;
     ServerConfig config;
+
+    if (req_uri.find("..") != std::string::npos) {
+        this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
+        return;
+    }
     try {
         config = this->GetConfig(port, host_name);
     } catch (std::runtime_error &e) {
