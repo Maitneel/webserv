@@ -10,11 +10,13 @@ class LocastionConfig {
     std::string             name_;  // url、 pathみたいな //
     std::string             document_root_;
     std::set<std::string>   methods_;
+    std::set<std::string>   index_;
     bool                    autoindex_;
     std::string             cgi_path_;
     size_t                  max_body_size_;
     std::string             redirect_;
 
+    std::string ToString();
     const LocastionConfig operator=(const LocastionConfig &rhs);
 };
 
@@ -31,10 +33,10 @@ bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs);
 class ServerConfig {
  public :
     std::string server_name_;
-    LocastionConfig common_config_;
     int         port_;
     std::map<std::string, LocastionConfig> location_configs_;  // <url, config> //
     std::map<int, std::string> error_page_path_;
+    std::string ToString();
 };
 
 std::map<ServerConfigKey, ServerConfig> parse_config(std::string path);  // <virtual-name, config> //

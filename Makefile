@@ -1,4 +1,4 @@
-CXX		 := c++
+CXX		 := g++-14
 CXXFLAGS	:= -Wall -Wextra -pedantic -std=c++98 -MMD -MP -g
 
 NAME		= webserv
@@ -31,6 +31,7 @@ SRCS		=	main.cpp \
 				${SERVER_DIR}event_dispatcher.cpp \
 				${SERVER_DIR}generate_autoindex.cpp \
 				${CONFIG_DIR}config.cpp \
+				${CONFIG_DIR}config_parser.cpp \
 				${UTILS_DIR}split.cpp \
 				${UTILS_DIR}safe_to_integer.cpp \
 				${UTILS_DIR}string.cpp \

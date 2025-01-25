@@ -1,9 +1,8 @@
 ?start                  : config
 
 config                  : server_block+
-server_block            : "server" "{" server_directives "}"
-server_directives       : server_directive+
-server_directive        : listen_directive server_name_directive root_directive location_block+
+server_block            : "server" "{" server_directive "}"
+server_directive        : listen_directive server_name_directive location_block+
 
 listen_directive        : "listen" port ";"
 server_name_directive   : "server_name" server_name ";"
@@ -35,6 +34,7 @@ port : NUMBER
 path : (CNAME | "-" | "/" | "." )+
 server_name : CNAME
 location_path : path
+number      : NUMBER
 
 %import common.NUMBER
 %import common.CNAME

@@ -9,3 +9,5 @@ webserv
 .DS_Store
 *.s
 *.S
+.devcontainer
+.github/dependabot.yml

@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <sstream>
 
 #include "config.hpp"
 
@@ -25,6 +26,23 @@ bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs) {
         return (lhs.port_ < rhs.port_);
     }
     return (lhs.server_name_ < rhs.server_name_);
+}
+
+std::string LocastionConfig::ToString() {
+    std::stringstream ss;
+    ss << "\t" << "name: " << name_ << std::endl;
+    ss << "\t" << "document_root: " << document_root_ << std::endl;
+    // ss << "\t" << "methods: " << methods_ << std::endl;
+    ss << "\t" << "index: ";
+    for (std::set<std::string>::iterator it = index_.begin(); it != index_.end(); it++) {
+        ss << *it << " ";
+    }
+    ss << std::endl;
+    ss << "\t" << "autoindex:  " << std::boolalpha << autoindex_ << std::endl;
+    ss << "\t" << "cgi_path:  " << cgi_path_ << std::endl;
+    ss << "\t" << "max_body_size:" << max_body_size_ << std::endl;
+    ss << "\t" << "redirect:" << redirect_ << std::endl;
+    return ss.str();
 }
 
 std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
@@ -113,7 +131,7 @@ std::map<ServerConfigKey, ServerConfig> hard_coding_config() {
         server_config.location_configs_ = hard_coding_loc_config();
         server_config.port_ = 8080;
         server_config.server_name_ = "localhost";
-        server_config.common_config_ = gen_loc_conf("/", "./docs/", false, "").second;
+        server_config.location_configs_.insert(gen_loc_conf("/", "./docs/", false, ""));
 
         configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
@@ -122,7 +140,7 @@ std::map<ServerConfigKey, ServerConfig> hard_coding_config() {
         server_config.location_configs_ = hard_coding_loc_config();
         server_config.port_ = 8001;
         server_config.server_name_ = "localhost";
-        server_config.common_config_ = gen_loc_conf("/", "./docs/", false, "").second;
+        server_config.location_configs_.insert(gen_loc_conf("/", "./docs/", false, ""));
 
         configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
@@ -131,7 +149,7 @@ std::map<ServerConfigKey, ServerConfig> hard_coding_config() {
         server_config.location_configs_ = hard_coding_loc_config();
         server_config.port_ = 8080;
         server_config.server_name_ = "127.0.0.1";
-        server_config.common_config_ = gen_loc_conf("/", "./docs/", false, "").second;
+        server_config.location_configs_.insert(gen_loc_conf("/", "./docs/", false, ""));
 
         configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
@@ -139,5 +157,14 @@ std::map<ServerConfigKey, ServerConfig> hard_coding_config() {
     return configs;
 }
 
-
-
+std::string ServerConfig::ToString() {
+    std::stringstream ss;
+    ss << "server_name: " << server_name_ << std::endl;
+    ss << "port: " << port_ << std::endl;
+    std::map<std::string, LocastionConfig>::iterator it;
+    for (it=location_configs_.begin(); it != location_configs_.end(); it++) {
+        ss << it->first << std::endl;
+        ss << it->second.ToString() << std::endl;
+    }
+    return ss.str();
+}
