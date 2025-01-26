@@ -95,6 +95,7 @@ std::map<std::string, LocastionConfig> hard_coding_loc_config() {
     conf_map.insert(gen_loc_conf("/cgi/cgi_test/", "", false, "./test/cgi_tester"));
     conf_map.insert(gen_loc_conf("/cgi/php/", "", false, "./docs/cgi/php_cgi.php"));
     conf_map.insert(gen_loc_conf("/cgi/python/", "", false, "./docs/cgi/python_cgi.py"));
+    conf_map.insert(gen_loc_conf("/cgi/return_ok/", "", false, "./docs/cgi/return_ok.py"));
 
     conf_map.insert(gen_loc_conf("/hoge/", "./docs/dir_1/", false, ""));
     conf_map.insert(gen_loc_conf("/hoge/dir_2/", "./docs/dir_2/", false, ""));

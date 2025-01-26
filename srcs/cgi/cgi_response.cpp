@@ -95,6 +95,9 @@ void CGIResponse::register_body(const std::vector<std::string> &splited_by_lf, c
 
 CGIResponse::CGIResponse(const std::string &buffer) {
     std::vector<std::string> splited_by_lf = split(buffer, "\n");
+    if (splited_by_lf[0].find("Status:") != std::string::npos) {
+        splited_by_lf.erase(splited_by_lf.begin());
+    }
     this->type_ = get_response_type(splited_by_lf);
     add_header(splited_by_lf.at(0));
     if (this->type_ == kLocalRedirectResponse) {
@@ -107,7 +110,7 @@ CGIResponse::CGIResponse(const std::string &buffer) {
     }
     // ここキモいかも　//
     for (; line_index < splited_by_lf.size(); line_index++) {
-        if (splited_by_lf.at(line_index) == "\n") {
+        if (splited_by_lf.at(line_index) == "\n" || splited_by_lf.at(line_index) == "\r\n") {
             break;
         }
         add_header(splited_by_lf.at(line_index));

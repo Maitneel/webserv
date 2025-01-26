@@ -276,7 +276,11 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     context.is_cgi_ = true;
     const CGIInfo &cgi_info = context.cgi_info_;
     dispatcher_.RegisterFileFd(cgi_info.fd, connection_fd);
-    dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    if (req.entity_body_.length() != 0) {
+        dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    } else {
+        shutdown(cgi_info.fd, SHUT_WR);
+    }
     debug(cgi_info.fd);
     std::cerr << "cgi end" << std::endl;
 }
@@ -534,6 +538,7 @@ void Server::EventLoop() {
                 this->CloseConnection(event.connection_fd);
             } else if (event.event == kFileWriteEnd) {
                 // TODO(maitneel): Do it;
+                shutdown(event_fd, SHUT_WR);
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
             } else if (event.event == kServerEventFail) {
