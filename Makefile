@@ -13,6 +13,9 @@ CGI_DIR 	= cgi/
 DEPS_DIR		= ${OBJS_DIR}
 INCLUDE_DIR 	= ./include
 
+PHP_PATH		= ${shell which php}
+PYTHON3_PATH	= ${shell which python3}
+
 SRCS		=	main.cpp \
 				${HTTP_DIR}http_request.cpp \
 				${HTTP_DIR}http_response.cpp \
@@ -59,6 +62,14 @@ ifeq ($(MAKECMDGOALS),debug)
 else
 	OBJS		= ${SRCS:%.cpp=${OBJS_DIR}/%.o}
 	DEPS		= ${SRCS:%.cpp=${DEPS_DIR}/%.d}
+endif
+
+ifneq (${PHP_PATH},)
+	CXXFLAGS += -D PHP_PATH=\"${PHP_PATH}\"
+endif
+
+ifneq (${PYTHON3_PATH},)
+	CXXFLAGS += -D PYTHON3_PATH=\"${PYTHON3_PATH}\"
 endif
 
 all:  $(NAME)
