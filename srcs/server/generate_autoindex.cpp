@@ -89,6 +89,7 @@ static std::string gen_index(const std::string &dir_name, const std::string &req
             dir_info.insert(create_filestat(file_element, dir_name, req_path));
         }
     }
+    closedir(dir);
     return gen_html_text(dir_info, req_path);
 }
 
