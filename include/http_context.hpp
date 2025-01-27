@@ -13,6 +13,7 @@ class HTTPContext {
     HTTPRequest request_;
     bool parsed_header_;
     bool parsed_body_;
+
  public:
     CGIInfo cgi_info_;
     bool is_cgi_;
