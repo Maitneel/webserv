@@ -12,6 +12,7 @@ class HTTPContext {
     std::string buffer_;
     HTTPRequest request_;
     bool parsed_header_;
+    bool parsed_body_;
  public:
     CGIInfo cgi_info_;
     bool is_cgi_;
@@ -25,6 +26,7 @@ class HTTPContext {
     int GetConnectionFD() const;
     const std::string& GetBuffer() const;
     bool IsParsedHeader() const;
+    bool IsParsedBody() const;
     void ParseRequestHeader(const int &port);
     void ParseRequestBody();
     const HTTPRequest &GetHTTPRequest();
