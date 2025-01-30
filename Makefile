@@ -36,6 +36,7 @@ SRCS		=	main.cpp \
 				${UTILS_DIR}safe_to_integer.cpp \
 				${UTILS_DIR}string.cpp \
 				${UTILS_DIR}int_to_string.cpp \
+				${UTILS_DIR}file_signatures.cpp \
 				${CGI_DIR}cgi_server.cpp \
 				${CGI_DIR}set_meta_valiable.cpp \
 				${CGI_DIR}valid_words.cpp \

@@ -28,6 +28,7 @@
 #include "http_response.hpp"
 #include "cgi_response.hpp"
 #include "cgi.hpp"
+#include "file_signatures.hpp"
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
 using std::cerr;
@@ -38,6 +39,8 @@ std::string int_to_str(int n) {
     ss << n;
     return ss.str();
 }
+
+const FileSignatures file_signatures;
 
 std::string GetContent(const std::string& path) {
     std::ifstream ifs(path.c_str());
@@ -173,38 +176,6 @@ int SocketList::GetFd(const int &port) {
     return NON_EXIST_FD;
 }
 
-std::string GetContentType(const std::string path) {
-    std::string::size_type dot_pos = path.rfind(".");
-    if (dot_pos == std::string::npos) {
-        return "application/octet-stream";
-    }
-    std::string ext = path.substr(dot_pos + 1);
-
-    if (ext == "html") {
-        return "text/html";
-    } else if (ext == "txt") {
-        return "text/plain";
-} else if (ext == "png") {
-        return "image/png";
-    }
-    // TODO(taksaito): 他の MIME タイプの対応
-    return "application/octet-stream";
-}
-
-bool IsDir(const std::string& path) {
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0)
-        return false;
-    return (st.st_mode & S_IFMT) == S_IFDIR;
-}
-
-static std::string get_host_name(const std::string &host_header_value, const int &port) {
-    std::string port_string = ":";
-    port_string += int_to_str(port);
-    const std::string::size_type port_front = host_header_value.find(port_string);
-    return (host_header_value.substr(0, port_front));
-}
-
 std::string get_extension(const std::string file_name) {
     const std::string::size_type last_slash_index = file_name.rfind('/');
     const std::string::size_type last_dot_index = file_name.rfind('.');
@@ -224,16 +195,42 @@ std::string get_extension(const std::string file_name) {
     }
 }
 
-std::string get_content_type(const std::string &file_name) {
-    const std::string extension = get_extension(file_name);
+std::string GetContentType(const std::string path) {
+    std::string content_type = "";
+    try {
+        content_type = file_signatures.GetMIMEType(path);
+    } catch (std::runtime_error &e) {
+        // nothing to do;
+    }
+    if (content_type != "" && content_type != "application/octet-stream") {
+        return content_type;
+    }
 
-    if (extension == ".html") {
+    std::string ext = get_extension(path);
+
+    if (ext == "html") {
         return "text/html";
-    } else if (extension == ".txt") {
+    } else if (ext == "txt") {
         return "text/plain";
     }
+    // TODO(taksaito): 他の MIME タイプの対応
     return "application/octet-stream";
 }
+
+bool IsDir(const std::string& path) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0)
+        return false;
+    return (st.st_mode & S_IFMT) == S_IFDIR;
+}
+
+static std::string get_host_name(const std::string &host_header_value, const int &port) {
+    std::string port_string = ":";
+    port_string += int_to_str(port);
+    const std::string::size_type port_front = host_header_value.find(port_string);
+    return (host_header_value.substr(0, port_front));
+}
+
 
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
 void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
@@ -269,7 +266,7 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
 
     int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
     if (0 <= fd) {
-        context->content_type = get_content_type(path);
+        context->content_type = GetContentType(path);
         context->file_fd_ = fd;
         dispatcher_.RegisterFileFd(fd, connection_fd);
         return;
@@ -306,7 +303,7 @@ void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path
         return;
     }
 
-    HTTPResponse res(HTTPResponse::kOK, get_content_type(path), "");
+    HTTPResponse res(HTTPResponse::kOK, GetContentType(path), "");
     this->dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
