@@ -205,6 +205,36 @@ static std::string get_host_name(const std::string &host_header_value, const int
     return (host_header_value.substr(0, port_front));
 }
 
+std::string get_extension(const std::string file_name) {
+    const std::string::size_type last_slash_index = file_name.rfind('/');
+    const std::string::size_type last_dot_index = file_name.rfind('.');
+
+    if (last_slash_index == std::string::npos) {
+        if (last_dot_index != std::string::npos) {
+            return file_name.substr(last_dot_index);
+        } else {
+            return "";
+        }
+    } else {
+        if (last_slash_index < last_dot_index) {
+            return file_name.substr(last_dot_index);
+        } else {
+            return "";
+        }
+    }
+}
+
+std::string get_content_type(const std::string &file_name) {
+    const std::string extension = get_extension(file_name);
+
+    if (extension == ".html") {
+        return "text/html";
+    } else if (extension == ".txt") {
+        return "text/plain";
+    }
+    return "application/octet-stream";
+}
+
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
 void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
@@ -239,6 +269,7 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
 
     int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
     if (0 <= fd) {
+        context->content_type = get_content_type(path);
         context->file_fd_ = fd;
         dispatcher_.RegisterFileFd(fd, connection_fd);
         return;
@@ -275,7 +306,7 @@ void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path
         return;
     }
 
-    HTTPResponse res(HTTPResponse::kOK, "/", "");
+    HTTPResponse res(HTTPResponse::kOK, get_content_type(path), "");
     this->dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
@@ -428,14 +459,14 @@ void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::st
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
-void Server::SendresponseFromFile(const int &connection_fd, const std::string &file_content) {
+void Server::SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type) {
     // TODO(maitneel): content-typeをどうにかする //
     if (ctxs_.at(connection_fd).sent_response_) {
         return;
     }
     ctxs_.at(connection_fd).sent_response_ = true;
 
-    HTTPResponse res(HTTPResponse::kOK, "/", file_content);
+    HTTPResponse res(HTTPResponse::kOK, content_type, file_content);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
@@ -556,11 +587,12 @@ void Server::EventLoop() {
             } else if (event.event == kReadableFile) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kFileEndOfRead) {
-                if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
+                const HTTPContext &ctx = ctxs_.at(event.connection_fd);
+                if (ctx.is_cgi_ && ctx.cgi_info_.is_proccess_end) {
                     this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
-                } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
-                    this->SendresponseFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                } else if (!ctx.is_cgi_) {
+                    this->SendresponseFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd), ctx.content_type);
                     dispatcher_.UnregisterFileFd(event_fd);
                 }
             } else if (event.event == kresponseWriteEnd) {
