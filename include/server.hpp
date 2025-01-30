@@ -52,7 +52,8 @@ class Server {
     ~Server();
     // ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
-    void GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config);
+    void GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config);
+    void HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config);
     void EventLoop();
 };
 

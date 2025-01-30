@@ -100,7 +100,8 @@ std::pair<std::string, LocatoinConfig> gen_loc_conf(
     conf.name_ = name;
 
     conf.methods_.insert("GET");
-    conf.methods_.insert("POST");
+    // conf.methods_.insert("POST");
+    // conf.methods_.insert("HEAD");
     conf.methods_.insert("DELETE");
 
     conf.document_root_ = doc_root;

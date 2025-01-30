@@ -206,7 +206,7 @@ static std::string get_host_name(const std::string &host_header_value, const int
 }
 
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
-void Server::GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
+void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
     std::string path = document_root + req_path;
     const int &connection_fd = context->GetConnectionFD();
@@ -245,6 +245,38 @@ void Server::GetHandler(HTTPContext *context, const std::string &req_path, const
     }
     this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
     return;
+}
+
+void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
+    const std::string &document_root = location_config.document_root_;
+    std::string path = document_root + req_path;
+    const int &connection_fd = context->GetConnectionFD();
+
+    if (IsDir(path.c_str())) {
+        if (location_config.autoindex_) {
+            if (access(path.c_str(), R_OK) == -1) {
+                this->SendErrorResponce(403, server_config, connection_fd);
+            } else {
+                HTTPResponse res(HTTPResponse::kOK, "text/html", "");
+                this->dispatcher_.add_writen_buffer(connection_fd, res.toString());
+            }
+            return;
+        }
+        path += "/index.html";
+    }
+
+    std::cout << path << std::endl;
+    if (access(path.c_str(), F_OK) == -1) {
+        this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+        return;
+    }
+    if (access(path.c_str(), R_OK) == -1) {
+        this->SendErrorResponce(HTTPResponse::kForbidden, server_config, connection_fd);
+        return;
+    }
+
+    HTTPResponse res(HTTPResponse::kOK, "/", "");
+    this->dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
 int ft_accept(int fd) {
@@ -296,8 +328,10 @@ void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &serve
         this->CallCGI(connection_fd, req, loc_conf.cgi_path_, loc_conf.name_);
         return;
     } else if (method == "GET") {
-        this->GetHandler(ctx, req_uri, server_config, loc_conf);
+        this->GetMethodHandler(ctx, req_uri, server_config, loc_conf);
         return;
+    } else if (method == "HEAD") {
+        this->HeadMethodHandler(ctx, req_uri, server_config, loc_conf);
     } else {
         SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
     }
@@ -307,7 +341,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
-    // req.print_info();
+    req.print_info();
     std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
