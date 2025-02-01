@@ -63,25 +63,25 @@ void ConfigParser::Consume(const std::string& expect) {
     }
 }
 
-void ConfigParser::parse_url(LocastionConfig *location_config) {
+void ConfigParser::parse_url(LocatoinConfig *location_config) {
     // TODO: (taksaito) url のチェック
     std::string url = ConsumeToken();
     location_config->redirect_ = url;
 }
 
-void ConfigParser::parse_return_directive(LocastionConfig *location_config) {
+void ConfigParser::parse_return_directive(LocatoinConfig *location_config) {
     Consume("return");
     parse_url(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_cgi_path(LocastionConfig *location_config) {
+void ConfigParser::parse_cgi_path(LocatoinConfig *location_config) {
     Consume("cgi_path");
     parse_path(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_number(LocastionConfig *location_config) {
+void ConfigParser::parse_number(LocatoinConfig *location_config) {
     std::string body_size_str = ConsumeToken();
     try {
         location_config->max_body_size_ = safe_atoi(body_size_str);
@@ -92,7 +92,7 @@ void ConfigParser::parse_number(LocastionConfig *location_config) {
     }
 }
 
-void ConfigParser::parse_max_body_size_directive(LocastionConfig *location_config) {
+void ConfigParser::parse_max_body_size_directive(LocatoinConfig *location_config) {
     Consume("max_body_size");
     std::string path = ConsumeToken();
     // TODO: (taksaito) validation path;
@@ -100,7 +100,7 @@ void ConfigParser::parse_max_body_size_directive(LocastionConfig *location_confi
     Consume(";");
 }
 
-void ConfigParser::parse_autoindex_directive(LocastionConfig *location_config) {
+void ConfigParser::parse_autoindex_directive(LocatoinConfig *location_config) {
     Consume("autoindex");
     std::string token = ConsumeToken();
     if (token == "on")
@@ -112,51 +112,51 @@ void ConfigParser::parse_autoindex_directive(LocastionConfig *location_config) {
     Consume(";");
 }
 
-void ConfigParser::parse_index_files(LocastionConfig *location_config) {
+void ConfigParser::parse_index_files(LocatoinConfig *location_config) {
     do {
         std::string index_file = ConsumeToken();
         location_config->index_.insert(index_file);
     } while(GetToken() != ";");
 }
 
-void ConfigParser::parse_index_directive(LocastionConfig *location_config) {
+void ConfigParser::parse_index_directive(LocatoinConfig *location_config) {
     Consume("index");
     parse_index_files(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_path(LocastionConfig *location_config) {
+void ConfigParser::parse_path(LocatoinConfig *location_config) {
     std::string root = ConsumeToken();
     // TODO: (taksaito) pathのvalidation
     location_config->document_root_ = root;
 }
 
-void ConfigParser::parse_root_directive(LocastionConfig *location_config) {
+void ConfigParser::parse_root_directive(LocatoinConfig *location_config) {
     Consume("root");
     parse_path(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_method(LocastionConfig *location_config) {
+void ConfigParser::parse_method(LocatoinConfig *location_config) {
     do {
         location_config->methods_.insert(ConsumeToken());
     } while(GetToken() != ";");
 }
 
-void ConfigParser::parse_method_directive(LocastionConfig *location_config) {
+void ConfigParser::parse_method_directive(LocatoinConfig *location_config) {
     Consume("method");
     parse_method(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_location_path(LocastionConfig *location_config) {
+void ConfigParser::parse_location_path(LocatoinConfig *location_config) {
     std::string path = ConsumeToken();
     // TODO: (taksaito) pathのvalidation
     location_config->name_ = path;
 }
 
 void ConfigParser::parse_location_directive(ServerConfig *server_config) {
-    LocastionConfig location_config;
+    LocatoinConfig location_config;
     Consume("location");
     parse_location_path(&location_config);
     Consume("{");

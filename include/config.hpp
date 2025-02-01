@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 
-class LocastionConfig {
+class LocatoinConfig {
  public :
     std::string             name_;  // url、 pathみたいな //
     std::string             document_root_;
@@ -17,7 +17,7 @@ class LocastionConfig {
     std::string             redirect_;
 
     std::string ToString();
-    const LocastionConfig operator=(const LocastionConfig &rhs);
+    const LocatoinConfig operator=(const LocatoinConfig &rhs);
 };
 
 struct ServerConfigKey {
@@ -34,7 +34,7 @@ class ServerConfig {
  public :
     std::string server_name_;
     int         port_;
-    std::map<std::string, LocastionConfig> location_configs_;  // <url, config> //
+    std::map<std::string, LocatoinConfig> location_configs_;  // <url, config> //
     std::map<int, std::string> error_page_path_;
     std::string ToString();
 };

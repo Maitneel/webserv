@@ -6,7 +6,7 @@
 
 #include "config.hpp"
 
-const LocastionConfig LocastionConfig::operator=(const LocastionConfig &rhs) {
+const LocatoinConfig LocatoinConfig::operator=(const LocatoinConfig &rhs) {
     if (this == &rhs) {
         return *this;
     }
@@ -28,7 +28,7 @@ bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs) {
     return (lhs.server_name_ < rhs.server_name_);
 }
 
-std::string LocastionConfig::ToString() {
+std::string LocatoinConfig::ToString() {
     std::stringstream ss;
     ss << "\t" << "name: " << name_ << std::endl;
     ss << "\t" << "document_root: " << document_root_ << std::endl;
@@ -50,7 +50,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
     // 一旦固定値を返す
     std::map<ServerConfigKey, ServerConfig> configs;
     {
-        LocastionConfig location_conf;
+        LocatoinConfig location_conf;
         location_conf.document_root_ = "./docs";
         location_conf.methods_.insert("GET");
 
@@ -63,7 +63,7 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
         configs.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
     }
     {
-        LocastionConfig location_conf;
+        LocatoinConfig location_conf;
         location_conf.document_root_ = "./docs";
         location_conf.methods_.insert("GET");
 
@@ -80,13 +80,13 @@ std::map<ServerConfigKey, ServerConfig> parse_config(std::string path) {
     return configs;
 }
 
-std::pair<std::string, LocastionConfig> gen_loc_conf(
+std::pair<std::string, LocatoinConfig> gen_loc_conf(
     std::string name,
     std::string doc_root,
     bool auto_index,
     std::string cgi_path
 ) {
-    LocastionConfig conf;
+    LocatoinConfig conf;
 
     conf.name_ = name;
 
@@ -104,8 +104,8 @@ std::pair<std::string, LocastionConfig> gen_loc_conf(
     return std::make_pair(name, conf);
 }
 
-std::map<std::string, LocastionConfig> hard_coding_loc_config() {
-    std::map<std::string, LocastionConfig> conf_map;
+std::map<std::string, LocatoinConfig> hard_coding_loc_config() {
+    std::map<std::string, LocatoinConfig> conf_map;
     conf_map.insert(gen_loc_conf("/", "./docs", true, ""));
     conf_map.insert(gen_loc_conf("/cgi/date.cgi/", "", false, "./cgi_script/date/date.cgi"));
     conf_map.insert(gen_loc_conf("/cgi/echo.cgi/", "", false, "./cgi_script/echo/echo.cgi"));
@@ -161,7 +161,7 @@ std::string ServerConfig::ToString() {
     std::stringstream ss;
     ss << "server_name: " << server_name_ << std::endl;
     ss << "port: " << port_ << std::endl;
-    std::map<std::string, LocastionConfig>::iterator it;
+    std::map<std::string, LocatoinConfig>::iterator it;
     for (it=location_configs_.begin(); it != location_configs_.end(); it++) {
         ss << it->first << std::endl;
         ss << it->second.ToString() << std::endl;
