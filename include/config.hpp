@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 
-class LocatoinConfig {
+struct LocatoinConfig {
  public :
     std::string             name_;  // url、 pathみたいな //
     std::string             document_root_;
@@ -30,7 +30,7 @@ struct ServerConfigKey {
 
 bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs);
 
-class ServerConfig {
+struct ServerConfig {
  public :
     std::string server_name_;
     int         port_;
