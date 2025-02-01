@@ -100,7 +100,7 @@ class FdEventDispatcher {
 typedef enum ServerEventTypeEnum {
     kUnknownEvent,                 // 0
     kReadableRequest,              // 1
-    kRequestEndOfReadad,           // 2
+    kRequestEndOfReaded,           // 2
     kReadableFile,                 // 3
     kFileEndOfRead,                // 4
     kresponseWriteEnd,             // 5

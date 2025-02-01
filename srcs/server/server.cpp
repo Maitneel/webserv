@@ -478,12 +478,12 @@ void Server::EventLoop() {
             }
             if (event.event == kUnknownEvent) {
                 // Nothing to do;
-            } else if (event.event == kReadableRequest || event.event == kRequestEndOfReadad) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
+            } else if (event.event == kReadableRequest || event.event == kRequestEndOfReaded) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
                 HTTPContext& ctx = ctxs_.at(event_fd);
                 if (ctx.error_occured_) {
                     continue;
                 }
-                if (event.event == kRequestEndOfReadad && ctx.IsParsedBody()) {
+                if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
                     CloseConnection(event.connection_fd);
                     continue;
                 }
@@ -506,14 +506,14 @@ void Server::EventLoop() {
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(400, server_config, event.connection_fd);
                         }
-                    } else if (event.event == kRequestEndOfReadad) {
+                    } else if (event.event == kRequestEndOfReaded) {
                         CloseConnection(event.connection_fd);
                     }
                 }
                 if (ctx.IsParsedHeader() && ctx.body_.IsComplated()) {
                     ctx.ParseRequestBody();
                     this->routing(event_fd, it->second.socket_fd);
-                } else if (event.event == kRequestEndOfReadad) {
+                } else if (event.event == kRequestEndOfReaded) {
                     CloseConnection(event.connection_fd);
                 }
             } else if (event.event == kReadableFile) {

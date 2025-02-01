@@ -514,7 +514,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableRequest;
         } else if (fd_event == kEOF) {
-            event = kRequestEndOfReadad;
+            event = kRequestEndOfReaded;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
