@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+ENVIRON="REQUEST_METHOD=GET SERVER_PROTOCOL=HTTP/1.1 PATH_INFO=/"
+
+env -i ${ENVIRON} ./cgi_tester

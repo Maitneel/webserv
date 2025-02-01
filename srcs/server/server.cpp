@@ -261,14 +261,26 @@ int ft_accept(int fd) {
 }
 
 
-void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path) {
+void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path, const std::string &loc_name) {
     std::cerr << "call cgi" << std::endl;
+    std::string path_info = "/";
+    std::string req_path = req.get_request_uri();
+    if (req_path.at(req_path.length() - 1) != '/') {
+        req_path += '/';
+    }
+    if (loc_name.length() < req_path.length()) {
+        path_info = req_path.substr(loc_name.length());
+    }
     HTTPContext &context = ctxs_.at(connection_fd);
-    context.cgi_info_ = call_cgi_script(req, cgi_path);
+    context.cgi_info_ = call_cgi_script(req, cgi_path, path_info);
     context.is_cgi_ = true;
     const CGIInfo &cgi_info = context.cgi_info_;
     dispatcher_.RegisterFileFd(cgi_info.fd, connection_fd);
-    dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    if (req.entity_body_.length() != 0) {
+        dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    } else {
+        shutdown(cgi_info.fd, SHUT_WR);
+    }
     debug(cgi_info.fd);
     std::cerr << "cgi end" << std::endl;
 }
@@ -281,7 +293,7 @@ void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &serve
         return;
     }
     if (loc_conf.cgi_path_ != "") {
-        this->CallCGI(connection_fd, req, loc_conf.cgi_path_);
+        this->CallCGI(connection_fd, req, loc_conf.cgi_path_, loc_conf.name_);
         return;
     } else if (method == "GET") {
         this->GetHandler(ctx, req_uri, server_config, loc_conf);
@@ -376,6 +388,9 @@ void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::st
         return;
     }
     ctxs_.at(connection_fd).sent_response_ = true;
+    cerr << "cgi responce ----------------------------------------------------" << endl;
+    cerr << cgi_response_string << endl;
+    cerr << "cgi responce ----------------------------------------------------" << endl;
     CGIResponse cgi_res(cgi_response_string);
     HTTPResponse res = cgi_res.make_http_response();
 
@@ -523,6 +538,7 @@ void Server::EventLoop() {
                 this->CloseConnection(event.connection_fd);
             } else if (event.event == kFileWriteEnd) {
                 // TODO(maitneel): Do it;
+                shutdown(event_fd, SHUT_WR);
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
             } else if (event.event == kServerEventFail) {

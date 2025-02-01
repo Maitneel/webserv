@@ -168,9 +168,10 @@ static void add_env_from_request(const HTTPRequest &request, std::vector<std::st
     add_other_env(request, env);
 }
 
-char **make_env_array(const HTTPRequest &request) {
+char **make_env_array(const HTTPRequest &request, const std::string &path_info) {
     std::vector<std::string> env_vector;
     add_env_from_request(request, &env_vector);
+    env_vector.push_back("PATH_INFO=" + path_info);
 
     char **env = new (char*[env_vector.size() + 1]);
     for (size_t i = 0; i < env_vector.size(); i++) {

@@ -24,7 +24,7 @@ struct CGIInfo {
     }
 };
 
-CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path);
-char **make_env_array(const HTTPRequest &request);
+CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path, const std::string &path_info);
+char **make_env_array(const HTTPRequest &request, const std::string &path_info);
 
 #endif  // INCLUDE_CGI_HPP_
