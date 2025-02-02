@@ -8,4 +8,4 @@ REQUEST_FILE_PATH=`echo $0 | sed "s/${THIS_FILE_NAME}$/${REQUEST_FILE_NAME}/g"`
 echo "request ------------------------"
 cat ${REQUEST_FILE_PATH}
 echo "response -----------------------"
-cat ${REQUEST_FILE_PATH} - | nc localhost 8080
+cat ${REQUEST_FILE_PATH} - | nc localhost 8001

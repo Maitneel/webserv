@@ -478,11 +478,13 @@ void Server::EventLoop() {
             }
             if (event.event == kUnknownEvent) {
                 // Nothing to do;
-            } else if (event.event == kReadableRequest || event.event == kRequestEndOfReaded) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
-                HTTPContext& ctx = ctxs_.at(event_fd);
-                if (ctx.error_occured_) {
-                    continue;
+            } else if (event.event == kRequestEndOfReaded) {
+                if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
+                    CloseConnection(event_fd);
                 }
+                dispatcher_.UnregisterConnectionReadEvent(event_fd);
+            } else if (event.event == kReadableRequest) {
+                HTTPContext& ctx = ctxs_.at(event_fd);
                 if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
                     CloseConnection(event.connection_fd);
                     continue;
@@ -497,12 +499,12 @@ void Server::EventLoop() {
                             ctx.ParseRequestHeader(socket_list_.GetPort(event.socket_fd));
                         } catch (const MustReturnHTTPStatus &e) {
                             // TODO(maitneel): default のエラーを返すよにする //
-                            ctx.error_occured_ = true;
+                            dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
                         } catch (std::exception &e) {
                             // TODO(maitneel): ほんとは InvalidHeader　と InvalidRequestだけでいい
-                            ctx.error_occured_ = true;
+                            dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(400, server_config, event.connection_fd);
                         }

@@ -72,6 +72,7 @@ class FdEventDispatcher {
     // FdManager をポインタで返す関数があるのでほぼpublic //
     // どこがFdManagerの所有権を持つべきかよくわからない //
     std::map<int, FdManager> fds_;
+    std::set<int> registerd_read_fds_;
     std::vector<pollfd> poll_fds_;
 
     std::multimap<int, FdEvent> ReadBuffer();
@@ -89,6 +90,7 @@ class FdEventDispatcher {
 
     void Register(const int &fd, const FdType &type);
     void Unregister(const int &fd);
+    void UnregisterReadEvent(const int &fd);
     std::multimap<int, FdEvent> Wait(int timeout);
 
     const std::string &get_read_buffer(const int &fd) const;
@@ -195,6 +197,7 @@ class ServerEventDispatcher {
     void RegisterSocketFd(const int &socket_fd);
     void RegisterFileFd(const int &file_fd, const int &connection_fd);
     void UnregisterConnectionFd(const int &connection_fd);
+    void UnregisterConnectionReadEvent(const int &fd);
     void UnregisterFileFd(const int &file_fd);
     void UnregisterWithClose(const int &fd);
 
