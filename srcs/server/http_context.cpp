@@ -3,7 +3,7 @@
 #include "http_context.hpp"
 #include "http_validation.hpp"
 
-HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), is_cgi_(false), file_fd_(-1), sent_response_(false), error_occured_(false) {
+HTTPContext::HTTPContext(int fd) : connection_fd_(fd), parsed_header_(false), parsed_body_(false), is_cgi_(false), file_fd_(-1), sent_response_(false) {
 }
 
 
@@ -22,6 +22,10 @@ bool HTTPContext::IsParsedHeader() const {
     return (this->parsed_header_);
 }
 
+bool HTTPContext::IsParsedBody() const {
+    return (this->parsed_body_);
+}
+
 void HTTPContext::ParseRequestHeader(const int &port) {
     std::string header_str = buffer_.substr(0, buffer_.find("\r\n\r\n") + strlen(CRLF));
 
@@ -35,6 +39,7 @@ void HTTPContext::ParseRequestHeader(const int &port) {
 void HTTPContext::ParseRequestBody() {
     // TODO(maitneel): 直接触れないようにしたほうがいいかもしれない //
     request_.entity_body_ = body_.GetBody();
+    this->parsed_body_ = true;
     // TODO(maitneel): 適切な長さになるよにする(keep-aliveが動かない) //
     // buffer_ = buffer_.substr(request_.content_length_);
 }

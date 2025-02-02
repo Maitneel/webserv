@@ -307,7 +307,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
-    req.print_info();
+    // req.print_info();
     std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
@@ -373,7 +373,7 @@ void Server::CloseConnection(const int connection_fd) {
         dispatcher_.UnregisterFileFd(context.file_fd_);
         close(context.file_fd_);
     }
-    if (context.is_cgi_) {
+    if (context.cgi_info_.fd != NON_EXIST_FD) {
         dispatcher_.UnregisterFileFd(context.cgi_info_.fd);
         close(context.cgi_info_.fd);
     }
@@ -388,9 +388,6 @@ void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::st
         return;
     }
     ctxs_.at(connection_fd).sent_response_ = true;
-    cerr << "cgi responce ----------------------------------------------------" << endl;
-    cerr << cgi_response_string << endl;
-    cerr << "cgi responce ----------------------------------------------------" << endl;
     CGIResponse cgi_res(cgi_response_string);
     HTTPResponse res = cgi_res.make_http_response();
 
@@ -481,12 +478,18 @@ void Server::EventLoop() {
             }
             if (event.event == kUnknownEvent) {
                 // Nothing to do;
-            } else if (event.event == kReadableRequest || event.event == kRequestEndOfReadad) {  // TODO(maitneel): この中の処理を関数に分けて、ifの条件を一つだけにする
+            } else if (event.event == kRequestEndOfReaded) {
+                if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
+                    CloseConnection(event_fd);
+                } else {
+                    dispatcher_.UnregisterConnectionReadEvent(event_fd);
+                }
+            } else if (event.event == kReadableRequest) {
                 HTTPContext& ctx = ctxs_.at(event_fd);
-                if (ctx.error_occured_) {
+                if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
+                    CloseConnection(event.connection_fd);
                     continue;
                 }
-
                 // TODO(maitneel): 辻褄合わせをどうにかする //
                 ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
                 dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
@@ -497,32 +500,27 @@ void Server::EventLoop() {
                             ctx.ParseRequestHeader(socket_list_.GetPort(event.socket_fd));
                         } catch (const MustReturnHTTPStatus &e) {
                             // TODO(maitneel): default のエラーを返すよにする //
-                            ctx.error_occured_ = true;
+                            dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
                         } catch (std::exception &e) {
                             // TODO(maitneel): ほんとは InvalidHeader　と InvalidRequestだけでいい
-                            ctx.error_occured_ = true;
+                            dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(400, server_config, event.connection_fd);
                         }
+                    } else if (event.event == kRequestEndOfReaded) {
+                        CloseConnection(event.connection_fd);
                     }
                 }
                 if (ctx.IsParsedHeader() && ctx.body_.IsComplated()) {
                     ctx.ParseRequestBody();
                     this->routing(event_fd, it->second.socket_fd);
+                } else if (event.event == kRequestEndOfReaded) {
+                    CloseConnection(event.connection_fd);
                 }
             } else if (event.event == kReadableFile) {
                 // TODO(maitneel): Do it;
-            } else if (event.event == kFileEndOfRead) {
-                // TODO(maitneel): Do it;
-                if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
-                    this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregisterFileFd(event_fd);
-                } else if (!ctxs_.at(event.connection_fd).is_cgi_) {
-                    this->SendresponseFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
-                    dispatcher_.UnregisterFileFd(event_fd);
-                }
             } else if (event.event == kFileEndOfRead) {
                 if (ctxs_.at(event.connection_fd).is_cgi_ && ctxs_.at(event.connection_fd).cgi_info_.is_proccess_end) {
                     this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));

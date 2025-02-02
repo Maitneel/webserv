@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include <iostream>
+#include <iomanip>
 using std::cerr;
 using std::endl;
 
@@ -124,13 +125,18 @@ const std::string FdEventDispatcher::empty_string_ = "";
 
 FdEventDispatcher::FdEventDispatcher() {
     signal(SIGCHLD, signal_handler);
+    // なんかやっといた方がいいっぽい //
+    signal(SIGPIPE, SIG_IGN);
 }
 
 FdEventDispatcher::~FdEventDispatcher() {
+    signal(SIGCHLD, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
 }
 
 void FdEventDispatcher::Register(const int &fd, const FdType &type) {
     this->fds_.insert(std::make_pair(fd, FdManager(fd, type)));
+    this->registerd_read_fds_.insert(fd);
     struct pollfd pfd = {fd, POLLIN, 0};
     this->poll_fds_.push_back(pfd);
 }
@@ -139,12 +145,19 @@ void FdEventDispatcher::Unregister(const int &fd) {
     if (this->fds_.find(fd) != this->fds_.end()) {
         this->fds_.erase(fd);
     }
+    if (registerd_read_fds_.find(fd) != registerd_read_fds_.end()) {
+        registerd_read_fds_.erase(fd);
+    }
     for (std::vector<pollfd>::iterator it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
         if (it->fd == fd) {
             this->poll_fds_.erase(it);
             break;
         }
     }
+}
+
+void FdEventDispatcher::UnregisterReadEvent(const int &fd) {
+    registerd_read_fds_.erase(fd);
 }
 
 std::multimap<int, FdEvent> FdEventDispatcher::ReadBuffer() {
@@ -178,9 +191,10 @@ std::multimap<int, FdEvent> FdEventDispatcher::WriteBuffer() {
     for (size_t i = 0; i < this->poll_fds_.size(); i++) {
         struct pollfd &processing = this->poll_fds_.at(i);
         const int fd = processing.fd;
-        const short revents = processing.revents;
+        const short &revents = processing.revents;
+        const short &events = processing.events;
 
-        if ((revents & POLLOUT) == POLLOUT) {
+        if ((revents & POLLOUT) == POLLOUT && !(revents & (~events))) {
             ReadWriteStatType write_ret = this->fds_.at(fd).Write();
             if (write_ret == kSuccess) {
                 result_array.insert(std::make_pair(fd, FdEvent(fd, kWriteEnd)));
@@ -214,9 +228,17 @@ void FdEventDispatcher::UpdatePollEvents() {
         const int fd = processing.fd;
 
         if (!this->fds_.at(fd).IsEmptyWritebleBuffer()) {
-            processing.events = (POLLIN | POLLOUT);
+            if (registerd_read_fds_.find(fd) != registerd_read_fds_.end()) {
+                processing.events = (POLLIN | POLLOUT);
+            } else {
+                processing.events = (POLLOUT);
+            }
         } else {
-            processing.events = (POLLIN);
+            if (registerd_read_fds_.find(fd) != registerd_read_fds_.end()) {
+                processing.events = (POLLIN);
+            } else {
+                processing.events = (POLLIN);
+            }
         }
         processing.revents = 0;
     }
@@ -514,7 +536,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
         } else if (fd_event == kHaveReadableBuffer) {
             event = kReadableRequest;
         } else if (fd_event == kEOF) {
-            event = kRequestEndOfReadad;
+            event = kRequestEndOfReaded;
         } else if (fd_event == kChanged) {
             // Nothing to do;
         } else if (fd_event == kWriteEnd) {
@@ -601,6 +623,10 @@ void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
     }
     this->fd_event_dispatcher_.Unregister(connection_fd);
     this->registerd_fds_.UnregisterConnectionFd(connection_fd);
+}
+
+void ServerEventDispatcher::UnregisterConnectionReadEvent(const int &fd) {
+    fd_event_dispatcher_.UnregisterReadEvent(fd);
 }
 
 void ServerEventDispatcher::UnregisterFileFd(const int &file_fd) {

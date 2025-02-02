@@ -112,6 +112,5 @@ std::string HTTPResponse::toString() const {
 
     ss << "\r\n";
     ss << this->body_;
-    ss << "\r\n";
     return ss.str();
 }
