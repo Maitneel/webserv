@@ -483,6 +483,9 @@ void Server::SendErrorResponce(const int &stat, const ServerConfig config, const
     if (stat == HTTPResponse::kMethodNotAllowed) {
         error_message = "MethodNotAllowed";
     }
+    if (stat == HTTPResponse::kRequestTimeout) {
+        error_message = "RequestTimeout";
+    }
     if (stat == HTTPResponse::kInternalServerErrror) {
         error_message = "InternalServerErrror";
     }
@@ -602,6 +605,12 @@ void Server::EventLoop() {
                 shutdown(event_fd, SHUT_WR);
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
+            } else if (event.event == kTimeout) {
+                if (!dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
+                    const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                    this->SendErrorResponce(408, server_config, event.connection_fd);
+                }
+                // TODO(maitneel): socket の read側を監視対象から外す //
             } else if (event.event == kServerEventFail) {
                 // TODO(maitneel): Do it;
                 if (event_fd == event.connection_fd) {

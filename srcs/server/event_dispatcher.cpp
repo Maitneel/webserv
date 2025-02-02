@@ -3,7 +3,9 @@
 #include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
+#include <climits>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -25,6 +27,14 @@ using std::endl;
 
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
+
+long long get_usec() {
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL)) {
+        return -1;
+    }
+    return (tv.tv_sec * SEC_PER_USEC + tv.tv_usec);
+}
 
 // ------------------------------------------------------------------------ //
 //                                                                          //
@@ -524,6 +534,14 @@ ServerEventDispatcher::ServerEventDispatcher() {
 ServerEventDispatcher::~ServerEventDispatcher() {
 }
 
+ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, const ServerEventType &server_event) {
+    int socket_fd = this->registerd_fds_.GetPairentSocket(fd);
+    int connection_fd = this->registerd_fds_.GetPairentConnection(fd);
+    int file_fd = NON_EXIST_FD;
+
+    return ConnectionEvent(server_event, socket_fd, connection_fd, file_fd);
+}
+
 ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, const FdEventType &fd_event) {
     int socket_fd = this->registerd_fds_.GetPairentSocket(fd);
     int connection_fd = this->registerd_fds_.GetPairentConnection(fd);
@@ -594,8 +612,33 @@ void ServerEventDispatcher::MergeDuplicateFd(std::multimap<int, FdEvent> *events
     }
 }
 
+
+std::set<int> ServerEventDispatcher::CheckTimeout() {
+    std::set<int> timeout;
+    const long long now = get_usec();
+    for (std::map<int, long long>::iterator it = continue_connection_until_.begin(); it != continue_connection_until_.end(); it++) {
+        if (it->second < now) {
+            timeout.insert(it->first);
+            // 2回以上timeoutイベントが走るとめんどくさいので雑な処理 //
+            it->second = LLONG_MAX;
+        }
+    }
+    return timeout;
+}
+void ServerEventDispatcher::OverrideTimeoutEvent(std::multimap<int, ConnectionEvent> *events) {
+    std::set<int> timeout_fds = CheckTimeout();
+
+    for (std::set<int>::iterator it = timeout_fds.begin(); it != timeout_fds.end(); it++) {
+        if (events->find(*it) != events->end()) {
+            events->erase(*it);
+        }
+        events->insert(std::make_pair(*it, CreateConnectionEvent(*it, kTimeout)));
+    }
+}
+
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
     int connection_fd = ft_accept(socket_fd);
+    this->continue_connection_until_.insert(std::make_pair(connection_fd, get_usec() + TIMEOUT_LENGTH_USEC));
     this->fd_event_dispatcher_.Register(connection_fd, kConnection);
     this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
 }
@@ -623,6 +666,7 @@ void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
     }
     this->fd_event_dispatcher_.Unregister(connection_fd);
     this->registerd_fds_.UnregisterConnectionFd(connection_fd);
+    this->continue_connection_until_.erase(connection_fd);
 }
 
 void ServerEventDispatcher::UnregisterConnectionReadEvent(const int &fd) {
@@ -689,6 +733,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
                 connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kFdEventFail)));
             }
         }
+        OverrideTimeoutEvent(&connections);
     } while (connections.size() == 0);
     if (is_signal_recived) {
         connections.insert(std::make_pair(PROCESS_CHENGED_FD, ConnectionEvent(kChildProcessChanged, NON_EXIST_FD, NON_EXIST_FD, NON_EXIST_FD)));

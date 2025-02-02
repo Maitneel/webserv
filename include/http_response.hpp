@@ -22,6 +22,7 @@ class HTTPResponse {
         kForbidden            = 403,
         kNotFound             = 404,
         kMethodNotAllowed     = 405,
+        kRequestTimeout       = 408,
         kInternalServerErrror = 500,
         kNotImplemented       = 501
     };
