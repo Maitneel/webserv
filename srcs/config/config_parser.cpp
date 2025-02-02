@@ -314,6 +314,7 @@ const char* InvalidConfigException::what() const throw() {
     return ss.str().c_str();
 }
 
+/*
 int main(int argc, char **argv) {
     ConfigParser config_parser(argv[1]);
     std::map<ServerConfigKey, ServerConfig> conf = config_parser.Parse();
@@ -323,3 +324,4 @@ int main(int argc, char **argv) {
         std::cerr << it->second.ToString() << std::endl;
     }
 }
+*/

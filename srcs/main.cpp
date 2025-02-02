@@ -5,17 +5,35 @@
 #include "config.hpp"
 #include "http_request.hpp"
 #include "event_dispatcher.hpp"
+#include "config_parser.hpp"
 
 std::map<ServerConfigKey, ServerConfig> hard_coding_config();
 
-/*
-int main() {
-    // std::map<ServerConfigKey, ServerConfig> server_confs = parse_config("");
-    std::map<ServerConfigKey, ServerConfig> server_confs = hard_coding_config();
+// /*
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        std::cerr << "usage: ./webserve ${CONFIG_FILE_PATH}" << std::endl;
+        return 1;
+    }
+    try {
+        // std::map<ServerConfigKey, ServerConfig> server_confs = hard_coding_config();
+        // std::map<ServerConfigKey, ServerConfig> server_confs = parse_config(argv[1]);
 
-    Server server(server_confs);
 
-    server.EventLoop();
+        ConfigParser config_parser(argv[1]);
+        std::map<ServerConfigKey, ServerConfig> conf = config_parser.Parse();
+        
+        for (std::map<ServerConfigKey, ServerConfig>::iterator it = conf.begin(); it != conf.end(); it++) {
+            std::cerr << it->second.ToString() << std::endl;
+        }
+
+        Server server(conf);
+
+        server.EventLoop();
+    } catch (std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return 2;
+    }
 
     return 0;
 }

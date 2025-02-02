@@ -35,6 +35,11 @@ bool operator==(const ServerConfigKey &lhs, const ServerConfigKey &rhs) {
 std::string LocatoinConfig::ToString() {
     std::stringstream ss;
     ss << "\t" << "name: " << name_ << std::endl;
+    ss << "\t" << "method: ";
+    for (std::set<std::string>::iterator it = methods_.begin(); it != methods_.end(); it++) {
+        ss << *it << " ";
+    }
+    ss << std::endl;
     ss << "\t" << "document_root: " << document_root_ << std::endl;
     // ss << "\t" << "methods: " << methods_ << std::endl;
     ss << "\t" << "index: ";
