@@ -16,13 +16,9 @@ int main(int argc, char **argv) {
         return 1;
     }
     try {
-        // std::map<ServerConfigKey, ServerConfig> server_confs = hard_coding_config();
-        // std::map<ServerConfigKey, ServerConfig> server_confs = parse_config(argv[1]);
-
-
         ConfigParser config_parser(argv[1]);
         std::map<ServerConfigKey, ServerConfig> conf = config_parser.Parse();
-        
+
         for (std::map<ServerConfigKey, ServerConfig>::iterator it = conf.begin(); it != conf.end(); it++) {
             std::cerr << it->second.ToString() << std::endl;
         }
