@@ -165,6 +165,7 @@ std::string ServerConfig::ToString() {
     std::stringstream ss;
     ss << "server_name: " << server_name_ << std::endl;
     ss << "port: " << port_ << std::endl;
+    ss << "error_page: " << error_page_ << std::endl;
     std::map<std::string, LocatoinConfig>::iterator it;
     for (it=location_configs_.begin(); it != location_configs_.end(); it++) {
         ss << it->first << std::endl;

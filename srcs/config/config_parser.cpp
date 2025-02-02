@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iostream>
 #include <utility>
+#include <algorithm>
 
 bool is_positive_number(const std::string& str) {
     std::string::const_iterator it = str.begin();
@@ -23,7 +24,7 @@ bool is_start_with(const std::string& str, const std::string& start) {
     size_t min_len = std::min(str.size(), start.size());
 
     while (idx < min_len && str[idx] == start[idx]) {
-        idx++;        
+        idx++;
     }
     if (start.size() != idx)
         return false;
@@ -106,6 +107,10 @@ void ConfigParser::valid_path(const std::string& path) {
 void ConfigParser::valid_cgi_path(const std::string& path) {
     if (!(is_start_with(path, "./") || is_start_with(path, "/")))
         throw InvalidConfigException(current_line_, "path must start ./ or /");
+}
+
+void ConfigParser::valid_error_page_path(const std::string& path) {
+    valid_cgi_path(path);
 }
 
 void ConfigParser::parse_url(LocatoinConfig *location_config) {
@@ -263,18 +268,27 @@ void ConfigParser::parse_server_name_directive(ServerConfig *server_config) {
     Consume(";");
 }
 
+void ConfigParser::parse_error_page(ServerConfig *server_config) {
+    Consume("error_page");
+    const std::string page_path = ConsumeToken();
+    valid_error_page_path(page_path);
+    server_config->error_page_ = page_path;
+    Consume(";");
+}
+
 void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>* config) {
     ServerConfig server_config;
     Consume("server");
     Consume("{");
     parse_listen(&server_config);
     parse_server_name_directive(&server_config);
+    parse_error_page(&server_config);
     parse_location_directives(&server_config);
     Consume("}");
 
     ServerConfigKey key(server_config.port_, server_config.server_name_);
     if (config->find(key) != config->end())
-        throw InvalidConfigException(current_line_,"server_name or port duplicate");
+        throw InvalidConfigException(current_line_, "server_name or port duplicate");
     config->insert(std::make_pair(key, server_config));
 }
 

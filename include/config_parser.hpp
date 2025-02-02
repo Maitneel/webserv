@@ -17,6 +17,7 @@ class ConfigParser {
     void Consume(const std::string& expect);
 
     void valid_location_path(const std::string& route);
+    void valid_error_page_path(const std::string& path);
     void valid_url(const std::string& url);
     void valid_path(const std::string& path);
     void valid_cgi_path(const std::string& path);
@@ -39,6 +40,7 @@ class ConfigParser {
     void parse_listen(ServerConfig *sever_config);
     void parse_server_name(ServerConfig *server_config);
     void parse_server_name_directive(ServerConfig *server_config);
+    void parse_error_page(ServerConfig *server_config);
     void parse_server_block(std::map<ServerConfigKey, ServerConfig>* config);
     void parse_config(std::map<ServerConfigKey, ServerConfig>* config);
     bool is_end();
