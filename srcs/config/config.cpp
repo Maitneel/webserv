@@ -28,6 +28,10 @@ bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs) {
     return (lhs.server_name_ < rhs.server_name_);
 }
 
+bool operator==(const ServerConfigKey &lhs, const ServerConfigKey &rhs) {
+    return lhs.port_ == rhs.port_ && lhs.server_name_ == rhs.server_name_;
+}
+
 std::string LocatoinConfig::ToString() {
     std::stringstream ss;
     ss << "\t" << "name: " << name_ << std::endl;

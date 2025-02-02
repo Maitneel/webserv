@@ -29,6 +29,7 @@ struct ServerConfigKey {
 };
 
 bool operator<(const ServerConfigKey &lhs, const ServerConfigKey &rhs);
+bool operator==(const ServerConfigKey &lhs, const ServerConfigKey &rhs);
 
 struct ServerConfig {
  public :

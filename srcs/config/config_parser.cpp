@@ -58,7 +58,7 @@ std::string ConfigParser::ConsumeToken() {
 void ConfigParser::Consume(const std::string& expect) {
     std::string token = ConsumeToken();
     if (token != expect) {
-        throw InvalidConfigException(current_line_, "expect " + expect + " but obtain " + token);
+        throw InvalidConfigException(current_line_, read_index_, "expect " + expect + " but obtain " + token);
     }
 }
 
@@ -107,7 +107,7 @@ void ConfigParser::parse_autoindex_directive(LocatoinConfig *location_config) {
     else if (token == "off")
         location_config->autoindex_ = false;
     else
-        throw InvalidConfigException(current_line_, "autoindex expect 'on' or 'off' but obtained " + token);
+        throw InvalidConfigException(current_line_, read_index_, "autoindex expect 'on' or 'off' but obtained " + token);
     Consume(";");
 }
 
@@ -175,6 +175,8 @@ void ConfigParser::parse_location_directive(ServerConfig *server_config) {
         parse_return_directive(&location_config);
     }
     Consume("}");
+    if (server_config->location_configs_.find(location_config.name_) != server_config->location_configs_.end())
+        throw InvalidConfigException(current_line_, read_index_, "duplicate location route");
     server_config->location_configs_.insert(std::make_pair(location_config.name_, location_config));
 }
 
@@ -221,7 +223,11 @@ void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>* c
     parse_server_name_directive(&server_config);
     parse_location_directives(&server_config);
     Consume("}");
-    config->insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
+
+    ServerConfigKey key(server_config.port_, server_config.server_name_);
+    if (config->find(key) != config->end())
+        throw InvalidConfigException(current_line_, read_index_,"server_name or port duplicate");
+    config->insert(std::make_pair(key, server_config));
 }
 
 void ConfigParser::parse_config(std::map<ServerConfigKey, ServerConfig>* config) {
@@ -237,12 +243,15 @@ std::map<ServerConfigKey, ServerConfig> ConfigParser::Parse() {
     return config;
 }
 
-InvalidConfigException::InvalidConfigException(size_t line, std::string msg) throw(): line_(line), msg_(msg) {}
+InvalidConfigException::InvalidConfigException(size_t line, size_t read_index, std::string msg) throw(): line_(line), msg_(msg) {
+    col_ = read_index % line;
+}
+
 InvalidConfigException::~InvalidConfigException() throw() {}
 
 const char* InvalidConfigException::what() const throw() {
     std::stringstream ss;
-    ss << "line " << line_ << ": " << msg_;
+    ss << "line: " << line_ << " " << "col: " << col_ << " " << msg_;
     return ss.str().c_str();
 }
 

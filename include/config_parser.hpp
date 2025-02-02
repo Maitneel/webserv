@@ -47,9 +47,10 @@ class ConfigParser {
 class InvalidConfigException: public std::exception {
  private:
     size_t line_;
+    size_t col_;
     std::string msg_;
  public:
-    InvalidConfigException(size_t line, std::string msg) throw ();
+    InvalidConfigException(size_t line, size_t read_index_, std::string msg) throw ();
     ~InvalidConfigException() throw();
     const char* what() const throw();
 };
