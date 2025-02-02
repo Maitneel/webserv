@@ -1,4 +1,4 @@
-CXX		 := g++-14
+CXX		 := g++
 CXXFLAGS	:= -Wall -Wextra -pedantic -std=c++98 -MMD -MP -g
 
 NAME		= webserv
