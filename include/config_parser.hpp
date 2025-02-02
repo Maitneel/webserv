@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <map>
 #include "config.hpp"
 
 class ConfigParser {
@@ -31,14 +33,14 @@ class ConfigParser {
     void parse_location_directives(ServerConfig *server_config);
     void parse_port(ServerConfig *sever_config);
     void parse_listen(ServerConfig *sever_config);
-    void parse_server_name(ServerConfig *server_config);    
+    void parse_server_name(ServerConfig *server_config);
     void parse_server_name_directive(ServerConfig *server_config);
-    void parse_server_block(std::map<ServerConfigKey, ServerConfig>& config);
-    void parse_config(std::map<ServerConfigKey, ServerConfig>& config);    
+    void parse_server_block(std::map<ServerConfigKey, ServerConfig>* config);
+    void parse_config(std::map<ServerConfigKey, ServerConfig>* config);
     bool is_end();
 
  public:
-    ConfigParser(const std::string &file_path);
+    explicit ConfigParser(const std::string &file_path);
     std::map<ServerConfigKey, ServerConfig> Parse();
 };
 

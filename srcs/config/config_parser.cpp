@@ -5,12 +5,11 @@
 #include <map>
 #include <stdexcept>
 #include <sstream>
-
 #include <iostream>
-using std::cerr;
-using std::endl;
+#include <utility>
 
-void rstrip(std::string& str) {
+void rstrip(std::string* str_p) {
+    std::string& str = *str_p;
     std::string::size_type pos = str.find_last_not_of("\t\n\v\f\r ");
     if(pos != std::string::npos)
         str = str.substr(0, pos + 1);
@@ -24,7 +23,7 @@ ConfigParser::ConfigParser(const std::string &file_path): read_index_(0) {
     std::stringstream ss;
     ss << ifs.rdbuf();
     raw_str_ = ss.str();
-    rstrip(raw_str_);
+    rstrip(&raw_str_);
 }
 
 bool ConfigParser::is_end() {
@@ -64,7 +63,7 @@ void ConfigParser::Consume(const std::string& expect) {
 }
 
 void ConfigParser::parse_url(LocatoinConfig *location_config) {
-    // TODO: (taksaito) url のチェック
+    // TODO(taksaito) :  url のチェック
     std::string url = ConsumeToken();
     location_config->redirect_ = url;
 }
@@ -86,16 +85,16 @@ void ConfigParser::parse_number(LocatoinConfig *location_config) {
     try {
         location_config->max_body_size_ = safe_atoi(body_size_str);
     } catch (const std::overflow_error &e) {
-        // TODO error
+        // TODO(taksaito):  error handling
     } catch (const std::runtime_error &e) {
-        // TODO error
+        // TODO(taksaito):  error handling
     }
 }
 
 void ConfigParser::parse_max_body_size_directive(LocatoinConfig *location_config) {
     Consume("max_body_size");
     std::string path = ConsumeToken();
-    // TODO: (taksaito) validation path;
+    // TODO(taksaito) :  validation path;
     location_config->cgi_path_ = path;
     Consume(";");
 }
@@ -127,7 +126,7 @@ void ConfigParser::parse_index_directive(LocatoinConfig *location_config) {
 
 void ConfigParser::parse_path(LocatoinConfig *location_config) {
     std::string root = ConsumeToken();
-    // TODO: (taksaito) pathのvalidation
+    // TODO(taksaito) :  pathのvalidation
     location_config->document_root_ = root;
 }
 
@@ -151,7 +150,7 @@ void ConfigParser::parse_method_directive(LocatoinConfig *location_config) {
 
 void ConfigParser::parse_location_path(LocatoinConfig *location_config) {
     std::string path = ConsumeToken();
-    // TODO: (taksaito) pathのvalidation
+    // TODO(taksaito) :  pathのvalidation
     location_config->name_ = path;
 }
 
@@ -187,13 +186,13 @@ void ConfigParser::parse_location_directives(ServerConfig *server_config) {
 
 void ConfigParser::parse_port(ServerConfig *server_config) {
     std::string port = this->ConsumeToken();
-    // TODO: 数字かチェック
+    // TODO(taksaito): 数字かチェック
     try {
         server_config->port_ = safe_atoi(port);
     } catch (const std::overflow_error &e) {
-        // TODO error
+        // TODO(taksaito):  error handling
     } catch (const std::runtime_error &e) {
-        // TODO error
+        // TODO(taksaito):  error handling
     }
 }
 
@@ -204,7 +203,7 @@ void ConfigParser::parse_listen(ServerConfig *server_config) {
 }
 
 void ConfigParser::parse_server_name(ServerConfig *server_config) {
-    // TODO:(takasaito) よみ厳密にチェック
+    // TODO(takasaito): より厳密にチェック
     server_config->server_name_ = ConsumeToken();
 }
 
@@ -214,7 +213,7 @@ void ConfigParser::parse_server_name_directive(ServerConfig *server_config) {
     Consume(";");
 }
 
-void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>& config) {
+void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>* config) {
     ServerConfig server_config;
     Consume("server");
     Consume("{");
@@ -222,10 +221,10 @@ void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>& c
     parse_server_name_directive(&server_config);
     parse_location_directives(&server_config);
     Consume("}");
-    config.insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
+    config->insert(std::make_pair(ServerConfigKey(server_config.port_, server_config.server_name_), server_config));
 }
 
-void ConfigParser::parse_config(std::map<ServerConfigKey, ServerConfig>& config) {
+void ConfigParser::parse_config(std::map<ServerConfigKey, ServerConfig>* config) {
     while (!is_end()) {
         parse_server_block(config);
     }
@@ -234,7 +233,7 @@ void ConfigParser::parse_config(std::map<ServerConfigKey, ServerConfig>& config)
 std::map<ServerConfigKey, ServerConfig> ConfigParser::Parse() {
     std::map<ServerConfigKey, ServerConfig> config;
 
-    parse_config(config);
+    parse_config(&config);
     return config;
 }
 
@@ -253,6 +252,6 @@ int main() {
 
     std::map<ServerConfigKey, ServerConfig>::iterator it;
     for (it = conf.begin(); it != conf.end(); it++) {
-        cerr << it->second.ToString() << endl;
+        std::cerr << it->second.ToString() << std::endl;
     }
 }
