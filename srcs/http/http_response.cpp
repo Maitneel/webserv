@@ -103,11 +103,13 @@ std::string HTTPResponse::toString() const {
     // TODO(taksaito): Content-Type の判定や、description の文字の処理を実装。
     ss <<  HTTPResponse::kHTTPVersion << " " << this->status_code_ << " " << this->description_ << "\r\n";
     ss << "Content-Type: " << this->content_type_ << "\r\n";
-    ss << "Content-Length: ";
-    ss << this->body_.length() << "\r\n";
     std::map<std::string, std::vector<std::string> >hoge;
     for (std::map<std::string, std::string>::const_iterator it = this->extend_header_.begin(); it != this->extend_header_.end(); it++) {
         ss << it->first << ": " << it->second << "\r\n";
+    }
+    if (extend_header_.find("Content-Length") == extend_header_.end() && this->body_.length() != 0) {
+        ss << "Content-Length: ";
+        ss << this->body_.length() << "\r\n";
     }
 
     ss << "\r\n";
