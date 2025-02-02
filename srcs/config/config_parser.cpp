@@ -8,6 +8,28 @@
 #include <iostream>
 #include <utility>
 
+bool is_positive_number(const std::string& str) {
+    std::string::const_iterator it = str.begin();
+    while (it != str.end()) {
+        if (!std::isdigit(*it))
+            return false;
+        it++;
+    }
+    return true;
+}
+
+bool is_start_with(const std::string& str, const std::string& start) {
+    size_t idx = 0;
+    size_t min_len = std::min(str.size(), start.size());
+
+    while (idx < min_len && str[idx] == start[idx]) {
+        idx++;        
+    }
+    if (start.size() != idx)
+        return false;
+    return true;
+}
+
 void rstrip(std::string* str_p) {
     std::string& str = *str_p;
     std::string::size_type pos = str.find_last_not_of("\t\n\v\f\r ");
@@ -58,13 +80,37 @@ std::string ConfigParser::ConsumeToken() {
 void ConfigParser::Consume(const std::string& expect) {
     std::string token = ConsumeToken();
     if (token != expect) {
-        throw InvalidConfigException(current_line_, read_index_, "expect " + expect + " but obtain " + token);
+        throw InvalidConfigException(current_line_, "expect " + expect + " but obtain " + token);
     }
 }
 
+void ConfigParser::valid_location_path(const std::string& path) {
+    if (!(is_start_with(path, "/")))
+        throw InvalidConfigException(current_line_, "location path must start \"/\"");
+    if (path[path.size()-1] != '/')
+        throw InvalidConfigException(current_line_, "location path must end \"/\"");
+}
+
+void ConfigParser::valid_url(const std::string& url) {
+    if (!(is_start_with(url, "http://") || is_start_with(url, "https://")))
+        throw InvalidConfigException(current_line_, "url must start \"http://\" or \"https://\"");
+}
+
+void ConfigParser::valid_path(const std::string& path) {
+    if (!(is_start_with(path, "./") || is_start_with(path, "/")))
+        throw InvalidConfigException(current_line_, "path must start ./ or /");
+    if (path[path.size()-1] != '/')
+        throw InvalidConfigException(current_line_, "path must end /");
+}
+
+void ConfigParser::valid_cgi_path(const std::string& path) {
+    if (!(is_start_with(path, "./") || is_start_with(path, "/")))
+        throw InvalidConfigException(current_line_, "path must start ./ or /");
+}
+
 void ConfigParser::parse_url(LocatoinConfig *location_config) {
-    // TODO(taksaito) :  url のチェック
-    std::string url = ConsumeToken();
+    const std::string url = ConsumeToken();
+    valid_url(url);
     location_config->redirect_ = url;
 }
 
@@ -76,26 +122,28 @@ void ConfigParser::parse_return_directive(LocatoinConfig *location_config) {
 
 void ConfigParser::parse_cgi_path(LocatoinConfig *location_config) {
     Consume("cgi_path");
-    parse_path(location_config);
+    const std::string cgi_path = ConsumeToken();
+    valid_cgi_path(cgi_path);
+    location_config->cgi_path_ = cgi_path;
     Consume(";");
 }
 
-void ConfigParser::parse_number(LocatoinConfig *location_config) {
+void ConfigParser::parse_max_body_size(LocatoinConfig *location_config) {
     std::string body_size_str = ConsumeToken();
+    if (!is_positive_number(body_size_str))
+        throw InvalidConfigException(current_line_, "max_body_size is positve number");
     try {
         location_config->max_body_size_ = safe_atoi(body_size_str);
     } catch (const std::overflow_error &e) {
-        // TODO(taksaito):  error handling
+        InvalidConfigException(current_line_, "max_body_size is overflow.");
     } catch (const std::runtime_error &e) {
-        // TODO(taksaito):  error handling
+        InvalidConfigException(current_line_, "max_body_size must positive number");
     }
 }
 
 void ConfigParser::parse_max_body_size_directive(LocatoinConfig *location_config) {
     Consume("max_body_size");
-    std::string path = ConsumeToken();
-    // TODO(taksaito) :  validation path;
-    location_config->cgi_path_ = path;
+    parse_max_body_size(location_config);
     Consume(";");
 }
 
@@ -107,7 +155,7 @@ void ConfigParser::parse_autoindex_directive(LocatoinConfig *location_config) {
     else if (token == "off")
         location_config->autoindex_ = false;
     else
-        throw InvalidConfigException(current_line_, read_index_, "autoindex expect 'on' or 'off' but obtained " + token);
+        throw InvalidConfigException(current_line_, "autoindex expect 'on' or 'off' but obtained " + token);
     Consume(";");
 }
 
@@ -126,7 +174,7 @@ void ConfigParser::parse_index_directive(LocatoinConfig *location_config) {
 
 void ConfigParser::parse_path(LocatoinConfig *location_config) {
     std::string root = ConsumeToken();
-    // TODO(taksaito) :  pathのvalidation
+    valid_path(root);
     location_config->document_root_ = root;
 }
 
@@ -149,8 +197,8 @@ void ConfigParser::parse_method_directive(LocatoinConfig *location_config) {
 }
 
 void ConfigParser::parse_location_path(LocatoinConfig *location_config) {
-    std::string path = ConsumeToken();
-    // TODO(taksaito) :  pathのvalidation
+    const std::string path = ConsumeToken();
+    valid_location_path(path);
     location_config->name_ = path;
 }
 
@@ -176,7 +224,7 @@ void ConfigParser::parse_location_directive(ServerConfig *server_config) {
     }
     Consume("}");
     if (server_config->location_configs_.find(location_config.name_) != server_config->location_configs_.end())
-        throw InvalidConfigException(current_line_, read_index_, "duplicate location route");
+        throw InvalidConfigException(current_line_, "duplicate location route");
     server_config->location_configs_.insert(std::make_pair(location_config.name_, location_config));
 }
 
@@ -188,13 +236,14 @@ void ConfigParser::parse_location_directives(ServerConfig *server_config) {
 
 void ConfigParser::parse_port(ServerConfig *server_config) {
     std::string port = this->ConsumeToken();
-    // TODO(taksaito): 数字かチェック
+    if (!is_positive_number(port))
+        throw InvalidConfigException(current_line_, "port must be positve number");
     try {
         server_config->port_ = safe_atoi(port);
     } catch (const std::overflow_error &e) {
-        // TODO(taksaito):  error handling
+        throw InvalidConfigException(current_line_, "port is overflow");
     } catch (const std::runtime_error &e) {
-        // TODO(taksaito):  error handling
+        throw InvalidConfigException(current_line_, "port must be positve number");
     }
 }
 
@@ -205,7 +254,6 @@ void ConfigParser::parse_listen(ServerConfig *server_config) {
 }
 
 void ConfigParser::parse_server_name(ServerConfig *server_config) {
-    // TODO(takasaito): より厳密にチェック
     server_config->server_name_ = ConsumeToken();
 }
 
@@ -226,7 +274,7 @@ void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>* c
 
     ServerConfigKey key(server_config.port_, server_config.server_name_);
     if (config->find(key) != config->end())
-        throw InvalidConfigException(current_line_, read_index_,"server_name or port duplicate");
+        throw InvalidConfigException(current_line_,"server_name or port duplicate");
     config->insert(std::make_pair(key, server_config));
 }
 
@@ -243,15 +291,13 @@ std::map<ServerConfigKey, ServerConfig> ConfigParser::Parse() {
     return config;
 }
 
-InvalidConfigException::InvalidConfigException(size_t line, size_t read_index, std::string msg) throw(): line_(line), msg_(msg) {
-    col_ = read_index % line;
-}
+InvalidConfigException::InvalidConfigException(size_t line, std::string msg) throw(): line_(line), msg_(msg) {}
 
 InvalidConfigException::~InvalidConfigException() throw() {}
 
 const char* InvalidConfigException::what() const throw() {
     std::stringstream ss;
-    ss << "line: " << line_ << " " << "col: " << col_ << " " << msg_;
+    ss << "line: " << line_ << " " << msg_;
     return ss.str().c_str();
 }
 
