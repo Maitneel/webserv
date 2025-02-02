@@ -606,7 +606,7 @@ void Server::EventLoop() {
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
             } else if (event.event == kTimeout) {
-                if (!dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
+                if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
                     const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                     this->SendErrorResponce(408, server_config, event.connection_fd);
                 }

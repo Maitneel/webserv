@@ -627,13 +627,30 @@ std::set<int> ServerEventDispatcher::CheckTimeout() {
 }
 void ServerEventDispatcher::OverrideTimeoutEvent(std::multimap<int, ConnectionEvent> *events) {
     std::set<int> timeout_fds = CheckTimeout();
-
     for (std::set<int>::iterator it = timeout_fds.begin(); it != timeout_fds.end(); it++) {
         if (events->find(*it) != events->end()) {
             events->erase(*it);
         }
         events->insert(std::make_pair(*it, CreateConnectionEvent(*it, kTimeout)));
     }
+}
+
+int ServerEventDispatcher::CalcWaitTime(int *timeout) {
+    if (continue_connection_until_.size() == 0) {
+        return *timeout;
+    }
+    if (*timeout < 0) {
+        return (TIMEOUT_LENGTH_USEC / (SEC_PER_USEC / SEC_PER_MS));
+    }
+    int result = 0;
+    if (*timeout < TIMEOUT_LENGTH_USEC) {
+        result = *timeout;
+        *timeout = 0;
+    } else {
+        result = TIMEOUT_LENGTH_USEC;
+        *timeout -= TIMEOUT_LENGTH_USEC;
+    }
+    return result;
 }
 
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
@@ -703,15 +720,19 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
     std::multimap<int, ConnectionEvent> connections;
     bool is_signal_recived = false;
     do {
+        int fd_dispathcer_wait_time = CalcWaitTime(&timeout);
+        if (fd_dispathcer_wait_time == 0) {
+            break;
+        }
         std::multimap<int, FdEvent> fd_events;
         try {
-            fd_events = this->fd_event_dispatcher_.Wait(timeout);
+            fd_events = this->fd_event_dispatcher_.Wait(fd_dispathcer_wait_time);
         } catch (const SignalDelivered &e) {
             is_signal_recived = true;
             continue;
         }
         if (fd_events.size() == 0) {
-            return connections;
+            break;
         }
         this->MergeDuplicateFd(&fd_events);
         for (std::multimap<int, FdEvent>::iterator it = fd_events.begin(); it != fd_events.end(); it++) {
@@ -733,11 +754,11 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
                 connections.insert(std::make_pair(fd, this->CreateConnectionEvent(fd, kFdEventFail)));
             }
         }
-        OverrideTimeoutEvent(&connections);
     } while (connections.size() == 0);
     if (is_signal_recived) {
         connections.insert(std::make_pair(PROCESS_CHENGED_FD, ConnectionEvent(kChildProcessChanged, NON_EXIST_FD, NON_EXIST_FD, NON_EXIST_FD)));
     }
+    OverrideTimeoutEvent(&connections);
     return connections;
 }
 

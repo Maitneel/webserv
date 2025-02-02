@@ -202,6 +202,7 @@ class ServerEventDispatcher {
     void MergeDuplicateFd(std::multimap<int, FdEvent> *events);
     std::set<int> CheckTimeout();
     void OverrideTimeoutEvent(std::multimap<int, ConnectionEvent> *events);
+    int CalcWaitTime(int *timeout);
 
  public:
     ServerEventDispatcher();
