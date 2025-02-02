@@ -206,7 +206,7 @@ static std::string get_host_name(const std::string &host_header_value, const int
 }
 
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
-void Server::GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocastionConfig &location_config) {
+void Server::GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
     std::string path = document_root + req_path;
     const int &connection_fd = context->GetConnectionFD();
@@ -285,7 +285,7 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     std::cerr << "cgi end" << std::endl;
 }
 
-void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocastionConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
+void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
     const HTTPRequest &req = ctx->GetHTTPRequest();
     const std::string method = req.get_method();
     if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
@@ -331,7 +331,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     }
 
     std::string::size_type location_length = location.rfind('/');
-    std::map<std::string, LocastionConfig>::iterator location_config_it = config.location_configs_.end();
+    std::map<std::string, LocatoinConfig>::iterator location_config_it = config.location_configs_.end();
     while (location_length != std::string::npos) {
         location_config_it = config.location_configs_.find(location.substr(0, location_length + 1));
         if (location_config_it != config.location_configs_.end()) {

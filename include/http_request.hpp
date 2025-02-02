@@ -109,7 +109,7 @@ class HTTPRequest {
     std::string referer_;
     std::vector<std::string> user_agent_;
 
-    explicit HTTPRequest();
+    HTTPRequest();
     void parse_request_header(std::string header_str, const int &port);
     ~HTTPRequest();
 

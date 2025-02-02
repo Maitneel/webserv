@@ -36,7 +36,7 @@ class Server {
     std::map<ServerConfigKey, ServerConfig> config_;
     std::map<int, HTTPContext> ctxs_;
 
-    void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocastionConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
+    void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path, const std::string &loc_name);
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
@@ -52,7 +52,7 @@ class Server {
     ~Server();
     // ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
-    void GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocastionConfig &location_config);
+    void GetHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config);
     void EventLoop();
 };
 

@@ -1,0 +1,43 @@
+?start                  : config
+
+config                  : server_block+
+server_block            : "server" "{" server_directive "}"
+server_directive        : listen_directive server_name_directive location_block+
+
+listen_directive        : "listen" port ";"
+server_name_directive   : "server_name" server_name ";"
+root_directive          : "root" path ";"
+location_block          : "location" location_path "{" location_directives "}"
+
+location_directives     : location_directive+
+location_directive      : (method_directive root_directive? index_directive? autoindex_directive? max_body_size_directive? cgi_path_directive?)
+                        | return_directive
+
+method_directive        : "method" method+ ";"
+method                  : "GET" | "POST" | "DELETE"
+
+index_directive         : "index" index_files ";"
+index_files             : filename | filename index_files 
+filename                : (CNAME | ".")+
+
+autoindex_directive     : "autoindex" ("on" | "off") ";"
+
+max_body_size_directive : "max_body_size" number ";"
+
+cgi_path_directive      : "cgi_path" path ";"
+
+return_directive        : "return" status_code url ";"
+status_code             : number
+url                     : (NUMBER | CNAME | ":" | "-" | "/" | "." )+
+
+port : NUMBER
+path : (CNAME | "-" | "/" | "." )+
+server_name : CNAME
+location_path : path
+number      : NUMBER
+
+%import common.NUMBER
+%import common.CNAME
+%import common.WS
+
+%ignore WS
