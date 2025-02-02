@@ -272,9 +272,6 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
         while (handled_readable_fd.size() == 0 && handled_write_fd.size() == 0 && handled_error_fd.size() == 0) {
             this->UpdatePollEvents();
             int poll_ret = poll(this->poll_fds_.data(), this->poll_fds_.size(), timeout);
-            for (size_t i = 0; i < poll_fds_.size(); i++) {
-                cerr << std::setw(3) << poll_fds_[i].fd << ": " << poll_fds_[i].events << ", " << poll_fds_[i].revents << endl;
-            }
             if (recived_signal != 0) {
                 recived_signal = 0;
                 throw SignalDelivered(SIGCHLD);

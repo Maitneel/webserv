@@ -481,8 +481,9 @@ void Server::EventLoop() {
             } else if (event.event == kRequestEndOfReaded) {
                 if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
                     CloseConnection(event_fd);
+                } else {
+                    dispatcher_.UnregisterConnectionReadEvent(event_fd);
                 }
-                dispatcher_.UnregisterConnectionReadEvent(event_fd);
             } else if (event.event == kReadableRequest) {
                 HTTPContext& ctx = ctxs_.at(event_fd);
                 if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
