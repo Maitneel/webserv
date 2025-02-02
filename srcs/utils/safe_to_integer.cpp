@@ -30,7 +30,7 @@ int safe_atoi(std::string str) {
                 result *= 10;
                 result += str.at(str_index) - '0';
             } else {
-                throw std::runtime_error("safe_atoi: overflow");
+                throw std::overflow_error("safe_atoi: overflow");
             }
         }
     }

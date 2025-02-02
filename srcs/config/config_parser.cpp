@@ -38,7 +38,7 @@ void rstrip(std::string* str_p) {
         str = str.substr(0, pos + 1);
 }
 
-ConfigParser::ConfigParser(const std::string &file_path): read_index_(0) {
+ConfigParser::ConfigParser(const std::string &file_path): read_index_(0), current_line_(0) {
     std::ifstream ifs(file_path.c_str());
     if (ifs == NULL) {
         throw std::runtime_error(std::string("can't open ") + file_path);
@@ -142,7 +142,7 @@ void ConfigParser::parse_max_body_size(LocatoinConfig *location_config) {
     } catch (const std::overflow_error &e) {
         InvalidConfigException(current_line_, "max_body_size is overflow.");
     } catch (const std::runtime_error &e) {
-        InvalidConfigException(current_line_, "max_body_size must positive number");
+        InvalidConfigException(current_line_, "max_body_size is overflow.");
     }
 }
 
@@ -214,8 +214,7 @@ void ConfigParser::parse_location_directive(ServerConfig *server_config) {
     Consume("{");
     if (GetToken() == "method") {
         parse_method_directive(&location_config);
-        if (GetToken() == "root")
-            parse_root_directive(&location_config);
+        parse_root_directive(&location_config);
         if (GetToken() == "index")
             parse_index_directive(&location_config);
         if (GetToken() == "autoindex")
@@ -248,7 +247,7 @@ void ConfigParser::parse_port(ServerConfig *server_config) {
     } catch (const std::overflow_error &e) {
         throw InvalidConfigException(current_line_, "port is overflow");
     } catch (const std::runtime_error &e) {
-        throw InvalidConfigException(current_line_, "port must be positve number");
+        throw InvalidConfigException(current_line_, "port is overflow");
     }
 }
 
@@ -315,8 +314,8 @@ const char* InvalidConfigException::what() const throw() {
     return ss.str().c_str();
 }
 
-int main() {
-    ConfigParser config_parser("./srcs/config/server.conf");
+int main(int argc, char **argv) {
+    ConfigParser config_parser(argv[1]);
     std::map<ServerConfigKey, ServerConfig> conf = config_parser.Parse();
 
     std::map<ServerConfigKey, ServerConfig>::iterator it;
