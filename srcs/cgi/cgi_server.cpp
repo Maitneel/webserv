@@ -21,6 +21,8 @@
 
 #define BUFFER_SIZE 1024
 
+#include <iostream>
+
 char **create_argv(const std::string &program_name, const std::string &cgi_script_path) {
     size_t allocation_size = 2;
     if (program_name != cgi_script_path) {
@@ -67,6 +69,7 @@ void child_process(const HTTPRequest &request, const std::string &cgi_script_pat
 
     char **argv = create_argv(program_name, cgi_script_path);
     char **env = make_env_array(request, path_info);
+    std::cerr << "execve --------------------------" << std::endl;
     execve(program_name.c_str(), argv, env);
     exit(127);
 }

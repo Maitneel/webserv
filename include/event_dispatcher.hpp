@@ -33,12 +33,13 @@ class FdManager {
  private:
     const int fd_;
     const FdType type_;
-    std::string read_buffer_;
-    std::string writen_buffer_;
     ReadWriteStatType write_status_;
 
 
  public:
+    std::string read_buffer_;
+    std::string writen_buffer_;
+    
     FdManager(const int &fd, const FdType &type);
     ~FdManager();
 

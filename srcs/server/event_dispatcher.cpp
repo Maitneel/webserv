@@ -21,7 +21,7 @@ using std::endl;
 
 #include "poll_selector.hpp"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1048576
 
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
@@ -285,6 +285,9 @@ std::multimap<int, FdEvent> FdEventDispatcher::Wait(int timeout) {
             handled_write_fd = this->WriteBuffer();
             handled_readable_fd = this->ReadBuffer();
             handled_error_fd = this->GetErrorFds();
+            for (std::map<int, FdManager>::iterator it = fds_.begin(); it != fds_.end(); it++) {
+                cerr << "[fd, read, write]: [" << it->first << ", " << it->second.get_read_buffer().length() << ", " << it->second.writen_buffer_.length() << "]" << endl;
+            }
         }
     return this->MergeEvents(handled_readable_fd, handled_write_fd, handled_error_fd);
 }

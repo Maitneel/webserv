@@ -252,6 +252,9 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
         }
         std::set<std::string>::iterator index_it = location_config.index_.begin();
         path += *index_it;
+        if (path.at(path.length() - 1) == '/') {
+            path.erase(path.length() - 1);
+        }
         // path += "/index.html";
     }
 
@@ -347,15 +350,21 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
 }
 
 void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
+    ctx->GetHTTPRequest().print_info();
+    cerr << "loc conf: "<<  loc_conf.name_ << endl;
+    for (std::set<std::string>::iterator it = loc_conf.methods_.begin(); it != loc_conf.methods_.end(); it++) {
+        cerr << "methods: " << *it << endl;
+    }
     const HTTPRequest &req = ctx->GetHTTPRequest();
     const std::string method = req.get_method();
 
     cerr << "bodysize: " << loc_conf.max_body_size_  << ' ' << ctx->body_.GetBody().length() << endl;
-    if (loc_conf.max_body_size_ < ctx->body_.GetBody().length()) {
-        SendErrorResponce(HTTPResponse::kOK, server_config, connection_fd);
-        return;
-    }
+    // if (loc_conf.max_body_size_ < ctx->body_.GetBody().length()) {
+    //     SendErrorResponce(HTTPResponse::kOK, server_config, connection_fd);
+    //     return;
+    // }
 
+    cerr << "method: " << method << endl;
     if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
         this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, server_config, connection_fd);
         return;

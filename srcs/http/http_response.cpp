@@ -121,10 +121,10 @@ std::string HTTPResponse::toString() const {
     }
 
     ss << "\r\n";
-    ss << this->body_;
-    cerr << "responce ------------------------------------------" << endl;
+    cerr << "responce ------------------------------------------" << endl;;
     cerr << ss.str() << endl;
     cerr << "responce ------------------------------------------" << endl;
+    ss << this->body_;
 
 
     return ss.str();

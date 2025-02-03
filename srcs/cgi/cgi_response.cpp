@@ -9,6 +9,9 @@
 #include "extend_stdlib.hpp"
 #include "http_validation.hpp"
 
+#include <iostream>
+using namespace std;
+
 static std::string get_location(const std::string &first_line) {
     std::string::size_type front = first_line.find_first_not_of(" :", strlen("Location"));
     std::string location;
@@ -48,6 +51,9 @@ void CGIResponse::add_header(const std::string &header_line) {
     try {
         value = header_line.substr(header_line.find_first_not_of(": ", key.length()));
         if (*(value.end() - 1) == '\n') {
+            value.erase(value.end() - 1);
+        }
+        if (*(value.end() - 1) == '\r') {
             value.erase(value.end() - 1);
         }
     } catch (...) {
@@ -134,10 +140,13 @@ HTTPResponse CGIResponse::make_http_response() {
         content_type = "text/plain";
     }
     HTTPResponse http_res(this->status_code_, content_type, this->body_);
+    cerr << "cgi header.size " <<  this->filed_.size() << endl;
     for (std::multimap<std::string, std::string>::iterator it = this->filed_.begin(); it != this->filed_.end(); it++) {
+        cerr << "cgi header: '" << it->first << "', '" << it->second << "';" << endl;
         if (it->first != "Content-Type") {
             http_res.AddHeader(it->first, it->second);
         }
     }
+    http_res.AddHeader("Connection", "close");
     return http_res;
 }
