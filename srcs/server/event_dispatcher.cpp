@@ -23,7 +23,7 @@ using std::endl;
 
 #include "poll_selector.hpp"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1048576
 
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);

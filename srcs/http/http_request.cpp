@@ -467,9 +467,9 @@ void HTTPRequest::print_info(std::ostream &stream) const {
         stream << std::endl;
     }
     stream << "    }" << std::endl;
-    stream << "    body : {" << std::endl;
-    stream << "        " << this->entity_body_ << std::endl;
-    stream << "    }" << std::endl;
+    // stream << "    body : {" << std::endl;
+    // stream << "        " << this->entity_body_ << std::endl;
+    // stream << "    }" << std::endl;
     /*
     stream << std::left << std::setw(width) << "    Allow" << " : [";
     for (size_t i = 0; i < this->allow_.size(); i++) {

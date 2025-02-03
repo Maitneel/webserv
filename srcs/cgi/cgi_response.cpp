@@ -50,6 +50,9 @@ void CGIResponse::add_header(const std::string &header_line) {
         if (*(value.end() - 1) == '\n') {
             value.erase(value.end() - 1);
         }
+        if (*(value.end() - 1) == '\r') {
+            value.erase(value.end() - 1);
+        }
     } catch (...) {
     }
     this->filed_.insert(std::make_pair(key, value));
@@ -139,5 +142,6 @@ HTTPResponse CGIResponse::make_http_response() {
             http_res.AddHeader(it->first, it->second);
         }
     }
+    http_res.AddHeader("Connection", "Close");
     return http_res;
 }

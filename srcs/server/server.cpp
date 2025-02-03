@@ -257,7 +257,7 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+        this->SendErrorResponce(HTTPResponse::kNotFound, server_config, connection_fd);
         return;
     }
     if (access(path.c_str(), R_OK) == -1) {
