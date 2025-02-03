@@ -346,6 +346,28 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
     std::cerr << "cgi end" << std::endl;
 }
 
+const LocatoinConfig &Server::GetLocationConfig(const int &port, const HTTPRequest &req) {
+    std::string location = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
+    if (location.length() == 0 || location.at(location.length() - 1) != '/') {
+        location += "/";
+    }
+    const ServerConfig &server_config = GetConfig(port, req.get_host_name());
+
+    std::string::size_type location_length = location.rfind('/');
+    std::map<std::string, LocatoinConfig>::const_iterator location_config_it = server_config.location_configs_.end();
+    while (location_length != std::string::npos) {
+        location_config_it = server_config.location_configs_.find(location.substr(0, location_length + 1));
+        if (location_config_it != server_config.location_configs_.end()) {
+            break;
+        }
+        if (location_length == 0) {
+            break;
+        }
+        location_length = location.rfind('/', location_length - 1);
+    }
+    return location_config_it->second;
+}
+
 void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
     const HTTPRequest &req = ctx->GetHTTPRequest();
     const std::string method = req.get_method();
@@ -375,12 +397,11 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
     std::string location = req_uri;
-    ServerConfig config;
-
-    if (req_uri.find("..") != std::string::npos) {
-        this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
-        return;
+    if (location.length() == 0 || location.at(location.length() - 1) != '/') {
+        location += "/";
     }
+
+    ServerConfig config;
     try {
         config = this->GetConfig(port, host_name);
     } catch (std::runtime_error &e) {
@@ -388,28 +409,19 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
         return;
     }
 
+    if (req_uri.find("..") != std::string::npos) {
+        this->SendErrorResponce(HTTPResponse::kBadRequest, config, connection_fd);
+        return;
+    }
+
     std::string method = req.get_method();
-    if (location.length() == 0 || location.at(location.length() - 1) != '/') {
-        location += "/";
-    }
 
-    std::string::size_type location_length = location.rfind('/');
-    std::map<std::string, LocatoinConfig>::iterator location_config_it = config.location_configs_.end();
-    while (location_length != std::string::npos) {
-        location_config_it = config.location_configs_.find(location.substr(0, location_length + 1));
-        if (location_config_it != config.location_configs_.end()) {
-            break;
-        }
-        if (location_length == 0) {
-            break;
-        }
-        location_length = location.rfind('/', location_length - 1);
-    }
-
-    if (location_config_it != config.location_configs_.end()) {
-        this->RoutingByLocationConfig(&ctx, config, location_config_it->second, req_uri.substr(location_length), connection_fd);
-    } else {
-        this->RoutingByLocationConfig(&ctx, config, location_config_it->second, req_uri, connection_fd);
+    try {
+        LocatoinConfig location_config = GetLocationConfig(port, req);
+        std::string::size_type location_length = location_config.name_.length();
+        this->RoutingByLocationConfig(&ctx, config, location_config, location.substr(location_length), connection_fd);
+    } catch (...) {
+        SendErrorResponce(404, config, connection_fd);
     }
 }
 
@@ -494,6 +506,9 @@ void Server::SendErrorResponce(const int &stat, const ServerConfig config, const
     if (stat == HTTPResponse::kMethodNotAllowed) {
         error_message = "MethodNotAllowed";
     }
+    if (stat == HTTPResponse::kPayloadTooLarge) {
+        error_message = "PayloadTooLarge";
+    }
     if (stat == HTTPResponse::kRequestTimeout) {
         error_message = "RequestTimeout";
     }
@@ -567,23 +582,34 @@ void Server::EventLoop() {
                     continue;
                 }
                 // TODO(maitneel): 辻褄合わせをどうにかする //
-                ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
+                try {
+                    ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
+                } catch (MustReturnHTTPStatus &e) {
+                    dispatcher_.UnregisterConnectionReadEvent(event_fd);
+                    const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                    this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
+                    continue;
+                }
                 dispatcher_.erase_read_buffer(event_fd, 0, std::string::npos);
 
                 if (ctx.IsParsedHeader() == false) {
                     if (ctx.GetBuffer().find("\r\n\r\n") != std::string::npos) {
                         try {
-                            ctx.ParseRequestHeader(socket_list_.GetPort(event.socket_fd));
+                            const int port = socket_list_.GetPort(event.socket_fd);
+                            ctx.ParseRequestHeader(port);
+                            ctx.SetMaxBodySize(GetLocationConfig(port, ctx.GetHTTPRequest()).max_body_size_);
                         } catch (const MustReturnHTTPStatus &e) {
                             // TODO(maitneel): default のエラーを返すよにする //
                             dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
+                            continue;
                         } catch (std::exception &e) {
                             // TODO(maitneel): ほんとは InvalidHeader　と InvalidRequestだけでいい
                             dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(400, server_config, event.connection_fd);
+                            continue;
                         }
                     } else if (event.event == kRequestEndOfReaded) {
                         CloseConnection(event.connection_fd);

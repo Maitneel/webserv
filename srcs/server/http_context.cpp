@@ -44,6 +44,10 @@ void HTTPContext::ParseRequestBody() {
     // buffer_ = buffer_.substr(request_.content_length_);
 }
 
+void HTTPContext::SetMaxBodySize(const size_t &max_body_size) {
+    body_.SetMaxBodySize(max_body_size);
+}
+
 const HTTPRequest& HTTPContext::GetHTTPRequest() {
     return request_;
 }

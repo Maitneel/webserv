@@ -23,6 +23,7 @@ class HTTPResponse {
         kNotFound             = 404,
         kMethodNotAllowed     = 405,
         kRequestTimeout       = 408,
+        kPayloadTooLarge      = 413,
         kInternalServerErrror = 500,
         kNotImplemented       = 501
     };
