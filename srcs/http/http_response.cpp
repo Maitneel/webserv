@@ -19,6 +19,8 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
             return "Not Found";
         case HTTPResponse::kMethodNotAllowed:
             return "Method Not Allowed";
+        case HTTPResponse::kPayloadTooLarge:
+            return "Payload Too Large";
         case HTTPResponse::kInternalServerErrror:
             return "Internal Server Error";
         case HTTPResponse::kNotImplemented:
@@ -42,6 +44,9 @@ HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
     }
     if (code == 405) {
         return HTTPResponse::kMethodNotAllowed;
+    }
+    if (code == 413) {
+        return HTTPResponse::kPayloadTooLarge;
     }
     if (code == 500) {
         return HTTPResponse::kInternalServerErrror;
@@ -97,6 +102,9 @@ void HTTPResponse::AddHeader(const std::string &name, const std::string &value) 
     this->extend_header_.insert(std::make_pair(name, value));
 }
 
+
+#include <iostream>
+using namespace std;
 std::string HTTPResponse::toString() const {
     std::stringstream ss;
 
@@ -114,5 +122,10 @@ std::string HTTPResponse::toString() const {
 
     ss << "\r\n";
     ss << this->body_;
+    cerr << "responce ------------------------------------------" << endl;
+    cerr << ss.str() << endl;
+    cerr << "responce ------------------------------------------" << endl;
+
+
     return ss.str();
 }

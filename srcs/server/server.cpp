@@ -250,13 +250,14 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
             }
             return;
         }
-
-        path += "/index.html";
+        std::set<std::string>::iterator index_it = location_config.index_.begin();
+        path += *index_it;
+        // path += "/index.html";
     }
 
     std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
+        this->SendErrorResponce(HTTPResponse::kNotFound, server_config, connection_fd);
         return;
     }
     if (access(path.c_str(), R_OK) == -1) {
@@ -348,10 +349,19 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
 void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
     const HTTPRequest &req = ctx->GetHTTPRequest();
     const std::string method = req.get_method();
+
+    cerr << "bodysize: " << loc_conf.max_body_size_  << ' ' << ctx->body_.GetBody().length() << endl;
+    if (loc_conf.max_body_size_ < ctx->body_.GetBody().length()) {
+        SendErrorResponce(HTTPResponse::kOK, server_config, connection_fd);
+        return;
+    }
+
     if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
         this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, server_config, connection_fd);
         return;
     }
+
+
     if (loc_conf.cgi_path_ != "") {
         this->CallCGI(connection_fd, req, loc_conf.cgi_path_, loc_conf.name_);
         return;
@@ -369,7 +379,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
-    req.print_info();
+    // req.print_info();
     std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
@@ -482,6 +492,9 @@ void Server::SendErrorResponce(const int &stat, const ServerConfig config, const
     }
     if (stat == HTTPResponse::kMethodNotAllowed) {
         error_message = "MethodNotAllowed";
+    }
+    if (stat == HTTPResponse::kPayloadTooLarge) {
+        error_message = "PayloadTooLarge";
     }
     if (stat == HTTPResponse::kInternalServerErrror) {
         error_message = "InternalServerErrror";
@@ -599,6 +612,7 @@ void Server::EventLoop() {
                 this->CloseConnection(event.connection_fd);
             } else if (event.event == kFileWriteEnd) {
                 // TODO(maitneel): Do it;
+                cerr << "shotdown to " << event_fd << endl;
                 shutdown(event_fd, SHUT_WR);
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)

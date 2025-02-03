@@ -5,7 +5,8 @@ const port = 8080;
 const server = http.createServer((req, res) => {
     console.log(new Date() + ' ' + req.method + ' ' + req.url);
 
-    if (req.methdo == "GET") {
+    if (req.method == "GET") {
+        console.log("method is get ");
         getMethodHandler(req, res);
     } else if (req.method == "HEAD")  {
         // headMethodHandler(req, res);
@@ -18,7 +19,7 @@ const server = http.createServer((req, res) => {
 });
 
 function getMethodHandler(req, res) {
-    if (res.url == "/") {
+    if (req.url == "/" || req.url == "/directory") {
         res.writeHead(200, "OK", {})
         res.write("ok\n");
         res.end();

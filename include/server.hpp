@@ -13,7 +13,7 @@
 #include "event_dispatcher.hpp"
 
 #define MAX_BACKLOG 5
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 65536
 
 class SocketList {
  public:
