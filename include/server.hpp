@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include "config.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
@@ -35,6 +36,7 @@ class Server {
     SocketList socket_list_;
     std::map<ServerConfigKey, ServerConfig> config_;
     std::map<int, HTTPContext> ctxs_;
+    std::set<pid_t> pid_killed_by_webserve_;
 
     void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);

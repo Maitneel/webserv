@@ -729,7 +729,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
             fd_events = this->fd_event_dispatcher_.Wait(fd_dispathcer_wait_time);
         } catch (const SignalDelivered &e) {
             is_signal_recived = true;
-            continue;
+            break;
         }
         if (fd_events.size() == 0) {
             break;
