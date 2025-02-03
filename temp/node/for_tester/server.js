@@ -50,9 +50,22 @@ function routing(req, res) {
         console.log("----------------------------");
         console.log("req: ", checkingRequest);
         console.log("status: ", forceCheckResCode - 1);
-        process.exit(0);
+        // process.exit(0);
     }
-    forceCheck(req, res);
+    // forceCheck(req, res);
+    echoBody(req, res);
+}
+
+function echoBody(req, res) {
+    res.writeHead(200);
+    let body = "";
+    req.on('data', (buf) => {
+        body += (buf.toString().toUpperCase());
+    })
+    req.on('end', () => {
+        res.write(body);
+        res.end()
+    });
 }
 
 let forceCheckResCode = 200;
