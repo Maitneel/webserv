@@ -415,6 +415,15 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
 
 void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
     int temp_child_exit_code;
+    std::set<pid_t>::const_iterator it = pid_killed_by_webserve_.begin();
+    while (it != pid_killed_by_webserve_.end()) {
+        pid_t pid = *it;
+        it++;
+        if (waitpid(pid, &temp_child_exit_code, WNOHANG)) {
+            pid_killed_by_webserve_.erase(pid);
+        }
+    }
+
     for (std::map<int, HTTPContext>::iterator it = ctxs_.begin(); it != ctxs_.end(); it++) {
         HTTPContext &current = it->second;
         CGIInfo &cgi_info = current.cgi_info_;
@@ -427,14 +436,6 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
                 // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
             }
             pid_killed_by_webserve_.erase(current.cgi_info_.pid);
-        }
-    }
-    std::set<pid_t>::const_iterator it = pid_killed_by_webserve_.begin();
-    while (it != pid_killed_by_webserve_.end()) {
-        pid_t pid = *it;
-        it++;
-        if (waitpid(pid, &temp_child_exit_code, WNOHANG)) {
-            pid_killed_by_webserve_.erase(pid);
         }
     }
 }
