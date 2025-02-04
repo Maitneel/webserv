@@ -11,6 +11,8 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
     switch (status_code) {
         case HTTPResponse::kOK:
             return "OK";
+        case HTTPResponse::kCreated:
+            return "Created";
         case HTTPResponse::kBadRequest:
             return "Bad Request";
         case HTTPResponse::kForbidden:
@@ -34,6 +36,9 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
 HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
     if (code == 200) {
         return HTTPResponse::kOK;
+    }
+    if (code == 201) {
+        return HTTPResponse::kCreated;
     }
     if (code == 400) {
         return HTTPResponse::kBadRequest;
