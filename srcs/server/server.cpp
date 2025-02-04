@@ -555,11 +555,11 @@ void Server::EventLoop() {
             const int &event_fd = it->first;
             const ConnectionEvent &event = it->second;
 
-            try {
-                cerr << "[fd, event]: " << event_fd << ", " << event.event << ", " << ctxs_.at(event.connection_fd).GetHTTPRequest().get_request_uri() << endl;
-            } catch (...) {
-                cerr << endl;
-            }
+            // try {
+            //     cerr << "[fd, event]: " << event_fd << ", " << event.event << ", " << ctxs_.at(event.connection_fd).GetHTTPRequest().get_request_uri() << endl;
+            // } catch (...) {
+            //     cerr << endl;
+            // }
 
             if (event_fd == PROCESS_CHENGED_FD) {
                 continue;

@@ -56,9 +56,9 @@ static void add_auth_type_to_env(const HTTPRequest &req, std::vector<std::string
 
 static void add_content_length_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
     size_t conten_length = req.entity_body_.length();
-    if (conten_length == 0) {
-        return;
-    }
+    // if (conten_length == 0) {
+    //     return;
+    // }
     env->push_back(make_env_format("CONTENT_LENGTH", size_t_to_string(conten_length)));
 }
 
