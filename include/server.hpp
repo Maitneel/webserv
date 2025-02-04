@@ -13,7 +13,7 @@
 #include "poll_selector.hpp"
 #include "event_dispatcher.hpp"
 
-#define MAX_BACKLOG 5
+#define MAX_BACKLOG 300
 #define BUFFER_SIZE 1024
 
 class SocketList {

@@ -78,6 +78,7 @@ status_code_(status_code),
 content_type_(content_type),
 body_(body) {
     this->description_ = GenerateDescription(status_code);
+    AddHeader("Connection", "Close");
 }
 
 HTTPResponse::HTTPResponse(
@@ -89,6 +90,7 @@ status_code_(convert_status_code_to_enum(status_code)),
 content_type_(content_type),
 body_(body) {
     this->description_ = GenerateDescription(convert_status_code_to_enum(status_code));
+    AddHeader("Connection", "Close");
 }
 
 HTTPResponse::HTTPResponse(const HTTPResponse& other) {

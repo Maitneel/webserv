@@ -142,6 +142,5 @@ HTTPResponse CGIResponse::make_http_response() {
             http_res.AddHeader(it->first, it->second);
         }
     }
-    http_res.AddHeader("Connection", "Close");
     return http_res;
 }
