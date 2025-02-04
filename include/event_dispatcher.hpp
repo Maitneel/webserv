@@ -37,6 +37,8 @@ typedef enum ReadWriteStatEnum {
     kDidNotRead
 } ReadWriteStatType;
 
+#define BUFFER_ERASE_LENGTH 1000000
+
 class FdManager {
  private:
     const int fd_;
@@ -44,6 +46,8 @@ class FdManager {
     std::string read_buffer_;
     std::string writen_buffer_;
     ReadWriteStatType write_status_;
+
+    std::string::size_type write_head_;
 
 
  public:

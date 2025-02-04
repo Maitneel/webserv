@@ -49,7 +49,7 @@ static void signal_handler(int sigid) {
     recived_signal = sigid;
 }
 
-FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), write_status_(kNoBuffer) {
+FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), write_status_(kNoBuffer), write_head_(0) {
 }
 
 FdManager::~FdManager() {
@@ -80,21 +80,25 @@ ReadWriteStatType FdManager::Read() {
 
 // fdがnon-blocking であればブロックしないが、そうでなければブロックするのでnon-blockingである必要がある //
 ReadWriteStatType FdManager::Write() {
-    if (this->writen_buffer_.length() == 0) {
+    if (BUFFER_ERASE_LENGTH < this->write_head_) {
+        this->writen_buffer_.erase(0, this->write_head_);
+        this->write_head_ = 0;
+    }
+    if (this->writen_buffer_.length() - this->write_head_ == 0) {
         return kSuccess;
     }
     int writed_size;
     if (this->type_ == kConnection) {
-        writed_size = send(this->fd_, this->writen_buffer_.c_str(), std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length()), 0);
+        writed_size = send(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_), 0);
     } else if (this->type_ == kFile) {
-        writed_size = write(this->fd_, this->writen_buffer_.c_str(), std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length()));
+        writed_size = write(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_));
     }
     if (0 < writed_size) {
-        this->writen_buffer_.erase(0, writed_size);
+        this->write_head_ += writed_size;
     }
-    if (0 < this->writen_buffer_.size()) {
+    if (0 < this->writen_buffer_.size() - this->write_head_) {
         return kContinue;
-    } else if (writed_size == 0 || this->writen_buffer_.size() == 0) {
+    } else if (writed_size == 0 || this->writen_buffer_.size() - write_head_ == 0) {
         return kSuccess;
     } else {
         return kFail;
@@ -115,7 +119,7 @@ void FdManager::erase_read_buffer(const std::string::size_type &front, const std
 }
 
 bool FdManager::IsEmptyWritebleBuffer() {
-    return (this->writen_buffer_.size() == 0);
+    return (this->writen_buffer_.size() - this->write_head_ == 0);
 }
 
 const FdType &FdManager::get_type() const {
