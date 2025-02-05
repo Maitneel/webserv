@@ -147,10 +147,6 @@ typedef int AnyFdType;
 
 class RelatedFds {
  private:
-    std::set<AnyFdType> registerd_fds_;
-    std::set<SocketFdType> socket_fds_;
-    std::set<ConnectionFdType> connection_fds_;
-    std::set<FileFdType> file_fds_;
 
     // ここpairentはpairentが先なのにchildrenはchildrenがあとなのキモいな... //
     // 英文法わかんないからどっちが正しいのかわかんないけど //
@@ -165,6 +161,10 @@ class RelatedFds {
     static const std::set<AnyFdType> empty_any_fd_type_set_;
 
  public:
+    std::set<AnyFdType> registerd_fds_;
+    std::set<SocketFdType> socket_fds_;
+    std::set<ConnectionFdType> connection_fds_;
+    std::set<FileFdType> file_fds_;
     RelatedFds();
     ~RelatedFds();
 
@@ -207,6 +207,8 @@ class ServerEventDispatcher {
     std::set<int> CheckTimeout();
     void OverrideTimeoutEvent(std::multimap<int, ConnectionEvent> *events);
     int CalcWaitTime(int *timeout);
+
+    std::map<int, long long> times_;
 
  public:
     ServerEventDispatcher();

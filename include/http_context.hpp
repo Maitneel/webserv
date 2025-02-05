@@ -10,11 +10,11 @@ class HTTPContext {
  private:
     const int connection_fd_;
     std::string buffer_;
-    HTTPRequest request_;
     bool parsed_header_;
     bool parsed_body_;
 
  public:
+    HTTPRequest request_;
     CGIInfo cgi_info_;
     bool is_cgi_;
     int file_fd_;

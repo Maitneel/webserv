@@ -657,11 +657,22 @@ int ServerEventDispatcher::CalcWaitTime(int *timeout) {
     return result;
 }
 
+int accept_count = 0;
+
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
-    int connection_fd = ft_accept(socket_fd);
-    this->continue_connection_until_.insert(std::make_pair(connection_fd, get_usec() + TIMEOUT_LENGTH_USEC));
-    this->fd_event_dispatcher_.Register(connection_fd, kConnection);
-    this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
+    int connection_fd;
+    while (this->registerd_fds_.connection_fds_.size() < 100) {
+        connection_fd = ft_accept(socket_fd);
+        if (connection_fd < 0) {
+            break;
+        }
+        this->times_.insert(std::make_pair(connection_fd, get_usec()));
+        accept_count++;
+        // cerr << "accept: " << socket_fd << ' ' << connection_fd << ", count: " << accept_count << endl;
+        this->continue_connection_until_.insert(std::make_pair(connection_fd, get_usec() + TIMEOUT_LENGTH_USEC));
+        this->fd_event_dispatcher_.Register(connection_fd, kConnection);
+        this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
+    }
 }
 
 void ServerEventDispatcher::RegisterSocketFd(const int &socket_fd) {
@@ -680,6 +691,12 @@ void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
     if (this->registerd_fds_.GetType(connection_fd) != kConnection) {
         return;
     }
+    std::map<int, long long>::iterator it = times_.find(connection_fd);
+    if (!(get_usec() - it->second / SEC_PER_USEC)) {
+        cerr << "time: " << std::setw(2) << it->first << ": " <<  get_usec() - it->second << endl;
+    }
+    times_.erase(it);
+
     const std::set<int> children = this->registerd_fds_.GetChildrenFd(connection_fd);
     for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
         this->fd_event_dispatcher_.Unregister(*it);

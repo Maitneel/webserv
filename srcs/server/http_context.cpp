@@ -39,6 +39,7 @@ void HTTPContext::ParseRequestHeader(const int &port) {
 void HTTPContext::ParseRequestBody() {
     // TODO(maitneel): 直接触れないようにしたほうがいいかもしれない //
     request_.entity_body_ = body_.GetBody();
+    body_ = HTTPRequestBody();
     this->parsed_body_ = true;
     // TODO(maitneel): 適切な長さになるよにする(keep-aliveが動かない) //
     // buffer_ = buffer_.substr(request_.content_length_);
