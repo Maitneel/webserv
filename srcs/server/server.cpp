@@ -448,12 +448,6 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
         cgi_info.is_proccess_end = true;
 
         if (current.is_cgi_ && 0 < waitpid(current.cgi_info_.pid, &temp_child_exit_code, WNOHANG)) {
-            if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
-                // どっちのイベントがいいか正直微妙 //
-                // TODO: 正直このイベントなくていいのかわかんない //
-                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kFileEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
-                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
-            }
             pid_killed_by_webserve_.erase(current.cgi_info_.pid);
         }
     }
