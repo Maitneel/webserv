@@ -24,6 +24,7 @@ using std::endl;
 #include "poll_selector.hpp"
 
 #define BUFFER_SIZE 1048576
+#define MAX_NUMBER_OF_CONNECTION 10
 
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
@@ -251,7 +252,7 @@ void FdEventDispatcher::UpdatePollEvents() {
             if (registerd_read_fds_.find(fd) != registerd_read_fds_.end()) {
                 processing.events = (POLLIN);
             } else {
-                processing.events = (POLLIN);
+                processing.events = (0);
             }
         }
         processing.revents = 0;
@@ -661,7 +662,7 @@ int accept_count = 0;
 
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
     int connection_fd;
-    while (this->registerd_fds_.connection_fds_.size() < 100) {
+    while (this->registerd_fds_.connection_fds_.size() < MAX_NUMBER_OF_CONNECTION) {
         connection_fd = ft_accept(socket_fd);
         if (connection_fd < 0) {
             break;
