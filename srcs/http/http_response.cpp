@@ -114,9 +114,6 @@ void HTTPResponse::AddHeader(const std::string &name, const std::string &value) 
     this->extend_header_.insert(std::make_pair(name, value));
 }
 
-#include <iostream>
-using namespace std;
-
 std::string HTTPResponse::toString() const {
     std::stringstream ss;
 
@@ -132,8 +129,8 @@ std::string HTTPResponse::toString() const {
         ss << this->body_.length() << "\r\n";
     }
 
-    // cerr << "res-----------------" << endl;
-    // cerr << ss.str();
+    // std::cerr << "res-----------------" << std::endl;
+    // std::cerr << ss.str();
 
     ss << "\r\n";
     ss << this->body_;

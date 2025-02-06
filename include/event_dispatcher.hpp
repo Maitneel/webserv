@@ -147,7 +147,6 @@ typedef int AnyFdType;
 
 class RelatedFds {
  private:
-
     // ここpairentはpairentが先なのにchildrenはchildrenがあとなのキモいな... //
     // 英文法わかんないからどっちが正しいのかわかんないけど //
     std::map<AnyFdType, SocketFdType> pairent_socket_;
