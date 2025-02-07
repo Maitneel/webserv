@@ -81,12 +81,12 @@ std::string read_request(int fd) {
     return std::string(buf, n_read);
 }
 
-void response_to_client(int fd, const HTTPResponse& response) {
-    std::string response_raw = response.toString();
-    if (send(fd, response_raw.c_str(), response_raw.length(), 0) != 0)
-        close(fd);
-    return;
-}
+// void response_to_client(int fd, const HTTPResponse& response) {
+//     std::string response_raw = response.toString();
+//     if (send(fd, response_raw.c_str(), response_raw.length(), 0) != 0)
+//         close(fd);
+//     return;
+// }
 
 int create_inet_socket(int port) {
     struct addrinfo hints, *res, *ai;
@@ -325,10 +325,10 @@ int ft_accept(int fd) {
 }
 
 
-void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path, const std::string &loc_name) {
+void Server::CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name) {
     std::cerr << "call cgi" << std::endl;
     std::string path_info = "/";
-    std::string req_path = req.get_request_uri();
+    std::string req_path = req->get_request_uri();
     if (req_path.at(req_path.length() - 1) != '/') {
         req_path += '/';
     }
@@ -336,12 +336,13 @@ void Server::CallCGI(const int &connection_fd, const HTTPRequest &req, const std
         path_info = req_path.substr(loc_name.length());
     }
     HTTPContext &context = ctxs_.at(connection_fd);
-    context.cgi_info_ = call_cgi_script(req, cgi_path, path_info);
+    context.cgi_info_ = call_cgi_script(*req, cgi_path, path_info);
     context.is_cgi_ = true;
     const CGIInfo &cgi_info = context.cgi_info_;
     dispatcher_.RegisterFileFd(cgi_info.fd, connection_fd);
-    if (req.entity_body_.length() != 0) {
-        dispatcher_.add_writen_buffer(cgi_info.fd, req.entity_body_);
+    if (req->entity_body_.length() != 0) {
+        dispatcher_.add_writen_buffer(cgi_info.fd, req->entity_body_);
+        req->entity_body_.clear();
     } else {
         shutdown(cgi_info.fd, SHUT_WR);
     }
@@ -372,8 +373,9 @@ const LocatoinConfig &Server::GetLocationConfig(const int &port, const HTTPReque
 }
 
 void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
-    const HTTPRequest &req = ctx->GetHTTPRequest();
-    const std::string method = req.get_method();
+    // const HTTPRequest *req = ctx->GetHTTPRequest();
+    HTTPRequest *req = &ctx->request_;
+    const std::string method = req->get_method();
     if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
         this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, server_config, connection_fd);
         return;
@@ -445,17 +447,16 @@ void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEve
         cgi_info.is_proccess_end = true;
 
         if (current.is_cgi_ && 0 < waitpid(current.cgi_info_.pid, &temp_child_exit_code, WNOHANG)) {
-            if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
-                // どっちのイベントがいいか正直微妙 //
-                events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kFileEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
-                // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
-            }
             pid_killed_by_webserve_.erase(current.cgi_info_.pid);
         }
     }
 }
 
+int fail_close = 0;
+int resend_close = 0;
+
 void Server::CloseConnection(const int connection_fd) {
+    // cerr << "[success, fail]: [" << resend_close << ", " << fail_close << "]" << endl;
     const HTTPContext &context = ctxs_.at(connection_fd);
     if (context.file_fd_ != NON_EXIST_FD) {
         dispatcher_.UnregisterFileFd(context.file_fd_);
@@ -574,16 +575,17 @@ void Server::EventLoop() {
                 // Nothing to do;
             } else if (event.event == kRequestEndOfReaded) {
                 if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
+                    fail_close++;
                     CloseConnection(event_fd);
                 } else {
                     dispatcher_.UnregisterConnectionReadEvent(event_fd);
                 }
             } else if (event.event == kReadableRequest) {
                 HTTPContext& ctx = ctxs_.at(event_fd);
-                if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
-                    CloseConnection(event.connection_fd);
-                    continue;
-                }
+                // if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
+                //     CloseConnection(event.connection_fd);
+                //     continue;
+                // }
                 // TODO(maitneel): 辻褄合わせをどうにかする //
                 try {
                     ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
@@ -615,14 +617,14 @@ void Server::EventLoop() {
                             continue;
                         }
                     } else if (event.event == kRequestEndOfReaded) {
-                        CloseConnection(event.connection_fd);
+                        // CloseConnection(event.connection_fd);
                     }
                 }
                 if (ctx.IsParsedHeader() && ctx.body_.IsComplated()) {
                     ctx.ParseRequestBody();
                     this->routing(event_fd, it->second.socket_fd);
                 } else if (event.event == kRequestEndOfReaded) {
-                    CloseConnection(event.connection_fd);
+                    // CloseConnection(event.connection_fd);
                 }
             } else if (event.event == kReadableFile) {
                 // TODO(maitneel): Do it;
@@ -639,6 +641,7 @@ void Server::EventLoop() {
                 // TODO(maitneel): Do it (これだけでいいのか？？？);
                 // fdのclose忘れが出てきたらここが原因 //
                 // cerr << "resend: " << event_fd << endl;
+                resend_close++;
                 this->CloseConnection(event.connection_fd);
             } else if (event.event == kFileWriteEnd) {
                 // TODO(maitneel): Do it;
@@ -663,6 +666,7 @@ void Server::EventLoop() {
             } else if (event.event == kServerEventFail) {
                 // TODO(maitneel): Do it;
                 if (event_fd == event.connection_fd) {
+                    fail_close++;
                     this->CloseConnection(event.connection_fd);
                 } else if (event_fd == event.file_fd) {
                     if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {

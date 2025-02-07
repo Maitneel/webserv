@@ -129,6 +129,9 @@ std::string HTTPResponse::toString() const {
         ss << this->body_.length() << "\r\n";
     }
 
+    // std::cerr << "res-----------------" << std::endl;
+    // std::cerr << ss.str();
+
     ss << "\r\n";
     ss << this->body_;
     return ss.str();

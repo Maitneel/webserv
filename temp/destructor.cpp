@@ -6,6 +6,7 @@ class hoge {
  public :
     hoge();
     ~hoge();
+    string str;
 };
 
 hoge::hoge() {
@@ -21,5 +22,10 @@ void func() {
 }
 
 int main() {
-    func();
+    // func();
+    hoge h;
+    h.str = "hoge";
+    cout << h.str << endl;
+    h.~hoge();
+    cout << h.str << endl;
 }

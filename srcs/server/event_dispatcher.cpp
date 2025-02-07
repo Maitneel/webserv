@@ -24,6 +24,7 @@ using std::endl;
 #include "poll_selector.hpp"
 
 #define BUFFER_SIZE 1048576
+#define MAX_NUMBER_OF_CONNECTION 10
 
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
@@ -49,7 +50,7 @@ static void signal_handler(int sigid) {
     recived_signal = sigid;
 }
 
-FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), write_status_(kNoBuffer) {
+FdManager::FdManager(const int &fd, const FdType &type) : fd_(fd), type_(type), write_status_(kNoBuffer), write_head_(0) {
 }
 
 FdManager::~FdManager() {
@@ -80,21 +81,25 @@ ReadWriteStatType FdManager::Read() {
 
 // fdがnon-blocking であればブロックしないが、そうでなければブロックするのでnon-blockingである必要がある //
 ReadWriteStatType FdManager::Write() {
-    if (this->writen_buffer_.length() == 0) {
+    if (BUFFER_ERASE_LENGTH < this->write_head_) {
+        this->writen_buffer_.erase(0, this->write_head_);
+        this->write_head_ = 0;
+    }
+    if (this->writen_buffer_.length() - this->write_head_ == 0) {
         return kSuccess;
     }
     int writed_size;
     if (this->type_ == kConnection) {
-        writed_size = send(this->fd_, this->writen_buffer_.c_str(), std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length()), 0);
+        writed_size = send(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_), 0);
     } else if (this->type_ == kFile) {
-        writed_size = write(this->fd_, this->writen_buffer_.c_str(), std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length()));
+        writed_size = write(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_));
     }
     if (0 < writed_size) {
-        this->writen_buffer_.erase(0, writed_size);
+        this->write_head_ += writed_size;
     }
-    if (0 < this->writen_buffer_.size()) {
+    if (0 < this->writen_buffer_.size() - this->write_head_) {
         return kContinue;
-    } else if (writed_size == 0 || this->writen_buffer_.size() == 0) {
+    } else if (writed_size == 0 || this->writen_buffer_.size() - write_head_ == 0) {
         return kSuccess;
     } else {
         return kFail;
@@ -115,7 +120,7 @@ void FdManager::erase_read_buffer(const std::string::size_type &front, const std
 }
 
 bool FdManager::IsEmptyWritebleBuffer() {
-    return (this->writen_buffer_.size() == 0);
+    return (this->writen_buffer_.size() - this->write_head_ == 0);
 }
 
 const FdType &FdManager::get_type() const {
@@ -247,7 +252,7 @@ void FdEventDispatcher::UpdatePollEvents() {
             if (registerd_read_fds_.find(fd) != registerd_read_fds_.end()) {
                 processing.events = (POLLIN);
             } else {
-                processing.events = (POLLIN);
+                processing.events = (0);
             }
         }
         processing.revents = 0;
@@ -653,11 +658,19 @@ int ServerEventDispatcher::CalcWaitTime(int *timeout) {
     return result;
 }
 
+int accept_count = 0;
+
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
-    int connection_fd = ft_accept(socket_fd);
-    this->continue_connection_until_.insert(std::make_pair(connection_fd, get_usec() + TIMEOUT_LENGTH_USEC));
-    this->fd_event_dispatcher_.Register(connection_fd, kConnection);
-    this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
+    int connection_fd;
+    if (this->registerd_fds_.connection_fds_.size() < MAX_NUMBER_OF_CONNECTION) {
+        connection_fd = ft_accept(socket_fd);
+        this->times_.insert(std::make_pair(connection_fd, get_usec()));
+        accept_count++;
+        // cerr << "accept: " << socket_fd << ' ' << connection_fd << ", count: " << accept_count << endl;
+        this->continue_connection_until_.insert(std::make_pair(connection_fd, get_usec() + TIMEOUT_LENGTH_USEC));
+        this->fd_event_dispatcher_.Register(connection_fd, kConnection);
+        this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
+    }
 }
 
 void ServerEventDispatcher::RegisterSocketFd(const int &socket_fd) {
@@ -676,6 +689,12 @@ void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
     if (this->registerd_fds_.GetType(connection_fd) != kConnection) {
         return;
     }
+    std::map<int, long long>::iterator it = times_.find(connection_fd);
+    if (!(get_usec() - it->second / SEC_PER_USEC)) {
+        cerr << "time: " << std::setw(2) << it->first << ": " <<  get_usec() - it->second << endl;
+    }
+    times_.erase(it);
+
     const std::set<int> children = this->registerd_fds_.GetChildrenFd(connection_fd);
     for (std::set<int>::const_iterator it = children.begin(); it != children.end(); it++) {
         this->fd_event_dispatcher_.Unregister(*it);

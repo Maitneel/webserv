@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <sys/fcntl.h>
+#include <climits>
+#include <stdio.h>
 #include <string>
 #include <iostream>
 #include <stdexcept>

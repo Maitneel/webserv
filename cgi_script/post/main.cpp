@@ -17,8 +17,18 @@ int write_file(const std::string &file_name, std::string *data);
 void write_cgi_responce(const std::string &filename);
 void write_error_cgi_response();
 
+std::string to_string(long long n) {
+    std::string str;
+    if (n == 0) return "0";
+    while (n) {
+        str += '0' + n % 10;
+        n /= 10;
+    }
+    return str;
+}
+
 std::string gen_filename() {
-    return std::to_string(get_usec());
+    return to_string(get_usec());
 }
 
 int main() {

@@ -13,7 +13,7 @@
 #include "poll_selector.hpp"
 #include "event_dispatcher.hpp"
 
-#define MAX_BACKLOG 300
+#define MAX_BACKLOG 20000
 #define BUFFER_SIZE 1024
 
 class SocketList {
@@ -42,7 +42,7 @@ class Server {
 
     void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
-    void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path, const std::string &loc_name);
+    void CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name);
     void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
     void SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string);
     void SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type);
