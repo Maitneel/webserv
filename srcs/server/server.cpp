@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
@@ -413,18 +414,28 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
 }
 
 void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
+    int temp_child_exit_code;
+    std::set<pid_t>::const_iterator it = pid_killed_by_webserve_.begin();
+    while (it != pid_killed_by_webserve_.end()) {
+        pid_t pid = *it;
+        it++;
+        if (waitpid(pid, &temp_child_exit_code, WNOHANG)) {
+            pid_killed_by_webserve_.erase(pid);
+        }
+    }
+
     for (std::map<int, HTTPContext>::iterator it = ctxs_.begin(); it != ctxs_.end(); it++) {
         HTTPContext &current = it->second;
         CGIInfo &cgi_info = current.cgi_info_;
         cgi_info.is_proccess_end = true;
 
-        int temp_child_exit_code;
         if (current.is_cgi_ && 0 < waitpid(current.cgi_info_.pid, &temp_child_exit_code, WNOHANG)) {
             if (0 <= cgi_info.fd && events->find(cgi_info.fd) == events->end()) {
                 // どっちのイベントがいいか正直微妙 //
                 events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kFileEndOfRead, -1, current.GetConnectionFD(), cgi_info.fd)));
                 // events->insert(std::make_pair(cgi_info.fd, ConnectionEvent(kServerEventFail, -1, current.GetConnectionFD(),cgi_info.fd)));
             }
+            pid_killed_by_webserve_.erase(current.cgi_info_.pid);
         }
     }
 }
@@ -482,6 +493,9 @@ void Server::SendErrorResponce(const int &stat, const ServerConfig config, const
     }
     if (stat == HTTPResponse::kMethodNotAllowed) {
         error_message = "MethodNotAllowed";
+    }
+    if (stat == HTTPResponse::kRequestTimeout) {
+        error_message = "RequestTimeout";
     }
     if (stat == HTTPResponse::kInternalServerErrror) {
         error_message = "InternalServerErrror";
@@ -602,6 +616,21 @@ void Server::EventLoop() {
                 shutdown(event_fd, SHUT_WR);
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
+            } else if (event.event == kTimeout) {
+                if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
+                    const HTTPContext &context = ctxs_.at(event_fd);
+                    if (context.is_cgi_) {
+                        kill(context.cgi_info_.pid, SIGTERM);
+                        pid_killed_by_webserve_.insert(context.cgi_info_.pid);
+                        // ここでcloseもしたい気持ちは若干ある ・//
+                        dispatcher_.UnregisterConnectionReadEvent(context.cgi_info_.fd);
+                    } else {
+                        dispatcher_.UnregisterConnectionReadEvent(context.file_fd_);
+                    }
+                    const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
+                    this->SendErrorResponce(408, server_config, event.connection_fd);
+                }
+                // TODO(maitneel): socket の read側を監視対象から外す //
             } else if (event.event == kServerEventFail) {
                 // TODO(maitneel): Do it;
                 if (event_fd == event.connection_fd) {

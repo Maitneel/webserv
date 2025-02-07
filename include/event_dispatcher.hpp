@@ -12,6 +12,14 @@
 #include "http_request.hpp"
 #include "http_response.hpp"
 
+
+#define TIMEOUT_LENGTH_USEC 1000000
+
+#define SEC_PER_MS 1000
+#define SEC_PER_USEC 1000000
+
+long long get_usec();
+
 typedef enum FdTypeEnum {
     kUnknownFd,
     kSocket,
@@ -108,7 +116,8 @@ typedef enum ServerEventTypeEnum {
     kresponseWriteEnd,             // 5
     kFileWriteEnd,                 // 6
     kChildProcessChanged,          // 7
-    kServerEventFail               // 8
+    kTimeout,                      // 8
+    kServerEventFail               // 9
 } ServerEventType;
 
 struct ConnectionEvent {
@@ -185,10 +194,15 @@ class ServerEventDispatcher {
     FdEventDispatcher fd_event_dispatcher_;
     RelatedFds registerd_fds_;
     std::set<int> scheduled_close_;
+    std::map<int, long long> continue_connection_until_;
 
     void RegisterNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
+    ConnectionEvent CreateConnectionEvent(const int &fd, const ServerEventType &fd_event);
     void MergeDuplicateFd(std::multimap<int, FdEvent> *events);
+    std::set<int> CheckTimeout();
+    void OverrideTimeoutEvent(std::multimap<int, ConnectionEvent> *events);
+    int CalcWaitTime(int *timeout);
 
  public:
     ServerEventDispatcher();

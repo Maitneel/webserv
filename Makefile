@@ -111,7 +111,7 @@ test: debug
 	./test/minimum_run_test.sh ./webserv
 
 run: debug
-	./${NAME}
+	./${NAME} ./config/default.conf
 
 r: run
 

@@ -19,6 +19,8 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
             return "Not Found";
         case HTTPResponse::kMethodNotAllowed:
             return "Method Not Allowed";
+        case HTTPResponse::kRequestTimeout:
+            return "Request Timeout";
         case HTTPResponse::kInternalServerErrror:
             return "Internal Server Error";
         case HTTPResponse::kNotImplemented:
@@ -42,6 +44,9 @@ HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
     }
     if (code == 405) {
         return HTTPResponse::kMethodNotAllowed;
+    }
+    if (code == 408) {
+        return HTTPResponse::kRequestTimeout;
     }
     if (code == 500) {
         return HTTPResponse::kInternalServerErrror;
