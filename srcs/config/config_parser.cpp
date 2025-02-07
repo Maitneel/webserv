@@ -113,19 +113,19 @@ void ConfigParser::valid_error_page_path(const std::string& path) {
     valid_cgi_path(path);
 }
 
-void ConfigParser::parse_url(LocatoinConfig *location_config) {
+void ConfigParser::parse_url(LocationConfig *location_config) {
     const std::string url = ConsumeToken();
     valid_url(url);
     location_config->redirect_ = url;
 }
 
-void ConfigParser::parse_return_directive(LocatoinConfig *location_config) {
+void ConfigParser::parse_return_directive(LocationConfig *location_config) {
     Consume("return");
     parse_url(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_cgi_path(LocatoinConfig *location_config) {
+void ConfigParser::parse_cgi_path(LocationConfig *location_config) {
     Consume("cgi_path");
     const std::string cgi_path = ConsumeToken();
     valid_cgi_path(cgi_path);
@@ -133,7 +133,7 @@ void ConfigParser::parse_cgi_path(LocatoinConfig *location_config) {
     Consume(";");
 }
 
-void ConfigParser::parse_max_body_size(LocatoinConfig *location_config) {
+void ConfigParser::parse_max_body_size(LocationConfig *location_config) {
     std::string body_size_str = ConsumeToken();
     if (!is_positive_number(body_size_str))
         throw InvalidConfigException(current_line_, "max_body_size is positve number");
@@ -146,13 +146,13 @@ void ConfigParser::parse_max_body_size(LocatoinConfig *location_config) {
     }
 }
 
-void ConfigParser::parse_max_body_size_directive(LocatoinConfig *location_config) {
+void ConfigParser::parse_max_body_size_directive(LocationConfig *location_config) {
     Consume("max_body_size");
     parse_max_body_size(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_autoindex_directive(LocatoinConfig *location_config) {
+void ConfigParser::parse_autoindex_directive(LocationConfig *location_config) {
     Consume("autoindex");
     std::string token = ConsumeToken();
     if (token == "on")
@@ -164,51 +164,51 @@ void ConfigParser::parse_autoindex_directive(LocatoinConfig *location_config) {
     Consume(";");
 }
 
-void ConfigParser::parse_index_files(LocatoinConfig *location_config) {
+void ConfigParser::parse_index_files(LocationConfig *location_config) {
     do {
         std::string index_file = ConsumeToken();
         location_config->index_.insert(index_file);
     } while(GetToken() != ";");
 }
 
-void ConfigParser::parse_index_directive(LocatoinConfig *location_config) {
+void ConfigParser::parse_index_directive(LocationConfig *location_config) {
     Consume("index");
     parse_index_files(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_path(LocatoinConfig *location_config) {
+void ConfigParser::parse_path(LocationConfig *location_config) {
     std::string root = ConsumeToken();
     valid_path(root);
     location_config->document_root_ = root;
 }
 
-void ConfigParser::parse_root_directive(LocatoinConfig *location_config) {
+void ConfigParser::parse_root_directive(LocationConfig *location_config) {
     Consume("root");
     parse_path(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_method(LocatoinConfig *location_config) {
+void ConfigParser::parse_method(LocationConfig *location_config) {
     do {
         location_config->methods_.insert(ConsumeToken());
     } while(GetToken() != ";");
 }
 
-void ConfigParser::parse_method_directive(LocatoinConfig *location_config) {
+void ConfigParser::parse_method_directive(LocationConfig *location_config) {
     Consume("method");
     parse_method(location_config);
     Consume(";");
 }
 
-void ConfigParser::parse_location_path(LocatoinConfig *location_config) {
+void ConfigParser::parse_location_path(LocationConfig *location_config) {
     const std::string path = ConsumeToken();
     valid_location_path(path);
     location_config->name_ = path;
 }
 
 void ConfigParser::parse_location_directive(ServerConfig *server_config) {
-    LocatoinConfig location_config;
+    LocationConfig location_config;
     Consume("location");
     parse_location_path(&location_config);
     Consume("{");

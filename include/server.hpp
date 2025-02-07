@@ -38,9 +38,9 @@ class Server {
     std::map<int, HTTPContext> ctxs_;
     std::set<pid_t> pid_killed_by_webserve_;
 
-    const LocatoinConfig &GetLocationConfig(const int &port, const HTTPRequest &req);
+    const LocationConfig &GetLocationConfig(const int &port, const HTTPRequest &req);
 
-    void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
+    void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocationConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name);
     void HandlingChildPID();
@@ -56,8 +56,8 @@ class Server {
     ~Server();
     // ServerConfig GetConfigByFd(int fd);
     // TODO(everyone): 関数の思考を変えたので関数名が適切か検討する //
-    void GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config);
-    void HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config);
+    void GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config);
+    void HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config);
     void EventLoop();
 };
 
