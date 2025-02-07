@@ -38,6 +38,8 @@ class Server {
     std::map<int, HTTPContext> ctxs_;
     std::set<pid_t> pid_killed_by_webserve_;
 
+    const LocatoinConfig &GetLocationConfig(const int &port, const HTTPRequest &req);
+
     void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, const HTTPRequest &req, const std::string &cgi_path, const std::string &loc_name);

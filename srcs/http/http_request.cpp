@@ -576,10 +576,17 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
 //                 HTTPRequestBody                 //
 // ----------------------------------------------- //
 
-HTTPRequestBody::HTTPRequestBody() : plain_body_(), chunked_body_(), is_chunked_(false), content_length_(0) {
+HTTPRequestBody::HTTPRequestBody() : plain_body_(), chunked_body_(), is_chunked_(false), content_length_(0), max_body_size_(-1) {
 }
 
 HTTPRequestBody::~HTTPRequestBody() {
+}
+
+void HTTPRequestBody::SetMaxBodySize(const size_t &max_body_size) {
+    max_body_size_ = max_body_size;
+    if (max_body_size_ < GetBody().length()) {
+        throw MustReturnHTTPStatus(413);
+    }
 }
 
 void HTTPRequestBody::SetHeader(const HTTPRequest &req) {
@@ -611,6 +618,9 @@ void HTTPRequestBody::AddBuffer(const std::string &buffer, size_t *used_buffer_s
             *used_buffer_size = std::min(content_length_ - plain_body_.length(), buffer.length());
         }
         plain_body_ += buffer.substr(0, std::min(content_length_ - plain_body_.length(), buffer.length()));
+    }
+    if (max_body_size_ < GetBody().length()) {
+        throw MustReturnHTTPStatus(413);
     }
 }
 

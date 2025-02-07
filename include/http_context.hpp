@@ -31,6 +31,7 @@ class HTTPContext {
     bool IsParsedBody() const;
     void ParseRequestHeader(const int &port);
     void ParseRequestBody();
+    void SetMaxBodySize(const size_t &max_body_size);
     const HTTPRequest &GetHTTPRequest();
     void AppendBuffer(std::string str);
 };

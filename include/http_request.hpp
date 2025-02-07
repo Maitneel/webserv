@@ -147,6 +147,7 @@ class HTTPRequestBody {
     HTTPRequestBody();
     ~HTTPRequestBody();
 
+    void SetMaxBodySize(const size_t &max_body_size);
     void SetHeader(const HTTPRequest &req);
     void AddBuffer(const std::string &buffer, size_t *used_buffer_size = NULL);
     bool IsComplated();
@@ -157,6 +158,7 @@ class HTTPRequestBody {
     std::string plain_body_;
     ChunkDecoder chunked_body_;
 
+    size_t max_body_size_;
     bool is_chunked_;
     size_t content_length_;
 };

@@ -19,6 +19,8 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
             return "Not Found";
         case HTTPResponse::kMethodNotAllowed:
             return "Method Not Allowed";
+        case HTTPResponse::kPayloadTooLarge:
+            return "Payload Too Large";
         case HTTPResponse::kRequestTimeout:
             return "Request Timeout";
         case HTTPResponse::kInternalServerErrror:
@@ -47,6 +49,9 @@ HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
     }
     if (code == 408) {
         return HTTPResponse::kRequestTimeout;
+    }
+    if (code == 413) {
+        return HTTPResponse::kPayloadTooLarge;
     }
     if (code == 500) {
         return HTTPResponse::kInternalServerErrror;
