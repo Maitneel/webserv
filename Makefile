@@ -1,5 +1,5 @@
 CXX		 := g++
-CXXFLAGS	:= -Wall -Wextra -pedantic -std=c++98 -MMD -MP -g
+CXXFLAGS	:= -Wall -Wextra -pedantic -std=c++98 -MMD -MP -g -O3
 
 NAME		= webserv
 
@@ -126,5 +126,8 @@ echo:
 show_stat:
 	uname -a
 	${CXX} --version
+
+tester: debug
+	./${NAME} ./config/tester.conf
 
 .PHONY: all clean fclean re test lint

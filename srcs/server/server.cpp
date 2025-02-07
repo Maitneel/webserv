@@ -252,10 +252,12 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
             return;
         }
 
-        path += "/index.html";
+        path += *(location_config.index_.begin());
     }
-
-    std::cout << path << std::endl;
+    if (path.at(path.length() - 1) == '/') {
+        path.erase(path.length() - 1);
+    }
+    // std::cout << "path: " << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
         this->SendErrorResponce(HTTPResponse::kNotFound, server_config, connection_fd);
         return;
@@ -318,6 +320,7 @@ int ft_accept(int fd) {
     if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {
         std::runtime_error("fcntl: failed");
     }
+    // cerr << "accept: [sock, con]: [" << fd << ", " << sock << "]" << endl;
     return sock;
 }
 
@@ -392,7 +395,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = ctxs_.at(connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
-    req.print_info();
+    // req.print_info();
     std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
@@ -555,11 +558,11 @@ void Server::EventLoop() {
             const int &event_fd = it->first;
             const ConnectionEvent &event = it->second;
 
-            try {
-                cerr << "[fd, event]: " << event_fd << ", " << event.event << ", " << ctxs_.at(event.connection_fd).GetHTTPRequest().get_request_uri() << endl;
-            } catch (...) {
-                cerr << endl;
-            }
+            // try {
+            //     cerr << "[fd, event]: " << event_fd << ", " << event.event << ", " << ctxs_.at(event.connection_fd).GetHTTPRequest().get_request_uri() << endl;
+            // } catch (...) {
+            //     cerr << endl;
+            // }
 
             if (event_fd == PROCESS_CHENGED_FD) {
                 continue;

@@ -13,7 +13,7 @@
 #include "http_response.hpp"
 
 
-#define TIMEOUT_LENGTH_USEC 1000000
+#define TIMEOUT_LENGTH_USEC 1000000000
 
 #define SEC_PER_MS 1000
 #define SEC_PER_USEC 1000000

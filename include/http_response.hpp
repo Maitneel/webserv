@@ -18,6 +18,7 @@ class HTTPResponse {
  public:
     enum StatusCode {
         kOK                   = 200,
+        kCreated              = 201,
         kBadRequest           = 400,
         kForbidden            = 403,
         kNotFound             = 404,
