@@ -11,12 +11,18 @@ std::map<ServerConfigKey, ServerConfig> hard_coding_config();
 
 // /*
 int main(int argc, char **argv) {
-    if (argc != 2) {
+    if (2 < argc) {
         std::cerr << "usage: ./webserve ${CONFIG_FILE_PATH}" << std::endl;
         return 1;
     }
     try {
-        ConfigParser config_parser(argv[1]);
+        std::string config_path;
+        if (argc == 2) {
+            config_path = argv[1];
+        } else {
+            config_path = std::string("./config/default.conf");
+        }
+        ConfigParser config_parser(config_path);
         std::map<ServerConfigKey, ServerConfig> conf = config_parser.Parse();
 
         for (std::map<ServerConfigKey, ServerConfig>::iterator it = conf.begin(); it != conf.end(); it++) {
