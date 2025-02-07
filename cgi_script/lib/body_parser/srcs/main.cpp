@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include "form_data.hpp"
-using namespace std;
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
 

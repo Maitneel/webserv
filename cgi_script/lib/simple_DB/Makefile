@@ -1,6 +1,6 @@
 NAME = simple_db
-CXX = c++
-CXXFLAGS = -Wall -Wextra
+CXX = g++
+CXXFLAGS = -Wall -Wextra -std=c++98
 
 TEST_FILE = a.out
 

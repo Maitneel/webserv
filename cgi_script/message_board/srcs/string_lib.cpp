@@ -1,14 +1,15 @@
 #include <string>
 #include <vector>
-#include <random>
+#include <cstdlib>
+
 
 std::string gen_random_str(const size_t length = 8) {
     const std::string useable_char = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_";
-    static std::random_device seed_generator;
-    static std::mt19937 mersenne_twister(seed_generator());
+    srand((unsigned int)time(NULL));
+
     std::string random_str;
     for (size_t i = 0; i < length; i++) {
-        int random_number = mersenne_twister();
+        int random_number = rand();
         random_str += useable_char.at(random_number % useable_char.length());
     }
     return random_str;

@@ -14,7 +14,7 @@
 
 void get_method(const std::multimap<std::string, std::string> &cookie) {
     // TODO path がやばいのでどうにかする //
-    std::ifstream ifs(INDEX_HTML_PATH);
+    std::ifstream ifs(INDEX_HTML_PATH_CSTR);
     std::string s;
     SimpleDB auth_db(AUTH_DB_PATH);
 

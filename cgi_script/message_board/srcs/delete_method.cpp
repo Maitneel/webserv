@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <simple_db.hpp>
+#include <cstdlib>
 #include "defines.hpp"
 #include "gen_html.hpp"
 #include "cookie.hpp"

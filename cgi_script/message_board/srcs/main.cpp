@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <cstdlib>
 
 #include <iostream>
 #include <stdexcept>

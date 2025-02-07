@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
+#include <cstdlib>
 
 int get_content_length(char **env) {
     const std::string content_length_str = "CONTENT_LENGTH";

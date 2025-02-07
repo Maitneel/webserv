@@ -1,10 +1,10 @@
 #include <string>
+#include <cstdlib>
+#include <iostream>
 
 #include "simple_db.hpp"
 #include "defines.hpp"
 #include "string_lib.hpp"
-
-#include <iostream>
 
 std::string get_remove_cookie(std::string name) {
     return ("Set-Cookie: " + name + "; Max-Age=-1\n");

@@ -1,6 +1,6 @@
 NAME = body_parser
 CXX = c++
-CXXFLAGS = -Wall -Wextra
+CXXFLAGS = -Wall -Wextra -std=c++98
 
 TEST_FILE = a.out
 

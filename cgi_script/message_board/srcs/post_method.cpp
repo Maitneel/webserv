@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <fstream>
 #include <iostream>
+#include <cstdlib>
 
 #include "simple_db.hpp"
 #include "proccessing.hpp"
@@ -11,6 +12,16 @@
 #include "form_data.hpp"
 #include "formated_string.hpp"
 #include "cookie.hpp"
+
+std::string to_string(long long n) {
+    std::string str;
+    if (n == 0) return "0";
+    while (n) {
+        str += '0' + n % 10;
+        n /= 10;
+    }
+    return str;
+}
 
 void update_text_message (SimpleDB *message_db, const FormDataBody &body, const std::string &message_id, const std::string &user_id) {
     std::string message = body.get_body("message");
@@ -25,7 +36,7 @@ void update_image_message (SimpleDB *message_db, const FormDataBody &body, const
         return;
     }
     const std::string file_path = RESOURCE_IMAGE_PREFIX + id;
-    std::ofstream ofs(file_path);
+    std::ofstream ofs(file_path.c_str());
     if (!ofs) {
         return;
     } 
@@ -44,12 +55,12 @@ void update_image_message (SimpleDB *message_db, const FormDataBody &body, const
 void update_message_db(SimpleDB *message_db, const FormDataBody &body, const std::string &user_id) {
     int message_count;
     if (message_db->is_include_key(DB_MESSAGE_COUNT_ID)) {
-        message_count = std::stoi(message_db->get(DB_MESSAGE_COUNT_ID));
+        message_count = atoi(message_db->get(DB_MESSAGE_COUNT_ID).c_str());
     } else {
         message_count = 0;
     }
     message_count++;
-    message_db->update(DB_MESSAGE_COUNT_ID, std::to_string(message_count));
+    message_db->update(DB_MESSAGE_COUNT_ID, to_string(message_count));
     std::string message_id = get_formated_id(message_count - 1);
     update_text_message(message_db, body, message_id, user_id);
     update_image_message(message_db, body, message_id);

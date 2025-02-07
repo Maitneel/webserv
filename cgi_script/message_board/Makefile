@@ -1,7 +1,7 @@
 NAME = message_board.cgi
 
 CXX = c++
-CXXFLAGS = -Wall -Wextra
+CXXFLAGS = -Wall -Wextra -std=c++98
 
 SRCS_DIR = ./srcs
 INCLUDE = ./include
