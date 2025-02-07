@@ -8,6 +8,8 @@
 #include <iostream>
 #include <utility>
 #include <algorithm>
+#include <sys/stat.h>
+
 
 bool is_positive_number(const std::string& str) {
     std::string::const_iterator it = str.begin();
@@ -38,8 +40,19 @@ void rstrip(std::string* str_p) {
         str = str.substr(0, pos + 1);
 }
 
+bool is_file(const std::string& file_path) {
+    struct stat st;
+    if (stat(file_path.c_str(), &st) == -1) {
+        throw std::runtime_error("failed stat function");
+    }
+    return (st.st_mode & S_IFREG) == S_IFREG;
+}
+
 ConfigParser::ConfigParser(const std::string &file_path): read_index_(0), current_line_(0) {
     std::ifstream ifs(file_path.c_str());
+    if (!is_file(file_path)) {
+        throw std::runtime_error(file_path + " is not file.");
+    }
     if (ifs == NULL) {
         throw std::runtime_error(std::string("can't open ") + file_path);
     }
