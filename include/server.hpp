@@ -43,7 +43,7 @@ class Server {
     void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name);
-    void InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events);
+    void HandlingChildPID();
     void SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string);
     void SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type);
     void SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd);

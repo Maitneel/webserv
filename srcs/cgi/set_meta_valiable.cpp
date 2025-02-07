@@ -173,7 +173,7 @@ char **make_env_array(const HTTPRequest &request, const std::string &path_info) 
     add_env_from_request(request, &env_vector);
     env_vector.push_back("PATH_INFO=" + path_info);
 
-    char **env = new (char*[env_vector.size() + 1]);
+    char **env = new char*[env_vector.size() + 1];
     for (size_t i = 0; i < env_vector.size(); i++) {
         env[i] = strdup(env_vector.at(i).c_str());
     }

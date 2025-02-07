@@ -225,14 +225,6 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
-static std::string get_host_name(const std::string &host_header_value, const int &port) {
-    std::string port_string = ":";
-    port_string += int_to_str(port);
-    const std::string::size_type port_front = host_header_value.find(port_string);
-    return (host_header_value.substr(0, port_front));
-}
-
-
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
 void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
@@ -430,7 +422,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     }
 }
 
-void Server::InsertEventOfWhenChildProcessEnded(std::multimap<int, ConnectionEvent> *events) {
+void Server::HandlingChildPID() {
     int temp_child_exit_code;
     std::set<pid_t>::const_iterator it = pid_killed_by_webserve_.begin();
     while (it != pid_killed_by_webserve_.end()) {
@@ -551,7 +543,7 @@ void Server::EventLoop() {
 
         for (it = dis_events.find(PROCESS_CHENGED_FD); it->first == PROCESS_CHENGED_FD; it++) {
             if (it->second.event == kChildProcessChanged) {
-                this->InsertEventOfWhenChildProcessEnded(&dis_events);
+                this->HandlingChildPID();
                 break;
             }
         }
