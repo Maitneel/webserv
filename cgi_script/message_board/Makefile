@@ -7,14 +7,18 @@ SRCS_DIR = ./srcs
 INCLUDE = ./include
 OBJS_DIR = ./objs
 
-SRCS = 	main.cpp \
+SRCS =	main.cpp \
 		get_method.cpp \
 		post_method.cpp \
+		body_parser.cpp \
 		delete_method.cpp \
-		gen_html.cpp \
 		formated_string.cpp \
-		string_lib.cpp \
 		cookie.cpp \
+		simple_db.cpp \
+		form_data.cpp \
+		string_lib.cpp \
+		gen_html.cpp \
+
 
 RESOURCE_DIR = ./resource
 
