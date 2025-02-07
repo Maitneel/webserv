@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <map>
@@ -127,7 +128,6 @@ FormDataParameters::~FormDataParameters() {
 
 std::string get_content_entity(const std::string &str, size_t lf_count) {
     size_t body_start = 0;
-    size_t cr_count = lf_count;
     while (body_start < str.length() && lf_count) {
         if (str[body_start] == '\n') {
             lf_count--;

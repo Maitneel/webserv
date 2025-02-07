@@ -1,40 +1,29 @@
-#include <unistd.h>
-
 #include <iostream>
-#include <stdexcept>
-#include <string>
-#include <map>
 
-#include "proccessing.hpp"
-#include "defines.hpp"
-#include "gen_html.hpp"
-#include "cookie.hpp"
-
-
+#include "simple_db.hpp"
 using namespace std;
 
+SimpleDB db("./temp.db");
+
 int main() {
-    
-    std::string method = getenv("REQUEST_METHOD");
-    std::multimap<std::string, std::string> cookie = parse_cookie();
-
-    // char *cookie_cstr = getenv("HTTP_COOKIE");
-    // std::map<std::string, std::string> cookie = make_cookie_map();
-
-    if (access(INDEX_HTML_PATH_CSTR, F_OK)) {
-        init_index_html();
-    }
-    try {
-        if (method == "GET") {
-            get_method(cookie);
-        } else if (method == "POST") {
-            post_method(cookie);
-        } else if (method == "DELETE") {
-            delete_method(cookie);
+    string key, value;
+    cout << "key: " << flush;
+    while (cin >> key) {
+        cout << "value: ";
+        cin >> value;
+        try {
+            db.add(key, value);
+        } catch (exception &e) {
+            cerr << e.what() << endl;
         }
-    } catch (std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return -1;
+        cout << "key: ";
     }
+
+    cout << "---------------------------------------" << endl;
+    vector<string> key_list = db.get_include_key();
+    for (size_t i = 0; i < key_list.size(); i++) {
+        cout << "'" << key_list.at(i) << "': '" << db.get(key_list.at(i)) << "'" << endl;
+    }
+    
     return 0;
 }

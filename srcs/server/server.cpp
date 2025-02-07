@@ -305,9 +305,12 @@ void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path
 
 int ft_accept(int fd) {
     struct sockaddr_storage addr;
+    cerr << "fd: " << fd << endl;
     socklen_t addrlen = sizeof addr;
+    errno = 0;
     int sock = accept(fd, (struct sockaddr*)&addr, &addrlen);
     if (sock < 0) {
+        perror("accept");
         throw std::runtime_error("accept: failed");
     }
     if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {

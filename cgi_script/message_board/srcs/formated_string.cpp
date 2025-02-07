@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 std::string get_formated_date() {
     struct tm newtime;

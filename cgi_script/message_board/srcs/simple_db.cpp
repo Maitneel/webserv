@@ -4,6 +4,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 #include "simple_db.hpp"
 
@@ -11,7 +12,7 @@ const std::string SimpleDB::empty_string = "";
 
 SimpleDB::SimpleDB(const std::string &file_path) : filename_(file_path) {
     std::ifstream ifs(file_path);
-    if (ifs == NULL) {
+    if (!ifs) {
         return;
     }
     while (!ifs.fail()) {
@@ -39,7 +40,7 @@ SimpleDB::SimpleDB(const std::string &file_path) : filename_(file_path) {
 
 SimpleDB::~SimpleDB() {
     std::ofstream ofs(this->filename_);
-    if (ofs == NULL) {
+    if (!ofs) {
         // ユーザーの何らかの解決を促してもいいかもしれない //
         std::cerr << "fatal error: DB could not save" << std::endl;
         return ;

@@ -15,27 +15,19 @@ SRCS = 	main.cpp \
 		formated_string.cpp \
 		string_lib.cpp \
 		cookie.cpp \
+		simple_db.cpp \
+		form_data.cpp \
+
+
 
 RESOURCE_DIR = ./resource
 
 OBJS = ${SRCS:%.cpp=${OBJS_DIR}/%.o}
 
-DB_DIR = ../lib/simple_DB
-DATABASE = ${DB_DIR}/simple_db
-
-BODY_PARSER_DIR = ../lib/body_parser
-BODY_PARSER = ${BODY_PARSER_DIR}/body_parser
-
 all : ${NAME}
 
-${NAME} : ${OBJS_DIR} ${OBJS} ${DATABASE} ${BODY_PARSER} ${RESOURCE_DIR}
-	${CXX} ${CXXFLAGS} -o ${NAME} ${DATABASE} ${BODY_PARSER} ${OBJS}
-
-${DATABASE} : ${DB_DIR}/srcs/*.cpp
-	make -C ${DB_DIR}
-
-${BODY_PARSER} : ${BODY_PARSER_DIR}/srcs/*.cpp
-	make -C ${BODY_PARSER_DIR}
+${NAME} : ${OBJS_DIR} ${OBJS} ${RESOURCE_DIR}
+	${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS}
 
 ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 	${CXX} ${CXXFLAGS} -I ${INCLUDE} -I ${DB_DIR}/include -I ${BODY_PARSER_DIR}/include -c -o $@ $<

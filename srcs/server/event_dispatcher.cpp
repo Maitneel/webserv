@@ -59,7 +59,7 @@ FdManager::~FdManager() {
 
 ReadWriteStatType FdManager::Read() {
     char buffer[BUFFER_SIZE];
-    int read_size = 0;
+    int read_size = -1;
     if (this->type_ == kSocket) {
         return kDidNotRead;
     }
@@ -664,6 +664,7 @@ int accept_count = 0;
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
     int connection_fd;
     if (this->registerd_fds_.connection_fds_.size() < MAX_NUMBER_OF_CONNECTION) {
+        cerr << "calling accept" << endl;
         connection_fd = ft_accept(socket_fd);
         this->times_.insert(std::make_pair(connection_fd, get_usec()));
         accept_count++;
@@ -746,6 +747,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
         }
         std::multimap<int, FdEvent> fd_events;
         try {
+            cerr << "waiting" << endl;
             fd_events = this->fd_event_dispatcher_.Wait(fd_dispathcer_wait_time);
         } catch (const SignalDelivered &e) {
             is_signal_recived = true;
@@ -756,6 +758,7 @@ std::multimap<int, ConnectionEvent> ServerEventDispatcher::Wait(int timeout) {
         }
         this->MergeDuplicateFd(&fd_events);
         for (std::multimap<int, FdEvent>::iterator it = fd_events.begin(); it != fd_events.end(); it++) {
+            cerr << it->second.fd_ << ' ' << it->second.event_ << endl;
             const int &fd = it->second.fd_;
             const FdEventType &event = it->second.event_;
             if (event == kFdEventTypeUndefined) {
