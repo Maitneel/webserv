@@ -10,7 +10,6 @@ class ConfigParser {
     size_t read_index_;
     size_t current_line_;
     std::string raw_str_;
-    std::vector<std::string> tokens_;
 
     std::string GetToken();
     std::string ConsumeToken();
