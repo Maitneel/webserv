@@ -373,6 +373,10 @@ void HTTPRequest::valid_headers() {
             }
         }
     }
+
+    if (protocol == HTTP_1_1 && header_.find("host") == header_.end()) {
+        throw MustReturnHTTPStatus(400);
+    }
 }
 
 void HTTPRequest::transform_content_type() {
