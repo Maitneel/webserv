@@ -315,8 +315,7 @@ int ft_accept(int fd) {
     socklen_t addrlen = sizeof addr;
     int sock = accept(fd, (struct sockaddr*)&addr, &addrlen);
     if (sock < 0) {
-        // throw std::runtime_error("accept: failed");
-        return -1;
+        throw std::runtime_error("accept: failed");
     }
     if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {
         std::runtime_error("fcntl: failed");

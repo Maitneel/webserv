@@ -662,11 +662,8 @@ int accept_count = 0;
 
 void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
     int connection_fd;
-    while (this->registerd_fds_.connection_fds_.size() < MAX_NUMBER_OF_CONNECTION) {
+    if (this->registerd_fds_.connection_fds_.size() < MAX_NUMBER_OF_CONNECTION) {
         connection_fd = ft_accept(socket_fd);
-        if (connection_fd < 0) {
-            break;
-        }
         this->times_.insert(std::make_pair(connection_fd, get_usec()));
         accept_count++;
         // cerr << "accept: " << socket_fd << ' ' << connection_fd << ", count: " << accept_count << endl;
