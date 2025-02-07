@@ -576,7 +576,7 @@ const char *HTTPRequest::InvalidHeader::what() const throw() {
 //                 HTTPRequestBody                 //
 // ----------------------------------------------- //
 
-HTTPRequestBody::HTTPRequestBody() : plain_body_(), chunked_body_(), is_chunked_(false), content_length_(0), max_body_size_(-1) {
+HTTPRequestBody::HTTPRequestBody() : plain_body_(), chunked_body_(), max_body_size_(-1), is_chunked_(false), content_length_(0) {
 }
 
 HTTPRequestBody::~HTTPRequestBody() {

@@ -18,7 +18,7 @@
 #define SEC_PER_MS 1000
 #define SEC_PER_USEC 1000000
 
-long long get_usec();
+long get_usec();
 
 typedef enum FdTypeEnum {
     kUnknownFd,
@@ -197,7 +197,7 @@ class ServerEventDispatcher {
     FdEventDispatcher fd_event_dispatcher_;
     RelatedFds registerd_fds_;
     std::set<int> scheduled_close_;
-    std::map<int, long long> continue_connection_until_;
+    std::map<int, long> continue_connection_until_;
 
     void RegisterNewConnection(const int &socket_fd);
     ConnectionEvent CreateConnectionEvent(const int &fd, const FdEventType &fd_event);
@@ -207,7 +207,7 @@ class ServerEventDispatcher {
     void OverrideTimeoutEvent(std::multimap<int, ConnectionEvent> *events);
     int CalcWaitTime(int *timeout);
 
-    std::map<int, long long> times_;
+    std::map<int, long> times_;
 
  public:
     ServerEventDispatcher();

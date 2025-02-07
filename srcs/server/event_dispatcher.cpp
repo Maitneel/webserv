@@ -29,7 +29,7 @@ using std::endl;
 // TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
 
-long long get_usec() {
+long get_usec() {
     struct timeval tv;
     if (gettimeofday(&tv, NULL)) {
         return -1;
@@ -88,7 +88,7 @@ ReadWriteStatType FdManager::Write() {
     if (this->writen_buffer_.length() - this->write_head_ == 0) {
         return kSuccess;
     }
-    int writed_size;
+    int writed_size = 0;
     if (this->type_ == kConnection) {
         writed_size = send(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_), 0);
     } else if (this->type_ == kFile) {
@@ -620,8 +620,8 @@ void ServerEventDispatcher::MergeDuplicateFd(std::multimap<int, FdEvent> *events
 
 std::set<int> ServerEventDispatcher::CheckTimeout() {
     std::set<int> timeout;
-    const long long now = get_usec();
-    for (std::map<int, long long>::iterator it = continue_connection_until_.begin(); it != continue_connection_until_.end(); it++) {
+    const long now = get_usec();
+    for (std::map<int, long>::iterator it = continue_connection_until_.begin(); it != continue_connection_until_.end(); it++) {
         if (it->second < now) {
             timeout.insert(it->first);
             // 2回以上timeoutイベントが走るとめんどくさいので雑な処理 //
@@ -689,7 +689,7 @@ void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
     if (this->registerd_fds_.GetType(connection_fd) != kConnection) {
         return;
     }
-    std::map<int, long long>::iterator it = times_.find(connection_fd);
+    std::map<int, long>::iterator it = times_.find(connection_fd);
     if (!(get_usec() - it->second / SEC_PER_USEC)) {
         cerr << "time: " << std::setw(2) << it->first << ": " <<  get_usec() - it->second << endl;
     }
