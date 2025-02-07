@@ -30,7 +30,7 @@ std::string read_data() {
 int write_file(const std::string &file_name, std::string *data) {
     std::string file_path = "./docs/";
     file_path += file_name;
-    const int fd = open(file_path.c_str(), O_WRONLY | O_CREAT, 0644);
+    const int fd = open(file_path.c_str(), O_WRONLY | O_CREAT, 0777);
     if (fd < 0) {
         return -1;
     }
@@ -67,4 +67,11 @@ void write_error_cgi_response() {
     std::cout << "Status: 403 Forbidden\n";
     std::cout << "\n";
     std::cout << "Forbidden\n";
+}
+
+void write_200_cgi_response() {
+    std::cout << "Content-Type: text/plain\n";
+    std::cout << "Status: 200 OK\n";
+    std::cout << "\n";
+    std::cout << "OK\n";
 }

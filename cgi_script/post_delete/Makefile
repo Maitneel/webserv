@@ -1,4 +1,4 @@
-NAME = post.cgi
+NAME = post_delete.cgi
 
 GXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
