@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <stdexcept>
 
 std::vector<std::string> split(const std::string &src, const std::string &delimiter);
 std::vector<std::string> escaped_quote_split(const std::string &src, const std::string &delimiter);
@@ -31,7 +32,16 @@ std::string size_t_to_hex_string(size_t n);
 // std::string closed_substr(const std::string &s, const std::string::size_type &closed_left, const std::string::size_type &closed_right);
 #define closed_substr(s, closed_left, closed_right) (s).substr((closed_left), (closed_right) - (closed_left) + 1)
 
+// template<typename key, typename value>
+// value &map_at(std::map<key, value> *m, const key &target);
+
 template<typename key, typename value>
-value &map_at(std::map<key, value> *m, const key &target);
+value &map_at(std::map<key, value> *m, const key &target) {
+    if (m->find(target) == m->end()) {
+        throw std::out_of_range("map_at");
+    }
+    return m->find(target)->second;
+}
+
 
 #endif  // INCLUDE_EXTEND_STDLIB_HPP_
