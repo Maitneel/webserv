@@ -227,7 +227,7 @@ bool IsDir(const std::string& path) {
 }
 
 // TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
-void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
+void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
     std::string path = document_root + req_path;
     const int &connection_fd = context->GetConnectionFD();
@@ -271,7 +271,7 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
     return;
 }
 
-void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocatoinConfig &location_config) {
+void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
     std::string path = document_root + req_path;
     const int &connection_fd = context->GetConnectionFD();
@@ -343,7 +343,7 @@ void Server::CallCGI(const int &connection_fd, HTTPRequest *req, const std::stri
     std::cerr << "cgi end" << std::endl;
 }
 
-const LocatoinConfig &Server::GetLocationConfig(const int &port, const HTTPRequest &req) {
+const LocationConfig &Server::GetLocationConfig(const int &port, const HTTPRequest &req) {
     std::string location = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
     if (location.length() == 0 || location.at(location.length() - 1) != '/') {
         location += "/";
@@ -351,7 +351,7 @@ const LocatoinConfig &Server::GetLocationConfig(const int &port, const HTTPReque
     const ServerConfig &server_config = GetConfig(port, req.get_host_name());
 
     std::string::size_type location_length = location.rfind('/');
-    std::map<std::string, LocatoinConfig>::const_iterator location_config_it = server_config.location_configs_.end();
+    std::map<std::string, LocationConfig>::const_iterator location_config_it = server_config.location_configs_.end();
     while (location_length != std::string::npos) {
         location_config_it = server_config.location_configs_.find(location.substr(0, location_length + 1));
         if (location_config_it != server_config.location_configs_.end()) {
@@ -365,7 +365,7 @@ const LocatoinConfig &Server::GetLocationConfig(const int &port, const HTTPReque
     return location_config_it->second;
 }
 
-void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocatoinConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
+void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocationConfig &loc_conf, const std::string &req_uri, const int &connection_fd) {
     // const HTTPRequest *req = ctx->GetHTTPRequest();
     HTTPRequest *req = &ctx->request_;
     const std::string method = req->get_method();
@@ -415,7 +415,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     std::string method = req.get_method();
 
     try {
-        LocatoinConfig location_config = GetLocationConfig(port, req);
+        LocationConfig location_config = GetLocationConfig(port, req);
         std::string::size_type location_length = location_config.name_.length();
         this->RoutingByLocationConfig(&ctx, config, location_config, location.substr(location_length), connection_fd);
     } catch (...) {
