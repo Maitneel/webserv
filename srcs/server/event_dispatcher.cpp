@@ -485,6 +485,10 @@ const std::set<AnyFdType> &RelatedFds::GetChildrenFd(const int &fd) {
     return empty_any_fd_type_set_;
 }
 
+bool RelatedFds::IsRegistered(const AnyFdType &fd) {
+    return (registerd_fds_.find(fd) != registerd_fds_.end());
+}
+
 /*
 #include <iostream>
 void RelatedFds::print() {
@@ -675,8 +679,10 @@ void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
 }
 
 void ServerEventDispatcher::RegisterSocketFd(const int &socket_fd) {
-    this->registerd_fds_.RegisterSocketFd(socket_fd);
-    this->fd_event_dispatcher_.Register(socket_fd, kSocket);
+    if (!this->registerd_fds_.IsRegistered(socket_fd)) {
+        this->registerd_fds_.RegisterSocketFd(socket_fd);
+        this->fd_event_dispatcher_.Register(socket_fd, kSocket);
+    }
 }
 
 void ServerEventDispatcher::RegisterFileFd(const int &file_fd, const int &connection_fd) {

@@ -185,6 +185,8 @@ class RelatedFds {
     FdType GetType(const AnyFdType &fd) const;
     const std::set<AnyFdType> &GetChildrenFd(const int &fd);
 
+    bool IsRegistered(const AnyFdType &fd);
+
     // この関数auto使ってるのでC++98環境では動かない //
     // void print();  // for debug;
 };
