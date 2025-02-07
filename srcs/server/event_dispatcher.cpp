@@ -20,6 +20,7 @@ using std::cerr;
 using std::endl;
 
 #include "event_dispatcher.hpp"
+#include "extend_stdlib.hpp"
 
 #include "poll_selector.hpp"
 
@@ -181,7 +182,7 @@ std::multimap<int, FdEvent> FdEventDispatcher::ReadBuffer() {
     for (it = this->poll_fds_.begin(); it != this->poll_fds_.end(); it++) {
         if ((it->revents & POLLIN) == POLLIN) {
             if (this->fds_.find(it->fd) != this->fds_.end()) {
-                FdManager &fd_buffer = this->fds_.at(it->fd);
+                FdManager &fd_buffer = map_at(&this->fds_, it->fd);
                 ReadWriteStatType stat = fd_buffer.Read();
                 FdEventType event_type;
 
@@ -210,7 +211,7 @@ std::multimap<int, FdEvent> FdEventDispatcher::WriteBuffer() {
         const short &events = processing.events;
 
         if ((revents & POLLOUT) == POLLOUT && !(revents & (~events))) {
-            ReadWriteStatType write_ret = this->fds_.at(fd).Write();
+            ReadWriteStatType write_ret = map_at(&this->fds_, fd).Write();
             if (write_ret == kSuccess) {
                 result_array.insert(std::make_pair(fd, FdEvent(fd, kWriteEnd)));
             } else if (write_ret == kFail) {
@@ -242,7 +243,7 @@ void FdEventDispatcher::UpdatePollEvents() {
         pollfd &processing = this->poll_fds_.at(i);
         const int fd = processing.fd;
 
-        if (!this->fds_.at(fd).IsEmptyWritebleBuffer()) {
+        if (!map_at(&this->fds_, fd).IsEmptyWritebleBuffer()) {
             if (registerd_read_fds_.find(fd) != registerd_read_fds_.end()) {
                 processing.events = (POLLIN | POLLOUT);
             } else {
@@ -402,7 +403,7 @@ void RelatedFds::RegisterConnectionFd(const ConnectionFdType &connection_fd, con
     this->connection_fds_.insert(connection_fd);
     this->fd_type_.insert(std::make_pair(connection_fd, kConnection));
     this->pairent_socket_.insert(std::make_pair(connection_fd, socket_fd));
-    this->socket_children_.at(socket_fd).insert(connection_fd);
+    map_at(&this->socket_children_, socket_fd).insert(connection_fd);
     this->connection_childlen_.insert(std::make_pair(connection_fd, std::set<FileFdType>()));
 }
 
@@ -416,16 +417,16 @@ void RelatedFds::RegisterFileFd(const FileFdType &file_fd, const ConnectionFdTyp
     this->file_fds_.insert(file_fd);
     this->fd_type_.insert(std::make_pair(file_fd, kFile));
     this->pairent_socket_.insert(std::make_pair(file_fd, socket_fd));
-    this->socket_children_.at(socket_fd).insert(file_fd);
+    map_at(&this->socket_children_, socket_fd).insert(file_fd);
     this->pairent_connection_.insert(std::make_pair(file_fd, connection_fd));
-    this->connection_childlen_.at(connection_fd).insert(file_fd);
+    map_at(&this->connection_childlen_, connection_fd).insert(file_fd);
 }
 
 void RelatedFds::UnregisterSocketFd(const SocketFdType &socket_fd) {
     this->registerd_fds_.erase(socket_fd);
     this->socket_fds_.erase(socket_fd);
     this->fd_type_.erase(socket_fd);
-    std::set<AnyFdType> children = this->socket_children_.at(socket_fd);
+    std::set<AnyFdType> children = map_at(&this->socket_children_, socket_fd);
     for (std::set<AnyFdType>::iterator it = children.begin(); it != children.end(); it++) {
         if (this->connection_fds_.find(*it) != this->connection_fds_.end()) {
             this->UnregisterConnectionFd(*it);
@@ -437,14 +438,14 @@ void RelatedFds::UnregisterSocketFd(const SocketFdType &socket_fd) {
 }
 
 void RelatedFds::UnregisterConnectionFd(const ConnectionFdType &connection_fd) {
-    const SocketFdType socket_fd = this->pairent_socket_.at(connection_fd);
+    const SocketFdType socket_fd = map_at(&this->pairent_socket_, connection_fd);
 
     this->registerd_fds_.erase(connection_fd);
     this->connection_fds_.erase(connection_fd);
     this->fd_type_.erase(connection_fd);
     this->pairent_socket_.erase(connection_fd);
-    this->socket_children_.at(socket_fd).erase(connection_fd);
-    std::set<AnyFdType> children = this->connection_childlen_.at(connection_fd);
+    map_at(&this->socket_children_, socket_fd).erase(connection_fd);
+    std::set<AnyFdType> children = map_at(&this->connection_childlen_, connection_fd);
     for (std::set<AnyFdType>::iterator it = children.begin(); it != children.end(); it++) {
         this->UnregisterFileFd(*it);
     }
@@ -452,15 +453,15 @@ void RelatedFds::UnregisterConnectionFd(const ConnectionFdType &connection_fd) {
 }
 
 void RelatedFds::UnregisterFileFd(const FileFdType &file_fd) {
-    const SocketFdType socket_fd = this->pairent_socket_.at(file_fd);
-    const ConnectionFdType connection_fd = this->pairent_connection_.at(file_fd);
+    const SocketFdType socket_fd = map_at(&this->pairent_socket_, file_fd);
+    const ConnectionFdType connection_fd = map_at(&this->pairent_connection_, file_fd);
 
     this->registerd_fds_.erase(file_fd);
     this->file_fds_.erase(file_fd);
     this->fd_type_.erase(file_fd);
-    this->socket_children_.at(socket_fd).erase(file_fd);
+    map_at(&this->socket_children_, socket_fd).erase(file_fd);
     this->pairent_socket_.erase(file_fd);
-    this->connection_childlen_.at(connection_fd).erase(file_fd);
+    map_at(&this->connection_childlen_, connection_fd).erase(file_fd);
     this->pairent_connection_.erase(file_fd);
 }
 
@@ -482,6 +483,10 @@ const std::set<AnyFdType> &RelatedFds::GetChildrenFd(const int &fd) {
         return this->connection_childlen_.find(fd)->second;
     }
     return empty_any_fd_type_set_;
+}
+
+bool RelatedFds::IsRegistered(const AnyFdType &fd) {
+    return (registerd_fds_.find(fd) != registerd_fds_.end());
 }
 
 /*
@@ -674,8 +679,10 @@ void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
 }
 
 void ServerEventDispatcher::RegisterSocketFd(const int &socket_fd) {
-    this->registerd_fds_.RegisterSocketFd(socket_fd);
-    this->fd_event_dispatcher_.Register(socket_fd, kSocket);
+    if (!this->registerd_fds_.IsRegistered(socket_fd)) {
+        this->registerd_fds_.RegisterSocketFd(socket_fd);
+        this->fd_event_dispatcher_.Register(socket_fd, kSocket);
+    }
 }
 
 void ServerEventDispatcher::RegisterFileFd(const int &file_fd, const int &connection_fd) {

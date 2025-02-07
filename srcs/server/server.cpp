@@ -30,6 +30,7 @@
 #include "cgi_response.hpp"
 #include "cgi.hpp"
 #include "file_signatures.hpp"
+#include "extend_stdlib.hpp"
 
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
 using std::cerr;
@@ -327,7 +328,7 @@ void Server::CallCGI(const int &connection_fd, HTTPRequest *req, const std::stri
     if (loc_name.length() < req_path.length()) {
         path_info = req_path.substr(loc_name.length());
     }
-    HTTPContext &context = ctxs_.at(connection_fd);
+    HTTPContext &context = map_at(&ctxs_, connection_fd);
     context.cgi_info_ = call_cgi_script(*req, cgi_path, path_info);
     context.is_cgi_ = true;
     const CGIInfo &cgi_info = context.cgi_info_;
@@ -386,7 +387,7 @@ void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &serve
 }
 
 void Server::routing(const int &connection_fd, const int &socket_fd) {
-    HTTPContext& ctx = ctxs_.at(connection_fd);
+    HTTPContext& ctx = map_at(&ctxs_, connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
     // req.print_info();
@@ -449,7 +450,7 @@ int resend_close = 0;
 
 void Server::CloseConnection(const int connection_fd) {
     // cerr << "[success, fail]: [" << resend_close << ", " << fail_close << "]" << endl;
-    const HTTPContext &context = ctxs_.at(connection_fd);
+    const HTTPContext &context = map_at(&ctxs_, connection_fd);
     if (context.file_fd_ != NON_EXIST_FD) {
         dispatcher_.UnregisterFileFd(context.file_fd_);
         close(context.file_fd_);
@@ -465,10 +466,10 @@ void Server::CloseConnection(const int connection_fd) {
 }
 
 void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string) {
-    if (ctxs_.at(connection_fd).sent_response_) {
+    if (map_at(&ctxs_, connection_fd).sent_response_) {
         return;
     }
-    ctxs_.at(connection_fd).sent_response_ = true;
+    map_at(&ctxs_, connection_fd).sent_response_ = true;
     CGIResponse cgi_res(cgi_response_string);
     HTTPResponse res = cgi_res.make_http_response();
 
@@ -477,10 +478,10 @@ void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::st
 
 void Server::SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type) {
     // TODO(maitneel): content-typeをどうにかする //
-    if (ctxs_.at(connection_fd).sent_response_) {
+    if (map_at(&ctxs_, connection_fd).sent_response_) {
         return;
     }
-    ctxs_.at(connection_fd).sent_response_ = true;
+    map_at(&ctxs_, connection_fd).sent_response_ = true;
 
     HTTPResponse res(HTTPResponse::kOK, content_type, file_content);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
@@ -573,7 +574,7 @@ void Server::EventLoop() {
                     dispatcher_.UnregisterConnectionReadEvent(event_fd);
                 }
             } else if (event.event == kReadableRequest) {
-                HTTPContext& ctx = ctxs_.at(event_fd);
+                HTTPContext& ctx = map_at(&ctxs_, event_fd);
                 // if (event.event == kRequestEndOfReaded && ctx.IsParsedBody()) {
                 //     CloseConnection(event.connection_fd);
                 //     continue;
@@ -621,7 +622,7 @@ void Server::EventLoop() {
             } else if (event.event == kReadableFile) {
                 // TODO(maitneel): Do it;
             } else if (event.event == kFileEndOfRead) {
-                const HTTPContext &ctx = ctxs_.at(event.connection_fd);
+                const HTTPContext &ctx = map_at(&ctxs_, event.connection_fd);
                 if (ctx.is_cgi_ && ctx.cgi_info_.is_proccess_end) {
                     this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
@@ -642,7 +643,7 @@ void Server::EventLoop() {
                 // Nothing to do (processed)
             } else if (event.event == kTimeout) {
                 if (dispatcher_.IsEmptyWritebleBuffer(event_fd)) {
-                    const HTTPContext &context = ctxs_.at(event_fd);
+                    const HTTPContext &context = map_at(&ctxs_, event_fd);
                     if (context.is_cgi_) {
                         kill(context.cgi_info_.pid, SIGTERM);
                         pid_killed_by_webserve_.insert(context.cgi_info_.pid);
@@ -661,7 +662,7 @@ void Server::EventLoop() {
                     fail_close++;
                     this->CloseConnection(event.connection_fd);
                 } else if (event_fd == event.file_fd) {
-                    if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctxs_.at(event.connection_fd).is_cgi_) {
+                    if (ctxs_.find(event.connection_fd) != ctxs_.end() && map_at(&ctxs_, event.connection_fd).is_cgi_) {
                         this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
                     dispatcher_.UnregisterFileFd(event_fd);
