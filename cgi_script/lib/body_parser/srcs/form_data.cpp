@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <map>
@@ -14,6 +15,16 @@
 using std::cerr;
 using std::endl;
 #define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
+
+
+
+template<typename key, typename value>
+value &map_at(std::map<key, value> *m, const key &target) {
+    if (m->find(target) == m->end()) {
+        throw std::out_of_range("map_at");
+    }
+    return m->find(target)->second;
+}
 
 // ---------------- utility function -------------------
 
@@ -107,9 +118,9 @@ FormDataParameters::FormDataParameters(const std::string &single_content) {
             std::vector<std::string> splited_by_semi_colon = split_with_erase_delimiter(parameter_line, ";");
             for (size_t i = 0; i < splited_by_semi_colon.size(); i++) {
                 trim_str(&splited_by_semi_colon[i], PARAMETER_DALIMITER);
-                this->parameter_.at(name).insert(parse_parameter(splited_by_semi_colon[i]));
+                map_at(&this->parameter_, name).insert(parse_parameter(splited_by_semi_colon[i]));
             }
-            for (auto it = this->parameter_.at(name).begin(); it != this->parameter_.at(name).end(); it++) {
+            for (std::map<std::string, std::string>::iterator it = map_at(&this->parameter_, name).begin(); it != this->parameter_.at(name).end(); it++) {
                 cerr << "name: '" << it->first << "' '" << it->second << "'" <<  endl;
             }
         } catch (std::exception &e) {
@@ -127,7 +138,6 @@ FormDataParameters::~FormDataParameters() {
 
 std::string get_content_entity(const std::string &str, size_t lf_count) {
     size_t body_start = 0;
-    size_t cr_count = lf_count;
     while (body_start < str.length() && lf_count) {
         if (str[body_start] == '\n') {
             lf_count--;

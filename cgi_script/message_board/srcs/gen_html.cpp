@@ -1,12 +1,10 @@
 #include <string>
 #include <fstream>
+#include <cstring>
+#include <cstdlib>
 #include "defines.hpp"
 #include "simple_db.hpp"
 #include "formated_string.hpp"
-
-#include <iostream>
-using std::cerr;
-using std::endl;
 
 std::string create_template_front() {
     std::string html;
@@ -86,19 +84,19 @@ std::string create_template_end() {
 void create_index_html(SimpleDB &message_db) {
     std::string html;
     html += create_template_front();
-    int message_count = stoi(message_db.get(DB_MESSAGE_COUNT_ID));
+    int message_count = atoi(message_db.get(DB_MESSAGE_COUNT_ID).c_str());
     for (int i = 0; i < message_count; i++) {
         std::string id(get_formated_id(i));
         html += create_message_div(message_db, id);
     }
     html += create_template_end();
 
-    std::ofstream ofs(INDEX_HTML_PATH);
+    std::ofstream ofs(INDEX_HTML_PATH_CSTR);
     ofs << html << std::endl;
 }
 
 void init_index_html() {
-    std::ofstream ofs(INDEX_HTML_PATH);
+    std::ofstream ofs(INDEX_HTML_PATH_CSTR);
     ofs << create_template_front();
     ofs << create_template_end();
     ofs.close();
