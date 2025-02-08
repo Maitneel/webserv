@@ -322,10 +322,19 @@ InvalidConfigException::InvalidConfigException(size_t line, std::string msg) thr
 InvalidConfigException::~InvalidConfigException() throw() {}
 
 const char* InvalidConfigException::what() const throw() {
-    std::stringstream ss;
-    ss << "line: " << line_ << " " << msg_;
-    return ss.str().c_str();
+    // static std::stringstream ss;
+    // ss << "line: " << line_ << " " << msg_;
+    // return ss.str().c_str();
+    return "InvalidConfig";
 }
+
+std::string InvalidConfigException::GetInvalidLineMessage() {
+    static std::stringstream ss;
+    ss << "line: " << line_ << " " << msg_;
+    return ss.str();
+}
+
+
 
 /*
 int main(int argc, char **argv) {
