@@ -7,29 +7,33 @@ SRCS_DIR = ./srcs
 INCLUDE = ./include
 OBJS_DIR = ./objs
 
-SRCS = 	main.cpp \
+SRCS =	main.cpp \
 		get_method.cpp \
 		post_method.cpp \
+		body_parser.cpp \
 		delete_method.cpp \
-		gen_html.cpp \
 		formated_string.cpp \
-		string_lib.cpp \
 		cookie.cpp \
+		simple_db.cpp \
+		form_data.cpp \
+		string_lib.cpp \
+		gen_html.cpp \
+
 
 RESOURCE_DIR = ./resource
 
 OBJS = ${SRCS:%.cpp=${OBJS_DIR}/%.o}
 
-DB_DIR = ../lib/simple_DB
-DATABASE = ${DB_DIR}/simple_db
+# DB_DIR = ../lib/simple_DB
+# DATABASE = ${DB_DIR}/simple_db
 
-BODY_PARSER_DIR = ../lib/body_parser
-BODY_PARSER = ${BODY_PARSER_DIR}/body_parser
+# BODY_PARSER_DIR = ../lib/body_parser
+# BODY_PARSER = ${BODY_PARSER_DIR}/body_parser
 
 all : ${NAME}
 
-${NAME} : ${OBJS_DIR} ${OBJS} ${DATABASE} ${BODY_PARSER} ${RESOURCE_DIR}
-	${CXX} ${CXXFLAGS} -o ${NAME} ${DATABASE} ${BODY_PARSER} ${OBJS}
+${NAME} : ${OBJS_DIR} ${OBJS} ${RESOURCE_DIR} 
+	${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS}
 
 ${DATABASE} : ${DB_DIR}/srcs/*.cpp
 	make -C ${DB_DIR}
@@ -43,10 +47,10 @@ ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 ${OBJS_DIR} :
 	mkdir ${OBJS_DIR}
 
-${RESOURCE_DIR} :
-	mkdir ./resource
-	mkdir ./resource/public
-	mkdir ./resource/private
+${RESOURCE_DIR} : ${OBJS}
+	mkdir -p ./resource
+	mkdir -p ./resource/public
+	mkdir -p ./resource/private
 
 clean :
 	rm -rf ${OBJS_DIR}

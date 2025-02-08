@@ -41,6 +41,7 @@ SimpleDB::SimpleDB(const std::string &file_path) : filename_(file_path) {
 SimpleDB::~SimpleDB() {
     std::ofstream ofs(this->filename_.c_str());
     if (!ofs) {
+        std::cerr << this->filename_ << std::endl;
         // ユーザーの何らかの解決を促してもいいかもしれない //
         std::cerr << "fatal error: DB could not save" << std::endl;
         return ;

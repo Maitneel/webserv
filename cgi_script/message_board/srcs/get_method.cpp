@@ -7,6 +7,7 @@
 #include "defines.hpp"
 #include "simple_db.hpp"
 
+#include "gen_html.hpp"
 #include "string_lib.hpp"
 #include "cookie.hpp"
 
@@ -17,6 +18,12 @@ void get_method(const std::multimap<std::string, std::string> &cookie) {
     std::ifstream ifs(INDEX_HTML_PATH_CSTR);
     std::string s;
     SimpleDB auth_db(AUTH_DB_PATH);
+
+    if (!ifs) {
+        SimpleDB message_db(MESSAGE_DB_PATH);
+        create_index_html(message_db);
+        ifs.open(INDEX_HTML_PATH_CSTR);
+    }
 
     std::cout << "Content-Type:text/html" << "\n";
     std::cout << get_cookie_header(cookie, &auth_db);

@@ -65,7 +65,7 @@ static std::vector<std::string> split_with_erase_delimiter(const std::string &st
     return splited;
 }
 
-std::string trim_str(std::string *str, const std::string &remove_char) {
+static std::string trim_str(std::string *str, const std::string &remove_char) {
     std::string::size_type front = str->find_first_not_of(remove_char);
     std::string::size_type last = str->find_last_not_of(remove_char) + 1;
     if (str->length() < front) {
