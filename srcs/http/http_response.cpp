@@ -192,3 +192,10 @@ std::string HTTPResponse::toString() const {
     ss << this->body_;
     return ss.str();
 }
+
+HTTPResponse create_redirect_response(const std::string &redirecto_to) {
+    HTTPResponse res(301, "text/plain", "Moved Permanently");
+    std::string location_header = "Location: ";
+    res.AddHeader("Location", redirecto_to);
+    return res;
+}

@@ -252,10 +252,12 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
     }
     // std::cout << "path: " << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
+        if (location_config.redirect_ != "") {
+            HTTPResponse res = create_redirect_response(location_config.redirect_);
+        }
         this->SendErrorResponce(HTTPResponse::kNotFound, server_config, connection_fd);
         return;
-    }
-    if (access(path.c_str(), R_OK) == -1) {
+    } else if (access(path.c_str(), R_OK) == -1) {
         this->SendErrorResponce(HTTPResponse::kForbidden, server_config, connection_fd);
         return;
     }
