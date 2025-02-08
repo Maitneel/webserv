@@ -53,7 +53,6 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
             return "Loop Detected";
         case HTTPResponse::kNetworkAuthenticationRequired:
             return "Network Authentication Required";
-
     }
     throw std::runtime_error("unreachable code");
 }
