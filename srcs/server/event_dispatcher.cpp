@@ -630,7 +630,7 @@ std::set<int> ServerEventDispatcher::CheckTimeout() {
         if (it->second < now) {
             timeout.insert(it->first);
             // 2回以上timeoutイベントが走るとめんどくさいので雑な処理 //
-            it->second = LLONG_MAX;
+            it->second = LONG_MAX;
         }
     }
     return timeout;
@@ -813,9 +813,10 @@ SignalDelivered::SignalDelivered(const int sigid) : sigid_(sigid) {
 }
 
 const char* SignalDelivered::what() const throw() {
-    std::stringstream message;
-    message << "SignalDelivered: delivered signal '" << this->sigid_ << "'";
-    return message.str().c_str();
+    // std::stringstream message;
+    // message << "SignalDelivered: delivered signal '" << this->sigid_ << "'";
+    // return message.str().c_str();
+    return "SignalDelivered: delivered signal";
 }
 
 const int &SignalDelivered::GetSigid() const {

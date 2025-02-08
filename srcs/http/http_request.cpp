@@ -408,7 +408,7 @@ void HTTPRequest::register_entity_body(const std::vector<std::string> &splited_b
     this->transform_headers();
 }
 
-HTTPRequest::HTTPRequest() : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
+HTTPRequest::HTTPRequest() : header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {
 }
 
 // HTTPRequest::HTTPRequest(std::string buffer) : is_simple_request(false), header_(), entity_body_(), allow_(), content_encoding_(), content_length_() {

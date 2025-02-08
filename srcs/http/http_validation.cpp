@@ -347,7 +347,7 @@ bool is_http_version(const std::string &s) {   // = "HTTP" "/" 1*DIGIT "." 1*DIG
 
 bool is_valid_http_header_element(const std::string &str) {
     size_t i = 0;
-    while (i < str.length() && is_filed_vchar_element(str.at(i))) {
+    while (i < str.length() && is_filed_vchar_element((unsigned char)(str.at(i)))) {
         i++;
     }
     if (i == 0) {
@@ -364,7 +364,7 @@ bool is_valid_http_header_element(const std::string &str) {
     while (i < str.length() && is_ows_elment(str.at(i))) {
         i++;
     }
-    if (str.length() < i && !is_filed_vchar_element(str.at(i))) {
+    if (str.length() < i && !is_filed_vchar_element((unsigned char)(str.at(i)))) {
         return false;
     }
     if (i == str.length()) {

@@ -47,7 +47,6 @@ class MIMEType {
 class HTTPRequest {
  private:
     // internal variable
-    bool is_simple_request;
 
     // request-line
     std::string method;

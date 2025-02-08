@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 #include "config.hpp"
 
 class ConfigParser {
@@ -57,4 +58,5 @@ class InvalidConfigException: public std::exception {
     InvalidConfigException(size_t line, std::string msg) throw ();
     ~InvalidConfigException() throw();
     const char* what() const throw();
+    std::string GetInvalidLineMessage();
 };

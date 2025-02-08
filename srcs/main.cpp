@@ -32,9 +32,12 @@ int main(int argc, char **argv) {
         Server server(conf);
 
         server.EventLoop();
+    } catch (InvalidConfigException &e) {
+        std::cerr << e.GetInvalidLineMessage() << std::endl;
+        return 2;
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
-        return 2;
+        return 3;
     }
 
     return 0;
