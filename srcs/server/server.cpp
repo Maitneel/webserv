@@ -252,9 +252,6 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
     }
     // std::cout << "path: " << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
-        if (location_config.redirect_ != "") {
-            HTTPResponse res = create_redirect_response(location_config.redirect_);
-        }
         this->SendErrorResponce(HTTPResponse::kNotFound, server_config, connection_fd);
         return;
     } else if (access(path.c_str(), R_OK) == -1) {
@@ -371,6 +368,11 @@ void Server::RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &serve
     // const HTTPRequest *req = ctx->GetHTTPRequest();
     HTTPRequest *req = &ctx->request_;
     const std::string method = req->get_method();
+    if (loc_conf.redirect_ != "") {
+        HTTPResponse res = create_redirect_response(loc_conf.redirect_);
+        dispatcher_.add_writen_buffer(connection_fd, res.toString());
+        return;
+    }
     if (loc_conf.methods_.find(method) == loc_conf.methods_.end()) {
         this->SendErrorResponce(HTTPResponse::kMethodNotAllowed, server_config, connection_fd);
         return;
@@ -392,7 +394,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     HTTPContext& ctx = map_at(&ctxs_, connection_fd);
     const HTTPRequest &req = ctx.GetHTTPRequest();
     const int port = socket_list_.GetPort(socket_fd);
-    // req.print_info();
+    req.print_info();
     std::string host_name = req.get_host_name();
     // TODO(maitneel): origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
