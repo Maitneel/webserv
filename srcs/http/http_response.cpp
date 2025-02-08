@@ -9,10 +9,21 @@ const char HTTPResponse::kHTTPVersion[] = "HTTP/1.1";
 
 std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
     switch (status_code) {
+        // 200 系
         case HTTPResponse::kOK:
             return "OK";
         case HTTPResponse::kCreated:
             return "Created";
+        case HTTPResponse::kAccepted:
+            return "Accepted";
+        case HTTPResponse::kNoContent:
+            return "No Content";
+        // 300 系
+        case HTTPResponse::kMovedPermanently:
+            return "Moved Permanently";
+        case HTTPResponse::kFound:
+            return "Found";
+        // 400 系
         case HTTPResponse::kBadRequest:
             return "Bad Request";
         case HTTPResponse::kForbidden:
@@ -21,14 +32,28 @@ std::string GenerateDescription(HTTPResponse::StatusCode status_code) {
             return "Not Found";
         case HTTPResponse::kMethodNotAllowed:
             return "Method Not Allowed";
-        case HTTPResponse::kPayloadTooLarge:
-            return "Payload Too Large";
         case HTTPResponse::kRequestTimeout:
             return "Request Timeout";
+        case HTTPResponse::kPayloadTooLarge:
+            return "Payload Too Large";
+        case HTTPResponse::kTooManyRequests:
+            return "Too Many Requests";
+        // 500 系
         case HTTPResponse::kInternalServerErrror:
             return "Internal Server Error";
         case HTTPResponse::kNotImplemented:
             return "Not Implemented";
+        case HTTPResponse::kBadGateway:
+            return "Bad Gateway";
+        case HTTPResponse::kServiceUnavailable:
+            return "Service Unavailable";
+        case HTTPResponse::kGatewayTimeout:
+            return "Gateway Timeout";
+        case HTTPResponse::kLoopDetected:
+            return "Loop Detected";
+        case HTTPResponse::kNetworkAuthenticationRequired:
+            return "Network Authentication Required";
+
     }
     throw std::runtime_error("unreachable code");
 }
@@ -39,6 +64,18 @@ HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
     }
     if (code == 201) {
         return HTTPResponse::kCreated;
+    }
+    if (code == 202) {
+        return HTTPResponse::kAccepted;
+    }
+    if (code == 204) {
+        return HTTPResponse::kNoContent;
+    }
+    if (code == 301) {
+        return HTTPResponse::kMovedPermanently;
+    }
+    if (code == 302) {
+        return HTTPResponse::kFound;
     }
     if (code == 400) {
         return HTTPResponse::kBadRequest;
@@ -58,12 +95,32 @@ HTTPResponse::StatusCode convert_status_code_to_enum(const int &code) {
     if (code == 413) {
         return HTTPResponse::kPayloadTooLarge;
     }
+    if (code == 429) {
+        return HTTPResponse::kTooManyRequests;
+    }
+
     if (code == 500) {
         return HTTPResponse::kInternalServerErrror;
     }
     if (code == 501) {
         return HTTPResponse::kNotImplemented;
     }
+    if (code == 502) {
+        return HTTPResponse::kBadGateway;
+    }
+    if (code == 503) {
+        return HTTPResponse::kServiceUnavailable;
+    }
+    if (code == 504) {
+        return HTTPResponse::kGatewayTimeout;
+    }
+    if (code == 508) {
+        return HTTPResponse::kLoopDetected;
+    }
+    if (code == 511) {
+        return HTTPResponse::kNetworkAuthenticationRequired;
+    }
+
     return HTTPResponse::kInternalServerErrror;
 }
 
