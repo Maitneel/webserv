@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
-
+#include <ctime>
 
 std::string gen_random_str(const size_t length = 8) {
     const std::string useable_char = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz_";
