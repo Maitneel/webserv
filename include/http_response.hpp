@@ -17,16 +17,33 @@ class HTTPResponse {
 
  public:
     enum StatusCode {
+        // 200
         kOK                   = 200,
         kCreated              = 201,
+        kAccepted             = 202,
+        kNoContent            = 204,
+
+        // 300
+        kMovedPermanently     = 301,
+        kFound                = 302,
+
+        // 400
         kBadRequest           = 400,
         kForbidden            = 403,
         kNotFound             = 404,
         kMethodNotAllowed     = 405,
         kRequestTimeout       = 408,
         kPayloadTooLarge      = 413,
+        kTooManyRequests      = 429,
+
+        // 500
         kInternalServerErrror = 500,
-        kNotImplemented       = 501
+        kNotImplemented       = 501,
+        kBadGateway           = 502,
+        kServiceUnavailable   = 503,
+        kGatewayTimeout       = 504,
+        kLoopDetected         = 508,
+        kNetworkAuthenticationRequired = 511,
     };
     HTTPResponse();
     HTTPResponse(
