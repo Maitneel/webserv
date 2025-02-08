@@ -32,7 +32,7 @@ OBJS = ${SRCS:%.cpp=${OBJS_DIR}/%.o}
 
 all : ${NAME}
 
-${NAME} : ${OBJS_DIR} ${OBJS} ${RESOURCE_DIR}
+${NAME} : ${OBJS_DIR} ${OBJS} ${RESOURCE_DIR} 
 	${CXX} ${CXXFLAGS} -o ${NAME} ${OBJS}
 
 ${DATABASE} : ${DB_DIR}/srcs/*.cpp
@@ -47,10 +47,10 @@ ${OBJS_DIR}/%.o : ${SRCS_DIR}/%.cpp
 ${OBJS_DIR} :
 	mkdir ${OBJS_DIR}
 
-${RESOURCE_DIR} :
-	mkdir ./resource
-	mkdir ./resource/public
-	mkdir ./resource/private
+${RESOURCE_DIR} : ${OBJS}
+	mkdir -p ./resource
+	mkdir -p ./resource/public
+	mkdir -p ./resource/private
 
 clean :
 	rm -rf ${OBJS_DIR}
