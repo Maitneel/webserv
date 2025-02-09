@@ -2,6 +2,7 @@
 #include <sys/fcntl.h>
 #include <cstring>
 
+#include <fstream>
 #include <string>
 #include <vector>
 #include <utility>
@@ -65,30 +66,25 @@ FileSignatures::~FileSignatures() {
 }
 
 const std::string &FileSignatures::GetMIMEType(const std::string &file_name) const {
-    const int fd = open(file_name.c_str(), O_RDONLY);
-    if (fd < 0) {
+    std::ifstream ifs(file_name.c_str());
+    if (!ifs) {
         return this->octed_;
     }
-    unsigned char *buf = new unsigned char[max_length_ + 1];
-    bzero(buf, max_length_ + 1);
-    // 強欲が過ぎる //
-    int read_ret;
-    if ((read_ret = read(fd, buf, max_length_)) < 0) {
-        close(fd);
-        delete [] buf;
-        throw std::runtime_error("read: fail");
-    }
-    close(fd);
 
-    std::vector<int> head(buf, buf + (sizeof(char) * max_length_));
+    std::vector<int> head;
+    unsigned char c;
+    for (int i = 0; i < max_length_ && !ifs.eof(); i++) {
+        c = ifs.get();
+        head.push_back((int)(c));
+    }
+    ifs.close();
+
+
     for (size_t i = 0; i < magic_numbers.size(); i++) {
         if (this->IsIncludeInFront(head, magic_numbers[i].first)) {
-            delete [] buf;
             return magic_numbers[i].second;
         }
     }
-
-    delete [] buf;
     return this->octed_;
 }
 
