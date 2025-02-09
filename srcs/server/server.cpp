@@ -69,18 +69,6 @@ std::string get_formated_date() {
     return now_string;
 }
 
-std::string read_request(int fd) {
-    char buf[BUFFER_SIZE];
-    std::string content;
-    int n_read = recv(fd, buf, BUFFER_SIZE-1, 0);
-    debug(n_read);
-    if (n_read < 0) {
-        return "";
-    }
-    buf[n_read] = '\0';
-    return std::string(buf, n_read);
-}
-
 // void response_to_client(int fd, const HTTPResponse& response) {
 //     std::string response_raw = response.toString();
 //     if (send(fd, response_raw.c_str(), response_raw.length(), 0) != 0)
