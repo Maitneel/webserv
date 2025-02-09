@@ -75,7 +75,7 @@ const std::string &FileSignatures::GetMIMEType(const std::string &file_name) con
     unsigned char c;
     for (int i = 0; i < max_length_ && !ifs.eof(); i++) {
         c = ifs.get();
-        head.push_back((int)(c));
+        head.push_back(static_cast<int>(c));
     }
     ifs.close();
 
