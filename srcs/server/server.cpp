@@ -511,9 +511,8 @@ std::string get_error_page(const int &stat, const ServerConfig &config) {
 }
 
 void Server::SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd) {
-    // TODO(maitneel): エラーページを返すようにする //
     std::string error_page_body = get_error_page(stat, config);
-    
+
     HTTPResponse res(stat, "text/html", error_page_body);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 
