@@ -260,7 +260,6 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
     int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
     if (0 <= fd) {
         context->content_type = GetContentType(path);
-        cerr << "content_type: " << context->content_type << endl;
         context->file_fd_ = fd;
         dispatcher_.RegisterFileFd(fd, connection_fd);
         return;
