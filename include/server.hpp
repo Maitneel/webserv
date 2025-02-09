@@ -10,7 +10,6 @@
 #include "http_request.hpp"
 #include "http_response.hpp"
 #include "http_context.hpp"
-#include "poll_selector.hpp"
 #include "event_dispatcher.hpp"
 
 #define MAX_BACKLOG 20000

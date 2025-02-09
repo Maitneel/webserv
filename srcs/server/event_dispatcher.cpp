@@ -22,8 +22,6 @@ using std::endl;
 #include "event_dispatcher.hpp"
 #include "extend_stdlib.hpp"
 
-#include "poll_selector.hpp"
-
 #define BUFFER_SIZE 1048576
 #define MAX_NUMBER_OF_CONNECTION 10
 
