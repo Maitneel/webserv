@@ -35,7 +35,6 @@ struct ServerConfig {
  public :
     std::string server_name_;
     int         port_;
-    std::string error_page_;
     std::map<std::string, LocationConfig> location_configs_;  // <url, config> //
     std::map<int, std::string> error_page_path_;
     std::string ToString();

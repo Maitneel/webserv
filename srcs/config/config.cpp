@@ -171,9 +171,11 @@ std::string ServerConfig::ToString() {
     std::stringstream ss;
     ss << "server_name: " << server_name_ << std::endl;
     ss << "port: " << port_ << std::endl;
-    ss << "error_page: " << error_page_ << std::endl;
-    std::map<std::string, LocationConfig>::iterator it;
-    for (it=location_configs_.begin(); it != location_configs_.end(); it++) {
+    for (std::map<int, std::string>::iterator it = error_page_path_.begin(); it != error_page_path_.end(); it++) {
+        ss << "error_page: " << it->first << " " << it->second << std::endl;
+    }
+
+    for (std::map<std::string, LocationConfig>::iterator it=location_configs_.begin(); it != location_configs_.end(); it++) {
         ss << it->first << std::endl;
         ss << it->second.ToString() << std::endl;
     }

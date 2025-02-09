@@ -286,11 +286,26 @@ void ConfigParser::parse_server_name_directive(ServerConfig *server_config) {
     Consume(";");
 }
 
+void ConfigParser::valid_status_code(const std::string& str) {
+    if (str.length() > 3 || str.length() == 0) {
+        throw InvalidConfigException(current_line_, "status code must 3 digit");
+    }
+    if (!(std::isdigit(str[0]) && std::isdigit(str[1]) && std::isdigit(str[2]))) {
+        throw InvalidConfigException(current_line_, "status code must 3 digit");
+    }
+}
+
 void ConfigParser::parse_error_page(ServerConfig *server_config) {
     Consume("error_page");
+    const std::string status_code_str = ConsumeToken();
+    valid_status_code(status_code_str);
+    int status_code = std::atoi(status_code_str.c_str());
     const std::string page_path = ConsumeToken();
     valid_error_page_path(page_path);
-    server_config->error_page_ = page_path;
+    if (server_config->error_page_path_.find(status_code) != server_config->error_page_path_.end()) {
+        throw InvalidConfigException(current_line_, "duplicate error page status code.");
+    }
+    server_config->error_page_path_.insert(std::make_pair(status_code, page_path));
     Consume(";");
 }
 
@@ -300,7 +315,9 @@ void ConfigParser::parse_server_block(std::map<ServerConfigKey, ServerConfig>* c
     Consume("{");
     parse_listen(&server_config);
     parse_server_name_directive(&server_config);
-    parse_error_page(&server_config);
+    while (GetToken() == "error_page") {
+        parse_error_page(&server_config);
+    }
     parse_location_directives(&server_config);
     Consume("}");
 
