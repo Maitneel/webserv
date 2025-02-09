@@ -1,6 +1,6 @@
 #include <string>
 
-// TODO(maitneel): 必要であるようならする(本来はやるべき） //
+// 必要であるようならする(本来はやるべき） //
 
 namespace rfc3875 {
 // https://datatracker.ietf.org/doc/html/rfc3875#section-2.2
@@ -41,7 +41,6 @@ namespace rfc3875 {
 // bool is_token_element(const char &c);
 
 bool is_meta_valiable_value(const std::string &s) {
-    // TODO(maitneel): やる //
     (void)(s);
     return true;
 }

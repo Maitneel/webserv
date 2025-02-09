@@ -62,7 +62,6 @@ static std::string gen_html_text(const std::set<FileStat> &dir_info, const std::
 
 static FileStat create_filestat(const struct dirent *file_element, const std::string &dir_name, const std::string &req_path) {
     std::string file_name = file_element->d_name;
-    // TODO(maitneel): dir_nameは常に'/'で終わるべきなので本来"/"を追加する必要はない //
     std::string file_path = dir_name + "/" + file_name;
     struct stat file_info;
     if (stat(file_path.c_str(), &file_info) != 0) {

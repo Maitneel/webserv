@@ -37,12 +37,11 @@ void HTTPRequest::valid_allow(const std::string &value) {
     try {
         this->allow_ = convert_allow_to_vector(value);
     } catch (InvalidHeader &e) {
-        // TODO(maitneel)  : 後で考える
+        // 後で考える //
     }
 }
 
 void HTTPRequest::valid_authorization(const std::string &value) {
-    // TODO(maitneel)
     (void)(value);
 }
 
@@ -151,7 +150,7 @@ void HTTPRequest::valid_expires(const std::string &value) {
 }
 
 void HTTPRequest::valid_form(const std::string &value) {
-    // TODO(maitneel)  : 必要があればやります //
+    // 必要があればやります //
     // if (!valid_mailbox(value)) {
     //     throw InvalidHeader(kForm);
     // }
@@ -342,13 +341,10 @@ size_t HTTPRequest::register_field(const std::vector<std::string> &splited_buffe
             throw InvalidRequest(kHTTPHeader);
         }
         std::pair<std::string, std::string> header_pair = make_header_pair(splited_buffer[i]);
-        // if (this->protocol == HTTP_1_1) {
-            // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
-            // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
-            // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
-            // TODO(maitneel): ここtrimしていいのかよくわかんない
-            header_pair.second = trim_string(header_pair.second, " \0x09");
-        // }
+        // https://www.rfc-editor.org/rfc/rfc9110.html#name-field-values
+        // >> a recipient of CR, LF, or NUL within a field value MUST either reject the message or replace each of those characters with SP before further processing or forwarding of that message. Field values containing other CTL characters are also invalid;
+        // この reject って400系のresponseを返せってことなのか、filedを無視しろってことなのかどっち? //
+        header_pair.second = trim_string(header_pair.second, " \0x09");
         std::map<std::string, std::vector<std::string> >::iterator it = this->header_.find(header_pair.first);
         if (it == this->header_.end()) {
             this->header_.insert(make_pair(header_pair.first, std::vector<std::string>(1, header_pair.second)));
@@ -607,7 +603,6 @@ void HTTPRequestBody::SetHeader(const HTTPRequest &req) {
 
 void HTTPRequestBody::AddBuffer(const std::string &buffer, size_t *used_buffer_size) {
     if (is_chunked_) {
-        // TODO(maitneel): 可能であればused_buffer_sizeを詰めれるようにする //
         if (used_buffer_size != NULL) {
             // とりあえず-1を入れておく(特に意味はない) //
             *used_buffer_size = -1;

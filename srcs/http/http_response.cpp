@@ -173,7 +173,6 @@ void HTTPResponse::AddHeader(const std::string &name, const std::string &value) 
 std::string HTTPResponse::toString() const {
     std::stringstream ss;
 
-    // TODO(taksaito): Content-Type の判定や、description の文字の処理を実装。
     ss <<  HTTPResponse::kHTTPVersion << " " << this->status_code_ << " " << this->description_ << "\r\n";
     ss << "Content-Type: " << this->content_type_ << "\r\n";
     std::map<std::string, std::vector<std::string> >hoge;

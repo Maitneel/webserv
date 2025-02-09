@@ -71,7 +71,7 @@ static void add_gateway_interface_to_env(std::vector<std::string> *env) {
 }
 
 static void add_path_info_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
-    // TODO(maitneel): 実装しないかも //
+    // 実装しないかも //
     (void)(req);
     (void)(env);
 }
@@ -83,7 +83,7 @@ static void add_query_string_to_env(const HTTPRequest &req, std::vector<std::str
         return;
     }
     std::string query_string = req.get_request_uri().substr(question_index);
-    // TODO(maitneel): valid query_string;
+    // valid query_string;
     if (!rfc_cgi::is_meta_valiable_value(query_string)) {
         env->push_back(make_env_format("QUERY_STRING", ""));
         return;
@@ -92,14 +92,14 @@ static void add_query_string_to_env(const HTTPRequest &req, std::vector<std::str
 }
 
 static void add_remote_addr_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
-    // TODO(maitneel): client の IP address を入れるがわからないので後でする //
+    // client の IP address を入れるがわからないので後でする //
     (void)(req);
     (void)(env);
 }
 
 // REMOTE_HOST は~めんどくさいから~わからないからやらないでいいかなー //
 
-// REMOTE_USER MUST　って書いてあったけど今のところいかなる認証もサポートしてないから作んなくて良くない？ //
+// REMOTE_USER MUST って書いてあったけど今のところいかなる認証もサポートしてないから作んなくて良くない？ //
 
 static void add_method_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
     // valid してエラーになっても困るししなくていいよね? //
@@ -107,7 +107,7 @@ static void add_method_to_env(const HTTPRequest &req, std::vector<std::string> *
 }
 
 static void add_script_name_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
-    // TODO(maitneel): なんかMUSTって書いてあるけどよくわかんないからあとで　　//
+    // なんかMUSTって書いてあるけどよくわかんないからあとで //
     (void)(req);
     (void)(env);
 }
@@ -117,7 +117,7 @@ static void add_server_name_to_env(const HTTPRequest &req, std::vector<std::stri
 }
 
 static void add_server_port_to_env(const HTTPRequest &req, std::vector<std::string> *env) {
-    // TODO(maitneel): port 持てるようにしないと実装できねぇ〜(MUST) //
+    // port 持てるようにしないと実装できねぇ〜(MUST) //
     (void)(req);
     (void)(env);
 }
