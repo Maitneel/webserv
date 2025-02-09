@@ -8,6 +8,7 @@
 #include "http_response.hpp"
 #include "extend_stdlib.hpp"
 #include "http_validation.hpp"
+#include "http_exception.hpp"
 
 static std::string get_location(const std::string &first_line) {
     std::string::size_type front = first_line.find_first_not_of(" :", strlen("Location"));
@@ -96,7 +97,7 @@ void CGIResponse::register_body(const std::vector<std::string> &splited_by_lf, c
     }
 }
 
-CGIResponse::CGIResponse(const std::string &buffer) {
+CGIResponse::CGIResponse(const std::string &buffer)  : status_code_(500), type_(kUnknownType) {
     std::vector<std::string> splited_by_lf = split(buffer, "\n");
     if (splited_by_lf[0].find("Status:") != std::string::npos) {
         splited_by_lf.erase(splited_by_lf.begin());
@@ -122,6 +123,9 @@ CGIResponse::CGIResponse(const std::string &buffer) {
     this->register_body(splited_by_lf, line_index);
     if (this->type_ == kClientRedirectResponse && this->body_ != "") {
         this->type_ = kClientRedirectResponseWithDocument;
+    }
+    if (this->type_ != kDocumentResponse) {
+        throw MustReturnHTTPStatus(500);
     }
 }
 
