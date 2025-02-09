@@ -18,6 +18,8 @@ struct LocationConfig {
 
     std::string ToString();
     const LocationConfig operator=(const LocationConfig &rhs);
+
+    LocationConfig();
 };
 
 struct ServerConfigKey {

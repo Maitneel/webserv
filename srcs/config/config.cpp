@@ -6,6 +6,14 @@
 
 #include "config.hpp"
 
+LocationConfig::LocationConfig():
+name_(""),
+document_root_(""),
+autoindex_(false),
+cgi_path_(""),
+max_body_size_(100),
+redirect_("") {}
+
 const LocationConfig LocationConfig::operator=(const LocationConfig &rhs) {
     if (this == &rhs) {
         return *this;
