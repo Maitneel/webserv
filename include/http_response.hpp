@@ -63,6 +63,7 @@ class HTTPResponse {
     std::string toString() const;
 };
 
+std::string GenerateDescription(HTTPResponse::StatusCode status_code);
 HTTPResponse::StatusCode convert_status_code_to_enum(const int &code);
 
 HTTPResponse create_redirect_response(const std::string &redirecto_to);

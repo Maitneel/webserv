@@ -489,36 +489,32 @@ void Server::SendresponseFromFile(const int &connection_fd, const std::string &f
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 }
 
+std::string get_error_page(const int &stat, const ServerConfig &config) {
+    std::map<int, std::string>::const_iterator error_page_it = config.error_page_path_.find(stat);
+    std::ifstream ifs;
+    if (error_page_it == config.error_page_path_.end()) {
+        ifs.setstate(std::ios_base::failbit);
+    } else {
+        ifs.open(error_page_it->second.c_str());
+    }
+
+    std::string error_page_body;
+    if (ifs) {
+        std::stringstream ss;
+        ss << ifs.rdbuf();
+        error_page_body = ss.str();
+    } else {
+        error_page_body = GenerateDescription(convert_status_code_to_enum(stat));
+    }
+    ifs.close();
+    return error_page_body;
+}
+
 void Server::SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd) {
     // TODO(maitneel): エラーページを返すようにする //
-    std::string error_message;
-
-    if (stat == HTTPResponse::kBadRequest) {
-        error_message = "BadRequest";
-    }
-    if (stat == HTTPResponse::kForbidden) {
-        error_message = "Forbidden";
-    }
-    if (stat == HTTPResponse::kNotFound) {
-        error_message = "NotFound";
-    }
-    if (stat == HTTPResponse::kMethodNotAllowed) {
-        error_message = "MethodNotAllowed";
-    }
-    if (stat == HTTPResponse::kPayloadTooLarge) {
-        error_message = "PayloadTooLarge";
-    }
-    if (stat == HTTPResponse::kRequestTimeout) {
-        error_message = "RequestTimeout";
-    }
-    if (stat == HTTPResponse::kInternalServerErrror) {
-        error_message = "InternalServerErrror";
-    }
-    if (stat == HTTPResponse::kNotImplemented) {
-        error_message = "NotImplemented";
-    }
-
-    HTTPResponse res(stat, "text/html", error_message);
+    std::string error_page_body = get_error_page(stat, config);
+    
+    HTTPResponse res(stat, "text/html", error_page_body);
     dispatcher_.add_writen_buffer(connection_fd, res.toString());
 
     (void)(config);
