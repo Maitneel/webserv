@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "server.hpp"
-#include "poll_selector.hpp"
 #include "http_exception.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
