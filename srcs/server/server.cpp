@@ -224,15 +224,12 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
-// TODO(maitneel): エラーの場合、exception投げた方が適切かもせ入れない　 //
 void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
     std::string path = document_root + req_path;
     const int &connection_fd = context->GetConnectionFD();
 
     if (IsDir(path.c_str())) {
-        // TODO(taksaito): autoindex か、 index をみるようにする
-        // 現在は一旦、index.html をみるように処理
         if (location_config.autoindex_) {
             try {
                 HTTPResponse res(HTTPResponse::kOK, "text/html", generate_autoindex_file(path, req_path));
@@ -394,7 +391,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     const int port = socket_list_.GetPort(socket_fd);
     req.print_info();
     std::string host_name = req.get_host_name();
-    // TODO(maitneel): origin-form以外に対応できていない //
+    // origin-form以外に対応できていない //
     const std::string &req_uri = req.get_request_uri().substr(0, req.get_request_uri().find('?'));
     std::string location = req_uri;
     if (location.length() == 0 || location.at(location.length() - 1) != '/') {
@@ -483,7 +480,6 @@ void Server::SendresponseFromCGIresponse(const int &socket_fd, const std::string
 }
 
 void Server::SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type) {
-    // TODO(maitneel): content-typeをどうにかする //
     if (map_at(&ctxs_, connection_fd).sent_response_) {
         return;
     }
@@ -529,7 +525,6 @@ const ServerConfig &Server::GetConfig(const int &port, const std::string &host_n
     if (config_it != config_.end()) {
         return config_it->second;
     } else {
-        // TODO(maitneel): 例外をいいかんじのやつにする //
         throw std::runtime_error("no exist config");
     }
 }
@@ -580,7 +575,7 @@ void Server::EventLoop() {
                 //     CloseConnection(event.connection_fd);
                 //     continue;
                 // }
-                // TODO(maitneel): 辻褄合わせをどうにかする //
+                // 辻褄合わせをどうにかする //
                 try {
                     ctx.AppendBuffer(dispatcher_.get_read_buffer(event_fd));
                 } catch (MustReturnHTTPStatus &e) {
@@ -598,13 +593,11 @@ void Server::EventLoop() {
                             ctx.ParseRequestHeader(port);
                             ctx.SetMaxBodySize(GetLocationConfig(port, ctx.GetHTTPRequest()).max_body_size_);
                         } catch (const MustReturnHTTPStatus &e) {
-                            // TODO(maitneel): default のエラーを返すよにする //
                             dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(e.GetStatusCode(), server_config, event.connection_fd);
                             continue;
                         } catch (std::exception &e) {
-                            // TODO(maitneel): ほんとは InvalidHeader　と InvalidRequestだけでいい
                             dispatcher_.UnregisterConnectionReadEvent(event.connection_fd);
                             const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                             this->SendErrorResponce(400, server_config, event.connection_fd);
@@ -621,7 +614,6 @@ void Server::EventLoop() {
                     // CloseConnection(event.connection_fd);
                 }
             } else if (event.event == kReadableFile) {
-                // TODO(maitneel): Do it;
             } else if (event.event == kFileEndOfRead) {
                 const HTTPContext &ctx = map_at(&ctxs_, event.connection_fd);
                 if (ctx.is_cgi_ && ctx.cgi_info_.is_proccess_end) {
@@ -632,13 +624,9 @@ void Server::EventLoop() {
                     dispatcher_.UnregisterFileFd(event_fd);
                 }
             } else if (event.event == kresponseWriteEnd) {
-                // TODO(maitneel): Do it (これだけでいいのか？？？);
-                // fdのclose忘れが出てきたらここが原因 //
-                // cerr << "resend: " << event_fd << endl;
                 resend_close++;
                 this->CloseConnection(event.connection_fd);
             } else if (event.event == kFileWriteEnd) {
-                // TODO(maitneel): Do it;
                 shutdown(event_fd, SHUT_WR);
             } else if (event.event == kChildProcessChanged) {
                 // Nothing to do (processed)
@@ -658,7 +646,6 @@ void Server::EventLoop() {
                 }
                 // TODO(maitneel): socket の read側を監視対象から外す //
             } else if (event.event == kServerEventFail) {
-                // TODO(maitneel): Do it;
                 if (event_fd == event.connection_fd) {
                     fail_close++;
                     this->CloseConnection(event.connection_fd);

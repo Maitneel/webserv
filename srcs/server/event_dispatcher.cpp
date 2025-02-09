@@ -25,7 +25,6 @@ using std::endl;
 #define BUFFER_SIZE 1048576
 #define MAX_NUMBER_OF_CONNECTION 10
 
-// TODO(maitneel): たぶんおそらくメイビー移動させる //
 int ft_accept(int fd);
 
 long get_usec() {
@@ -728,7 +727,6 @@ void ServerEventDispatcher::UnregisterWithClose(const int &fd) {
     if (type == kUnknownFd) {
         return;
     } else if (type == kConnection) {
-        // TODO(maitneel): Bug: 多分支配下のfdがcloseできていない　(F5 attack　すると使用しているfdが増加していく現象が確認できる)
         std::set<int> children_fds = registerd_fds_.GetConnectionChildren(fd);
         for (std::set<int>::iterator it = children_fds.begin(); it != children_fds.end(); it++) {
             this->UnregisterWithClose(*it);
