@@ -467,15 +467,19 @@ void Server::CloseConnection(const int connection_fd) {
     ctxs_.erase(connection_fd);
 }
 
-void Server::SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string) {
+void Server::SendresponseFromCGIresponse(const int &socket_fd, const std::string &host_name, const int &connection_fd, const std::string &cgi_response_string) {
     if (map_at(&ctxs_, connection_fd).sent_response_) {
         return;
     }
     map_at(&ctxs_, connection_fd).sent_response_ = true;
-    CGIResponse cgi_res(cgi_response_string);
-    HTTPResponse res = cgi_res.make_http_response();
-
-    dispatcher_.add_writen_buffer(connection_fd, res.toString());
+    try {
+        CGIResponse cgi_res(cgi_response_string);
+        HTTPResponse res = cgi_res.make_http_response();
+        dispatcher_.add_writen_buffer(connection_fd, res.toString());
+    } catch (MustReturnHTTPStatus &e) {
+        const ServerConfig &config = GetConfig(socket_list_.GetPort(socket_fd), host_name);
+        SendErrorResponce(e.GetStatusCode(), config, connection_fd);
+    }
 }
 
 void Server::SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type) {
@@ -621,7 +625,7 @@ void Server::EventLoop() {
             } else if (event.event == kFileEndOfRead) {
                 const HTTPContext &ctx = map_at(&ctxs_, event.connection_fd);
                 if (ctx.is_cgi_ && ctx.cgi_info_.is_proccess_end) {
-                    this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    this->SendresponseFromCGIresponse(event.socket_fd, ctx.request_.get_host_name(),  event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     dispatcher_.UnregisterFileFd(event_fd);
                 } else if (!ctx.is_cgi_) {
                     this->SendresponseFromFile(event.connection_fd, dispatcher_.get_read_buffer(event_fd), ctx.content_type);
@@ -659,8 +663,9 @@ void Server::EventLoop() {
                     fail_close++;
                     this->CloseConnection(event.connection_fd);
                 } else if (event_fd == event.file_fd) {
-                    if (ctxs_.find(event.connection_fd) != ctxs_.end() && map_at(&ctxs_, event.connection_fd).is_cgi_) {
-                        this->SendresponseFromCGIresponse(event.connection_fd, dispatcher_.get_read_buffer(event_fd));
+                    const HTTPContext &ctx = map_at(&ctxs_, event.connection_fd);
+                    if (ctxs_.find(event.connection_fd) != ctxs_.end() && ctx.is_cgi_) {
+                        this->SendresponseFromCGIresponse(event.socket_fd, ctx.request_.get_host_name(),  event.connection_fd, dispatcher_.get_read_buffer(event_fd));
                     }
                     dispatcher_.UnregisterFileFd(event_fd);
                 }

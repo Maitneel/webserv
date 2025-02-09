@@ -43,7 +43,7 @@ class Server {
     void routing(const int &connection_fd, const int &socket_fd);
     void CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name);
     void HandlingChildPID();
-    void SendresponseFromCGIresponse(const int &connection_fd, const std::string &cgi_response_string);
+    void SendresponseFromCGIresponse(const int &socket_fd, const std::string &host_name, const int &connection_fd, const std::string &cgi_response_string);
     void SendresponseFromFile(const int &connection_fd, const std::string &file_content, const std::string &content_type);
     void SendErrorResponce(const int &stat, const ServerConfig config, const int &connection_fd);
     void CloseConnection(const int connection_fd);
