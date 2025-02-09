@@ -73,6 +73,8 @@ std::string ConfigParser::GetToken() {
         idx++;
     }
     do {
+        if (idx >= raw_str_.length())
+            return token;
         token += raw_str_[idx];
         idx++;
     } while(idx < raw_str_.length() && !isspace(raw_str_[idx]) && raw_str_[idx] != ';');
@@ -181,6 +183,8 @@ void ConfigParser::parse_index_files(LocationConfig *location_config) {
     do {
         std::string index_file = ConsumeToken();
         location_config->index_.insert(index_file);
+        if (GetToken() == "")
+            throw InvalidConfigException(current_line_, "expect ';'");
     } while(GetToken() != ";");
 }
 
@@ -205,6 +209,8 @@ void ConfigParser::parse_root_directive(LocationConfig *location_config) {
 void ConfigParser::parse_method(LocationConfig *location_config) {
     do {
         location_config->methods_.insert(ConsumeToken());
+        if (GetToken() == "")
+            throw InvalidConfigException(current_line_, "expect ';'");
     } while(GetToken() != ";");
 }
 
