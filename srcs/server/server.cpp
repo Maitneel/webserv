@@ -644,7 +644,7 @@ void Server::EventLoop() {
                     const ServerConfig server_config = (config_.lower_bound(ServerConfigKey(socket_list_.GetPort(event.socket_fd), "")))->second;
                     this->SendErrorResponce(408, server_config, event.connection_fd);
                 }
-                // TODO(maitneel): socket の read側を監視対象から外す //
+                // socket の read側を監視対象から外したほうがいいかもしれない //
             } else if (event.event == kServerEventFail) {
                 if (event_fd == event.connection_fd) {
                     fail_close++;
