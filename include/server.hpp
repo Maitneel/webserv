@@ -41,6 +41,7 @@ class Server {
 
     void RoutingByLocationConfig(HTTPContext *ctx, const ServerConfig &server_config, const LocationConfig &loc_conf, const std::string &req_uri, const int &connection_fd);
     void routing(const int &connection_fd, const int &socket_fd);
+    void RegisterFileResponse(std::string path, HTTPContext *context, const int connection_fd);
     void CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name);
     void HandlingChildPID();
     void SendresponseFromCGIresponse(const int &socket_fd, const std::string &host_name, const int &connection_fd, const std::string &cgi_response_string);
