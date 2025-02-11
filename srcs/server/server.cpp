@@ -241,7 +241,7 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
     if (!IsDir(path.c_str())) {
         try {
             RegisterFileResponse(path, context, connection_fd);
-            return ;
+            return;
         } catch (MustReturnHTTPStatus &e) {
             this->SendErrorResponce(convert_status_code_to_enum(e.GetStatusCode()), server_config, connection_fd);
         }
@@ -259,7 +259,7 @@ void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path,
             try {
                 HTTPResponse res(HTTPResponse::kOK, "text/html", generate_autoindex_file(path, req_path));
                 dispatcher_.add_writen_buffer(connection_fd, res.toString());
-                return ;
+                return;
             } catch (MustReturnHTTPStatus &e) {
                 this->SendErrorResponce(convert_status_code_to_enum(e.GetStatusCode()), server_config, connection_fd);
             }
