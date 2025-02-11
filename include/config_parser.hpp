@@ -16,6 +16,7 @@ class ConfigParser {
     std::string ConsumeToken();
     void Consume(const std::string& expect);
 
+    void valid_method(const std::string& str);
     void valid_status_code(const std::string& str);
     void valid_location_path(const std::string& route);
     void valid_error_page_path(const std::string& path);
