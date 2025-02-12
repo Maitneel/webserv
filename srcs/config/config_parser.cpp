@@ -1,5 +1,6 @@
 #include "config_parser.hpp"
 #include "extend_stdlib.hpp"
+#include "http_validation.hpp"
 #include <string>
 #include <fstream>
 #include <map>
@@ -101,8 +102,8 @@ void ConfigParser::Consume(const std::string& expect) {
 }
 
 void ConfigParser::valid_method(const std::string& str) {
-    if (str != "GET" && str != "POST" && str != "DELETE")
-        throw InvalidConfigException(current_line_, "methd must GET or POST or DELETE");
+    if (!is_token(str))
+        throw InvalidConfigException(current_line_, str + " can not use method.");
     return;
 }
 
