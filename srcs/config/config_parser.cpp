@@ -49,7 +49,7 @@ bool is_file(const std::string& file_path) {
     return (st.st_mode & S_IFREG) == S_IFREG;
 }
 
-ConfigParser::ConfigParser(const std::string &file_path): read_index_(0), current_line_(1) {
+ConfigParser::ConfigParser(const std::string &file_path): read_index_(0), current_line_(1), tokens_("{};") {
     std::ifstream ifs(file_path.c_str());
     if (!is_file(file_path)) {
         throw std::runtime_error(file_path + " is not file.");
@@ -67,18 +67,29 @@ bool ConfigParser::is_end() {
     return read_index_ >= raw_str_.size();
 }
 
+bool ConfigParser::is_config_token(char c) {
+    std::string::const_iterator it = tokens_.begin();
+    for (it = tokens_.begin(); it != tokens_.end(); it++) {
+        if (*it == c)
+            return true;
+    }
+    return false;
+}
+
 std::string ConfigParser::GetToken() {
     std::string token;
     size_t idx = read_index_;
     while (idx < raw_str_.length() && isspace(raw_str_[idx])) {
         idx++;
     }
-    do {
-        if (idx >= raw_str_.length())
-            return token;
+    if (is_config_token(raw_str_[idx])) {
+        token += raw_str_[idx];
+        return token;
+    }
+    while(idx < raw_str_.length() && !isspace(raw_str_[idx]) && !is_config_token(raw_str_[idx])) {
         token += raw_str_[idx];
         idx++;
-    } while(idx < raw_str_.length() && !isspace(raw_str_[idx]) && raw_str_[idx] != ';');
+    }
     return token;
 }
 
