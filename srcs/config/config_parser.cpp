@@ -1,5 +1,6 @@
 #include "config_parser.hpp"
 #include "extend_stdlib.hpp"
+#include "http_validation.hpp"
 #include <string>
 #include <fstream>
 #include <map>
@@ -48,7 +49,7 @@ bool is_file(const std::string& file_path) {
     return (st.st_mode & S_IFREG) == S_IFREG;
 }
 
-ConfigParser::ConfigParser(const std::string &file_path): read_index_(0), current_line_(0) {
+ConfigParser::ConfigParser(const std::string &file_path): read_index_(0), current_line_(1) {
     std::ifstream ifs(file_path.c_str());
     if (!is_file(file_path)) {
         throw std::runtime_error(file_path + " is not file.");
@@ -98,6 +99,12 @@ void ConfigParser::Consume(const std::string& expect) {
     if (token != expect) {
         throw InvalidConfigException(current_line_, "expect " + expect + " but obtain " + token);
     }
+}
+
+void ConfigParser::valid_method(const std::string& str) {
+    if (!is_token(str))
+        throw InvalidConfigException(current_line_, str + " can not use method.");
+    return;
 }
 
 void ConfigParser::valid_location_path(const std::string& path) {
@@ -182,6 +189,8 @@ void ConfigParser::parse_autoindex_directive(LocationConfig *location_config) {
 void ConfigParser::parse_index_files(LocationConfig *location_config) {
     do {
         std::string index_file = ConsumeToken();
+        if (index_file == ";")
+            throw InvalidConfigException(current_line_, "expect index file name but obtained ';'");
         location_config->index_.insert(index_file);
         if (GetToken() == "")
             throw InvalidConfigException(current_line_, "expect ';'");
@@ -208,7 +217,11 @@ void ConfigParser::parse_root_directive(LocationConfig *location_config) {
 
 void ConfigParser::parse_method(LocationConfig *location_config) {
     do {
-        location_config->methods_.insert(ConsumeToken());
+        const std::string method = ConsumeToken();
+        if (method == ";")
+            throw InvalidConfigException(current_line_, "expect method name but obtained ';'");
+        valid_method(method);
+        location_config->methods_.insert(method);
         if (GetToken() == "")
             throw InvalidConfigException(current_line_, "expect ';'");
     } while(GetToken() != ";");
