@@ -212,13 +212,10 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
-std::string prev_path;
-
 void Server::RegisterFileResponse(std::string path, HTTPContext *context, const int connection_fd) {
     if (path.at(path.length() - 1) == '/') {
         path.erase(path.length() - 1);
     }
-    prev_path = path;
     if (access(path.c_str(), F_OK) == -1) {
         throw MustReturnHTTPStatus(404);
     } else if (access(path.c_str(), R_OK) == -1) {
