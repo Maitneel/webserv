@@ -212,45 +212,57 @@ bool IsDir(const std::string& path) {
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
+void Server::RegisterFileResponse(std::string path, HTTPContext *context, const int connection_fd) {
+    if (path.at(path.length() - 1) == '/') {
+        path.erase(path.length() - 1);
+    }
+    if (access(path.c_str(), F_OK) == -1) {
+        throw MustReturnHTTPStatus(404);
+    } else if (access(path.c_str(), R_OK) == -1) {
+        throw MustReturnHTTPStatus(403);
+    }
+    int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
+    if (fd < 0) {
+        throw MustReturnHTTPStatus(500);
+    }
+    context->content_type = GetContentType(path);
+    context->file_fd_ = fd;
+    dispatcher_.RegisterFileFd(fd, connection_fd);
+}
+
 void Server::GetMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config) {
     const std::string &document_root = location_config.document_root_;
     std::string path = document_root + req_path;
     const int &connection_fd = context->GetConnectionFD();
 
-    if (IsDir(path.c_str())) {
+    if (!IsDir(path.c_str())) {
+        try {
+            RegisterFileResponse(path, context, connection_fd);
+            return;
+        } catch (MustReturnHTTPStatus &e) {
+            this->SendErrorResponce(convert_status_code_to_enum(e.GetStatusCode()), server_config, connection_fd);
+        }
+    } else {
+        int error_status = 404;
+        for (std::set<std::string>::iterator it = location_config.index_.begin(); it != location_config.index_.end(); it++) {
+            try {
+                RegisterFileResponse(path + *it, context, connection_fd);
+                return;
+            } catch (MustReturnHTTPStatus &e) {
+                error_status = e.GetStatusCode();
+            }
+        }
         if (location_config.autoindex_) {
             try {
                 HTTPResponse res(HTTPResponse::kOK, "text/html", generate_autoindex_file(path, req_path));
                 dispatcher_.add_writen_buffer(connection_fd, res.toString());
+                return;
             } catch (MustReturnHTTPStatus &e) {
                 this->SendErrorResponce(convert_status_code_to_enum(e.GetStatusCode()), server_config, connection_fd);
             }
-            return;
         }
-
-        path += *(location_config.index_.begin());
+        this->SendErrorResponce(convert_status_code_to_enum(error_status), server_config, connection_fd);
     }
-    if (path.at(path.length() - 1) == '/') {
-        path.erase(path.length() - 1);
-    }
-    // std::cout << "path: " << path << std::endl;
-    if (access(path.c_str(), F_OK) == -1) {
-        this->SendErrorResponce(HTTPResponse::kNotFound, server_config, connection_fd);
-        return;
-    } else if (access(path.c_str(), R_OK) == -1) {
-        this->SendErrorResponce(HTTPResponse::kForbidden, server_config, connection_fd);
-        return;
-    }
-
-    int fd = open(path.c_str(), (O_RDONLY | O_NONBLOCK | O_CLOEXEC));
-    if (0 <= fd) {
-        context->content_type = GetContentType(path);
-        context->file_fd_ = fd;
-        dispatcher_.RegisterFileFd(fd, connection_fd);
-        return;
-    }
-    this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
-    return;
 }
 
 void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path, const ServerConfig &server_config, const LocationConfig &location_config) {
