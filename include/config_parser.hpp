@@ -17,6 +17,7 @@ class ConfigParser {
     std::string ConsumeToken();
     void Consume(const std::string& expect);
 
+    void ThrowInvalidException(const std::string& msg);
     bool is_config_token(char c);
     void valid_method(const std::string& str);
     void valid_status_code(const std::string& str);
