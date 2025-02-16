@@ -414,7 +414,7 @@ void Server::routing(const int &connection_fd, const int &socket_fd) {
     std::string method = req.get_method();
 
     try {
-        LocationConfig location_config = GetLocationConfig(port, req);
+        const LocationConfig& location_config = GetLocationConfig(port, req);
         std::string::size_type location_length = location_config.name_.length();
         this->RoutingByLocationConfig(&ctx, config, location_config, location.substr(location_length), connection_fd);
     } catch (...) {
