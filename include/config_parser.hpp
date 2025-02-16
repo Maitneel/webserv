@@ -11,11 +11,14 @@ class ConfigParser {
     size_t read_index_;
     size_t current_line_;
     std::string raw_str_;
+    const std::string tokens_;
 
     std::string GetToken();
     std::string ConsumeToken();
     void Consume(const std::string& expect);
 
+    void ThrowInvalidException(const std::string& msg);
+    bool is_config_token(char c);
     void valid_method(const std::string& str);
     void valid_status_code(const std::string& str);
     void valid_location_path(const std::string& route);
