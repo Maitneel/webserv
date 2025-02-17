@@ -110,6 +110,9 @@ debug: ${NAME}
 test: debug
 	./test/minimum_run_test.sh ./webserv
 
+ci_test:
+	python ./ci_test/main.py
+
 run: debug
 	./${NAME} ./config/default.conf
 
@@ -130,4 +133,4 @@ show_stat:
 tester: debug
 	./${NAME} ./config/tester.conf
 
-.PHONY: all clean fclean re test lint
+.PHONY: all clean fclean re test lint ci_test
