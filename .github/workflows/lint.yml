@@ -24,3 +24,22 @@ jobs:
       run: pip install cpplint
     - name: "lint check"
       run: make lint
+  test:
+    runs-on: codebuild-github-actions-runner-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: setup python
+      uses: actions/setup-python@v5 
+      with:
+        python-version: '3.10'
+    - name: "install requests"
+      run: pip install requests
+    - name: "build and run"
+      run: | 
+        make show_stat
+        make -C ./cgi_script/post_delete
+        make
+        ./webserv ./review.conf &
+    - name: ci_test
+      run: "make ci_test"
