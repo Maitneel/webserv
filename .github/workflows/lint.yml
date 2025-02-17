@@ -40,6 +40,6 @@ jobs:
         make show_stat
         make -C ./cgi_script/post_delete
         make
-        ./webserv ./review.conf &
+        ./webserv ./config/review.conf &
     - name: ci_test
       run: "make ci_test"
