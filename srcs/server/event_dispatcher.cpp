@@ -591,7 +591,7 @@ ConnectionEvent ServerEventDispatcher::CreateConnectionEvent(const int &fd, cons
 
 void ServerEventDispatcher::MergeDuplicateFd(std::multimap<int, FdEvent> *events) {
     for (std::multimap<int, FdEvent>::iterator it = events->begin(); it != events->end(); it++) {
-        const int &fd = it->first;
+        const int fd = it->first;
         if (events->count(fd) == 1) {
             continue;
         }
