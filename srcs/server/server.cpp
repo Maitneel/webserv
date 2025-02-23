@@ -77,13 +77,14 @@ std::string get_formated_date() {
 // }
 
 int create_inet_socket(int port) {
-    struct addrinfo hints, *res, *ai;
+    struct addrinfo hints, *res = NULL, *ai;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     if (getaddrinfo(NULL, int_to_str(port).c_str(), &hints, &res) != 0) {
+        freeaddrinfo(res);
         return -1;
     }
 
