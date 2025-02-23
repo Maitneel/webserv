@@ -56,7 +56,7 @@ FdManager::~FdManager() {
 
 ReadWriteStatType FdManager::Read() {
     char buffer[BUFFER_SIZE];
-    int read_size = 0;
+    ssize_t read_size = 0;
     if (this->type_ == kSocket) {
         return kDidNotRead;
     }
@@ -86,16 +86,19 @@ ReadWriteStatType FdManager::Write() {
     if (this->writen_buffer_.length() - this->write_head_ == 0) {
         return kSuccess;
     }
-    int writed_size = 0;
+    ssize_t writed_size = 0;
     if (this->type_ == kConnection) {
         writed_size = send(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_), 0);
     } else if (this->type_ == kFile) {
         writed_size = write(this->fd_, this->writen_buffer_.c_str() + this->write_head_, std::min((std::string::size_type)(BUFFER_SIZE), this->writen_buffer_.length() - this->write_head_));
     }
+
     if (0 < writed_size) {
         this->write_head_ += writed_size;
     }
-    if (0 < this->writen_buffer_.size() - this->write_head_) {
+    if (writed_size == -1) {
+        return kFail;
+    } else if (0 < this->writen_buffer_.size() - this->write_head_) {
         return kContinue;
     } else if (writed_size == 0 || this->writen_buffer_.size() - write_head_ == 0) {
         return kSuccess;
