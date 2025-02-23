@@ -77,13 +77,14 @@ std::string get_formated_date() {
 // }
 
 int create_inet_socket(int port) {
-    struct addrinfo hints, *res, *ai;
+    struct addrinfo hints, *res = NULL, *ai;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     if (getaddrinfo(NULL, int_to_str(port).c_str(), &hints, &res) != 0) {
+        freeaddrinfo(res);
         return -1;
     }
 
@@ -106,12 +107,12 @@ int create_inet_socket(int port) {
             close(sock);
             continue;
         }
-        freeaddrinfo(res);
         if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {
             std::runtime_error("fcntl: failed");
         }
         return sock;
     }
+    freeaddrinfo(res);
     return -1;
 }
 
@@ -355,6 +356,9 @@ const LocationConfig &Server::GetLocationConfig(const int &port, const HTTPReque
             break;
         }
         location_length = location.rfind('/', location_length - 1);
+    }
+    if (location_config_it == server_config.location_configs_.end()) {
+       throw MustReturnHTTPStatus(404);
     }
     return location_config_it->second;
 }
