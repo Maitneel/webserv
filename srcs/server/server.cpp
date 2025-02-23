@@ -357,7 +357,7 @@ const LocationConfig &Server::GetLocationConfig(const int &port, const HTTPReque
         location_length = location.rfind('/', location_length - 1);
     }
     if (location_config_it == server_config.location_configs_.end()) {
-       throw std::out_of_range("location config not found");
+       throw MustReturnHTTPStatus(404);
     }
     return location_config_it->second;
 }
