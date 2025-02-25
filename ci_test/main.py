@@ -68,6 +68,46 @@ class SimpleTests(unittest.TestCase):
                 method="GET",
                 url="http://localhost/", body="", expected=400
             ),
+
+            # added by maitneel
+            TestCase(
+                name="method not allow",
+                method="GET",
+                url="http://localhost:8080/post/",
+                body="",
+                expected=405
+            ),
+            # TestCase(
+            #     name="method not allow",
+            #     method="GET",
+            #     url="http://localhost:8080/redirect/",
+            #     body="",
+            #     expected=301
+            # ),
+            TestCase(
+                name="post 10byte",
+                method="POST",
+                url="http://localhost:8080/post/",
+                # crlf があるっぽいので2byte少ない
+                body="01234567",
+                expected=201
+            ),
+            TestCase(
+                name="post 11byte",
+                method="POST",
+                url="http://localhost:8080/post/",
+                # crlf があるっぽいので2byte少ない
+                body="012345678",
+                expected=413
+            ),
+            TestCase(
+                name="not found file",
+                method="GET",
+                url="http://localhost:8080/index/hogehogefugafugapiyopiyo",
+                # crlf があるっぽいので2byte少ない
+                body="012345678",
+                expected=404
+            ),
         ]
 
         for c in testcases:
