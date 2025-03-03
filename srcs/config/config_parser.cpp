@@ -365,6 +365,8 @@ std::map<ServerConfigKey, ServerConfig> ConfigParser::Parse() {
     std::map<ServerConfigKey, ServerConfig> config;
 
     parse_config(&config);
+    if (config.size() == 0)
+        ThrowInvalidException("empty config");
     return config;
 }
 
