@@ -190,6 +190,8 @@ std::multimap<int, FdEvent> FdEventDispatcher::ReadBuffer() {
                     event_type = kEOF;
                 } else if (stat == kDidNotRead) {
                     event_type = kChanged;
+                } else if (stat == kFail) {
+                    event_type = kFdEventFail;
                 } else {
                     event_type = kHaveReadableBuffer;
                 }
