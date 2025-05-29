@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="header1">Hello Webserve!!</h1>
+    <script>
+        const h1 = document.getElementById('header1');
+
+        let degree = 0;
+        setInterval(() => {
+            degree += 10;
+            degree %= 360;
+            h1.style.transform = "rotateX(" + degree + "deg)"
+
+        }, 50);
+
+    </script>
+</body>
+</html>

@@ -70,6 +70,10 @@ std::string create_template_end() {
     std::string s;
     std::ifstream request_js_file(JS_FILE_PATH);
     html += "    <script>\n";
+    html += "    const messageBoardURL = '";
+    html += REQUEST_URL;
+    html += "';\n";
+
     while (std::getline(request_js_file, s)) {
         html += "    " + s + "\n";
     }
