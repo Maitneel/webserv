@@ -200,6 +200,10 @@ std::string GetContentType(const std::string path) {
 
     if (ext == ".html") {
         return "text/html";
+    } else if (ext == ".js") {
+        return "text/javascript";
+    } else if (ext == ".css") {
+        return "text/css";
     } else if (ext == ".txt") {
         return "text/plain";
     }
