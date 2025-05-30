@@ -1,12 +1,12 @@
 services:
-  webserve:
+  webserv:
     build: .
     volumes:
       - type: volume
-        source: webserve-volume
+        source: webserv-volume
         target: /var/www/html/data
     networks:
-      - webserve-network
+      - webserv-network
     ports:
       - "80:80"
       - "443:443"
@@ -14,12 +14,12 @@ services:
 
 
 volumes:
-  webserve-volume:
-    name: webserve-volume
+  webserv-volume:
+    name: webserv-volume
     driver: local
 
 networks:
-  webserve-network:
+  webserv-network:
     driver: bridge
     ipam:
       driver: default
