@@ -26,7 +26,7 @@ void get_method(const std::multimap<std::string, std::string> &cookie) {
     }
 
     std::cout << "Content-Type:text/html" << "\n";
-    std::cout << get_cookie_header(cookie, &auth_db);
+    // std::cout << get_cookie_header(cookie, &auth_db);
     std::cout << "\n";
     // while (getline(ifs, s)) {
     //     debug(s);
