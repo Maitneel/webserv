@@ -55,8 +55,8 @@ server {
 動作確認を目的として、Dockerでの実行ができます。
 - 初期状態では、`docker_resource/server.conf`がconfigファイルとして使用されます
 - `docker_resource/html`内のファイルがドキュメントルートにコピーされます。
-- [チェスタイマー](https://github.com/maitneel/chess-timer)がドキュメントルートにcloneされます。
-- CGIのサンプルとして`./cgi_script/message_board`(匿名掲示板のようなプログラムです)がコンテナないにコピーされ、`/message_board/`にルーティングされます。
+- [chess-timer](https://github.com/maitneel/chess-timer)がドキュメントルートにcloneされます。
+- CGIのサンプルとして`./cgi_script/message_board`(匿名掲示板のようなプログラムです)がコンテナ内にコピーされ、`/message_board/`にルーティングされます。
 
 `make docker`で実行ができるようになっていますが、Docker起動後にconfigや表示するファイル、Dockerfileなどを変更した場合は再度ビルドが必要になるため、`docker compose build`を実行してください。
 
