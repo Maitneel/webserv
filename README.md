@@ -13,7 +13,7 @@ webservはHTTP、HTTPサーバーの学習を目的にC++98で作成されたHTT
 - `g++` (g++以外のC++用のコンパイラでもコンパイルできると思いますが、未検証です) 
 - `make`
 
-以下のOSでの動作を確認しています。
+以下の環境での動作を確認しています。
 |OS|コンパイラ|make|
 |-----|------|-----|
 |Debian GNU/Linux 12.9 (bookworm) (Linux debian 6.1.0-31-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.128-1 (2025-02-07) x86_64 GNU/Linux)|g++ (Debian 12.2.0-14) 12.2.0|GNU Make 4.3|
