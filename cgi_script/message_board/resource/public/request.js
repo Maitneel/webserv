@@ -1,5 +1,3 @@
-const messageBoardURL = '/cgi/message_board/';
-
 (function (){
     'use strict';
 

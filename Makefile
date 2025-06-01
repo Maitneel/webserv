@@ -136,4 +136,7 @@ tester: debug
 review: ${NAME}
 	./${NAME} ./config/review.conf
 
+docker:
+	docker compose up
+
 .PHONY: all clean fclean re test lint ci_test

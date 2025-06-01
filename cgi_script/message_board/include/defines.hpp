@@ -1,11 +1,29 @@
 #ifndef INCLUDE_DEFINES_HPP_
 #define INCLUDE_DEFINES_HPP_
 
-#define INDEX_HTML_PATH_CSTR "./cgi_script/message_board/resource/public/index.html"
-#define JS_FILE_PATH "./cgi_script/message_board/resource/public/request.js"
+#ifndef INDEX_HTML_PATH_CSTR
+# define INDEX_HTML_PATH_CSTR "./cgi_script/message_board/resource/public/index.html"
+#endif
+
+#ifndef JS_FILE_PATH
+# define JS_FILE_PATH "./cgi_script/message_board/resource/public/request.js"
+#endif
+
 #define INDEX_HTML_PATH (std::string)(INDEX_HTML_PATH_CSTR)
-#define PUBLIC_RESOURCE_ROOT (std::string)("./cgi_script/message_board/resource/public")
-#define PRIVATE_RESOURCE_ROOT (std::string)("./cgi_script/message_board/resource/private")
+
+#ifndef PUBLIC_RESOURCE_ROOT_CSTR
+# define PUBLIC_RESOURCE_ROOT_CSTR (std::string)("./cgi_script/message_board/resource/public")
+#endif
+#define PUBLIC_RESOURCE_ROOT (std::string)(PUBLIC_RESOURCE_ROOT_CSTR)
+
+#ifndef PRIVATE_RESOURCE_ROOT_CSTR
+# define PRIVATE_RESOURCE_ROOT_CSTR (std::string)("./cgi_script/message_board/resource/private")
+#endif
+#define PRIVATE_RESOURCE_ROOT (std::string)(PRIVATE_RESOURCE_ROOT_CSTR) 
+
+#ifndef REQUEST_URL
+# define REQUEST_URL "/cgi/message_board/"
+#endif
 
 #define MESSAGE_DB_PATH (PRIVATE_RESOURCE_ROOT + "/message_db.simple_db")
 #define AUTH_DB_PATH (PRIVATE_RESOURCE_ROOT + "/auth_db.simple_db")
@@ -19,18 +37,26 @@
 #define DB_POSTED_BY_USER_POREFIX (std::string)("posted_message_")
 #define DB_IMAGE_PATH_PREFIX (std::string)("image_path_image_")
 
+#define USER_ID_LENGTH 16
+#define USER_AUTH_STRING_LENGTH 128
+
+#ifndef RESOURCE_IMAGE_PREFIX_CSTR
+# define RESOURCE_IMAGE_PREFIX_CSTR "./docs/images_"
+#endif
+
+#define RESOURCE_IMAGE_PREFIX (std::string)(RESOURCE_IMAGE_PREFIX_CSTR)
+
+#ifndef IMAGE_URL_PREFIX_CSTR
+# define IMAGE_URL_PREFIX_CSTR "./images_"
+#endif
+#define IMAGE_URL_PREFIX (std::string)(IMAGE_URL_PREFIX_CSTR)
+
 #define COOKIE_USER_ID_KEY (std::string)("user")
 #define COOKIE_USER_AUTH_KEY (std::string)("auth_key")
 // とりあえず1日 //
 #define COOKIE_MAX_AGE ("86400")
-#define COOKIE_PATH ("/cgi/message_board")
+#define COOKIE_PATH REQUEST_URL
 
-#define USER_ID_LENGTH 16
-#define USER_AUTH_STRING_LENGTH 128
-
-#define RESOURCE_IMAGE_PREFIX (std::string)("./docs/image_")
-
-#define IMAGE_URL_PREFIX (std::string)("/image_")
 
 
 // #define RESOURCE_IMAGE_PREFIX (std::string)("./docs/image_")
