@@ -28,8 +28,8 @@ void register_auth_info_to_db(SimpleDB *auth_db, std::string user_id, std::strin
 
 std::string get_auth_cookie_header(const std::string &user_id, const std::string &auth_str) {
     std::string cookie_header;
-    cookie_header += "Set-Cookie: " + COOKIE_USER_ID_KEY + "=" + user_id + "; Max-Age=" + COOKIE_MAX_AGE + "; Path=" + COOKIE_PATH + "\n";
-    cookie_header += "Set-Cookie: " + COOKIE_USER_AUTH_KEY + "=" + auth_str + "; Max-Age=" + COOKIE_MAX_AGE + "; Path=" + COOKIE_PATH + "\n";
+    cookie_header += "Set-Cookie: " + COOKIE_USER_ID_KEY + "=" + user_id + "; Max-Age=" + COOKIE_MAX_AGE + "; Path=" + std::string(COOKIE_PATH) + "\n";
+    cookie_header += "Set-Cookie: " + COOKIE_USER_AUTH_KEY + "=" + auth_str + "; Max-Age=" + COOKIE_MAX_AGE + "; Path=" + std::string(COOKIE_PATH) + "\n";
 
     return cookie_header;
 }
