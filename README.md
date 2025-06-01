@@ -1,3 +1,5 @@
+[![CI](https://github.com/Maitneel/webserv/actions/workflows/lint.yml/badge.svg)](https://github.com/Maitneel/webserv/actions/workflows/lint.yml)
+
 # webserv
 webservはHTTP、HTTPサーバーの学習を目的にC++98で作成されたHTTPサーバーです。以下のような特徴があります
 - Non-Blocking I/Oによる入出力
