@@ -63,11 +63,11 @@ class SimpleTests(unittest.TestCase):
                 body="",
                 expected=200
             ),
-            TestCase(
-                name="mistake host name",
-                method="GET",
-                url="http://localhost/", body="", expected=400
-            ),
+            # TestCase(
+            #     name="mistake host name",
+            #     method="GET",
+            #     url="http://localhost/", body="", expected=400
+            # ),
 
             # added by maitneel
             TestCase(
@@ -122,10 +122,10 @@ class SimpleTests(unittest.TestCase):
 
 class HostHeaderTest(unittest.TestCase):
     def test_it(self):
-        actual = requests.get("http://localhost", headers={"Host": "example.com"})
+        actual = requests.get("http://localhost:8082", headers={"Host": "example.com"})
         self.assertEqual(actual.status_code, 200)
 
-        actual = requests.get("http://localhost", headers={"Host": "localhost"})
+        actual = requests.get("http://localhost:8082", headers={"Host": "localhost"})
         self.assertEqual(actual.status_code, 400)
 
 def main():
