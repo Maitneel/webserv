@@ -74,7 +74,6 @@ void child_process(const HTTPRequest &request, const std::string &cgi_script_pat
 CGIInfo call_cgi_script(const HTTPRequest &request, const std::string &cgi_script_path, const std::string &path_info) {
     int sv[2];
     int socketret = socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
-    std::cerr << "socketret: " <<  socketret << std::endl;
     if (socketret != 0) {
         throw std::runtime_error("pipe failed");
     }
