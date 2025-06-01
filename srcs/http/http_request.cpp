@@ -100,7 +100,6 @@ void HTTPRequest::valid_content_type(const std::string &value) {
             ows.push_back(SP);
             ows.push_back(HTAB);
             splited_parameter.at(i) = trim_string(splited_parameter.at(i), ows);
-            std::cerr << splited_parameter.at(i) << std::endl;
             if (splited_parameter.at(i) == ";" || splited_parameter.at(i) == "") {
                 continue;
             }
@@ -179,7 +178,6 @@ void HTTPRequest::valid_pragma(const std::string &value) {
         } else if (processing.at(processing.length() - 1) == ',') {
             processing.erase(processing.end() - 1, processing.end());
         }
-        std::cerr << processing << std::endl;
         if (is_crlf(processing.substr(0, 2))) {
             size_t front = 2;
             while (is_sp(processing.at(front)) || is_ht(processing.at(front))) {

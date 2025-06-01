@@ -31,10 +31,6 @@
 #include "file_signatures.hpp"
 #include "extend_stdlib.hpp"
 
-#define debug(s) std::cerr << #s << '\'' << (s) << '\'' << std::endl;
-using std::cerr;
-using std::endl;
-
 std::string int_to_str(int n) {
     std::stringstream ss;
     ss << n;
@@ -288,7 +284,6 @@ void Server::HeadMethodHandler(HTTPContext *context, const std::string &req_path
         path += "/index.html";
     }
 
-    std::cout << path << std::endl;
     if (access(path.c_str(), F_OK) == -1) {
         this->SendErrorResponce(HTTPResponse::kBadRequest, server_config, connection_fd);
         return;
@@ -312,13 +307,11 @@ int ft_accept(int fd) {
     if (fcntl(sock, F_SETFL, O_NONBLOCK | FD_CLOEXEC)) {
         std::runtime_error("fcntl: failed");
     }
-    // cerr << "accept: [sock, con]: [" << fd << ", " << sock << "]" << endl;
     return sock;
 }
 
 
 void Server::CallCGI(const int &connection_fd, HTTPRequest *req, const std::string &cgi_path, const std::string &loc_name) {
-    std::cerr << "call cgi" << std::endl;
     std::string path_info = "/";
     std::string req_path = req->get_request_uri();
     if (req_path.at(req_path.length() - 1) != '/') {
@@ -338,8 +331,6 @@ void Server::CallCGI(const int &connection_fd, HTTPRequest *req, const std::stri
     } else {
         shutdown(cgi_info.fd, SHUT_WR);
     }
-    debug(cgi_info.fd);
-    std::cerr << "cgi end" << std::endl;
 }
 
 const LocationConfig &Server::GetLocationConfig(const int &port, const HTTPRequest &req) {
@@ -456,7 +447,6 @@ int fail_close = 0;
 int resend_close = 0;
 
 void Server::CloseConnection(const int connection_fd) {
-    // cerr << "[success, fail]: [" << resend_close << ", " << fail_close << "]" << endl;
     const HTTPContext &context = map_at(&ctxs_, connection_fd);
     if (context.file_fd_ != NON_EXIST_FD) {
         dispatcher_.UnregisterFileFd(context.file_fd_);
@@ -555,13 +545,6 @@ void Server::EventLoop() {
         for (it = dis_events.begin(); it != dis_events.end(); it++) {
             const int &event_fd = it->first;
             const ConnectionEvent &event = it->second;
-
-            // try {
-            //     cerr << "[fd, event]: " << event_fd << ", " << event.event << ", " << ctxs_.at(event.connection_fd).GetHTTPRequest().get_request_uri() << endl;
-            // } catch (...) {
-            //     cerr << endl;
-            // }
-
             if (event_fd == PROCESS_CHENGED_FD) {
                 continue;
             }

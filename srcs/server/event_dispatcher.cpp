@@ -16,8 +16,6 @@
 
 #include <iostream>
 #include <iomanip>
-using std::cerr;
-using std::endl;
 
 #include "event_dispatcher.hpp"
 #include "extend_stdlib.hpp"
@@ -44,7 +42,6 @@ long get_usec() {
 // C++98においてatomicな型は存在しないっぽい(Cのatomic型もC11からしかなさそう)のでこの辺で妥協したい //
 static volatile int recived_signal = 0;
 static void signal_handler(int sigid) {
-    cerr << "recive signal" << endl;
     recived_signal = sigid;
 }
 
@@ -673,7 +670,6 @@ void ServerEventDispatcher::RegisterNewConnection(const int &socket_fd) {
         connection_fd = ft_accept(socket_fd);
         this->times_.insert(std::make_pair(connection_fd, get_usec()));
         accept_count++;
-        // cerr << "accept: " << socket_fd << ' ' << connection_fd << ", count: " << accept_count << endl;
         this->continue_connection_until_.insert(std::make_pair(connection_fd, get_usec() + TIMEOUT_LENGTH_USEC));
         this->fd_event_dispatcher_.Register(connection_fd, kConnection);
         this->registerd_fds_.RegisterConnectionFd(connection_fd, socket_fd);
@@ -699,9 +695,6 @@ void ServerEventDispatcher::UnregisterConnectionFd(const int &connection_fd) {
         return;
     }
     std::map<int, long>::iterator it = times_.find(connection_fd);
-    if (!(get_usec() - it->second / SEC_PER_USEC)) {
-        cerr << "time: " << std::setw(2) << it->first << ": " <<  get_usec() - it->second << endl;
-    }
     times_.erase(it);
 
     const std::set<int> children = this->registerd_fds_.GetChildrenFd(connection_fd);
